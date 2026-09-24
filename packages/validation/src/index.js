@@ -6,3 +6,4 @@ export * from './commerce.js';
 export * from './settings.js';
 export * from './billing.js';
 export * from './params.js';
+export * from './account.js';

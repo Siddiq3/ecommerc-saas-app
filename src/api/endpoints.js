@@ -47,6 +47,22 @@ export const businesses = {
   /** Makes the storefront publicly reachable; refused with a list of what is still missing. */
   publish: (businessId) => api.post(`/businesses/${businessId}/publish`, {}),
   slugAvailable: (slug) => api.get(`/businesses/slug-available${qs({ slug })}`),
+  /**
+   * Deletes the store and everything in it, permanently. The slug is sent back so the
+   * server can refuse a request aimed at a store other than the one on screen.
+   */
+  remove: (businessId, slug) => api.del(`/businesses/${businessId}`, { body: { slug, confirm: true } }),
+};
+
+/* ───────────── The account itself ───────────── */
+
+/**
+ * Closing the account is a request, not an action: it mints the same kind of one-time
+ * code billing uses and the merchant fills the form on the website, where a person reads
+ * it. Nothing here deletes anything.
+ */
+export const account = {
+  deletionHandoff: () => api.post('/me/account/deletion-handoff', {}),
 };
 
 /** Storefront configuration — theme, sections, policies. Merged one level deep by the API. */

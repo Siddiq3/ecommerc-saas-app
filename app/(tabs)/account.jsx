@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Alert as RNAlert, Linking, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '../../src/components/Screen.jsx';
@@ -10,6 +12,7 @@ import { Thumb } from '../../src/components/domain.jsx';
 import { PlanBanner } from '../../src/components/PlanBanner.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { usePlan } from '../../src/state/plan.jsx';
+import { account as accountApi, businesses as businessApi } from '../../src/api/endpoints.js';
 import { colors, radius, space, type } from '../../src/theme.js';
 
 /**
@@ -18,6 +21,12 @@ import { colors, radius, space, type } from '../../src/theme.js';
  * "Manage subscription" leaves for the browser exactly as the paywall does — there is no
  * second path to billing inside the app, and no screen here that could be mistaken for
  * one.
+ *
+ * The two deletions at the bottom are deliberately different things. Deleting the store
+ * is the merchant's own call and happens here, immediately and for good. Deleting the
+ * *account* opens the website, where they say why and a person reviews it — it ends a
+ * paid relationship and erases records we may be asked about later, which is not a
+ * decision that should turn on one mis-tap.
  */
 
 const STOREFRONT_HOST = String(process.env.EXPO_PUBLIC_STOREFRONT_HOST ?? 'storekit.site');
@@ -25,8 +34,9 @@ const STOREFRONT_HOST = String(process.env.EXPO_PUBLIC_STOREFRONT_HOST ?? 'store
 export default function Account() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user, business, signOut } = useAuth();
-  const { status, planStatus } = usePlan();
+  const { user, business, businessId, signOut, refreshUser } = useAuth();
+  const { status, planStatus, refresh } = usePlan();
+  const [busy, setBusy] = useState(false);
 
   const storeUrl = business?.slug ? `https://${STOREFRONT_HOST}/${business.slug}` : null;
 
@@ -42,6 +52,64 @@ export default function Account() {
       { text: 'Stay', style: 'cancel' },
       { text: 'Sign out', style: 'destructive', onPress: signOut },
     ]);
+
+  const deleteStore = async () => {
+    setBusy(true);
+    try {
+      await businessApi.remove(businessId, business.slug);
+      // Both providers, in this order: the layout sends the merchant to onboarding once
+      // the user has no store, and the plan status is what tells it there is none.
+      await refreshUser();
+      await refresh({ silent: true });
+    } catch (error) {
+      RNAlert.alert('Could not delete the store', error?.message ?? 'Something went wrong. Try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** Two taps, because the first one is the only thing standing between a tap and losing everything. */
+  const confirmDeleteStore = () => {
+    if (!businessId || !business?.slug) return;
+    RNAlert.alert(
+      `Delete ${business.name ?? 'your store'}?`,
+      'Your products, orders, customers and store link are deleted for good. Nothing can be restored, and any time left on a paid plan is not refunded. Your account stays, so you can start a new store.',
+      [
+        { text: 'Keep my store', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () =>
+            RNAlert.alert('Delete permanently?', 'This is the last step. There is no undo.', [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Delete forever', style: 'destructive', onPress: deleteStore },
+            ]),
+        },
+      ],
+    );
+  };
+
+  /**
+   * Opens the deletion form in the device's real browser with a one-time code, the same
+   * handoff billing uses. The code is opaque, lives two minutes and is spent on first use.
+   */
+  const openAccountDeletion = async () => {
+    setBusy(true);
+    try {
+      const { url } = await accountApi.deletionHandoff();
+      await WebBrowser.openBrowserAsync(url, {
+        toolbarColor: '#ffffff',
+        controlsColor: colors.accent600,
+        dismissButtonStyle: 'close',
+        enableBarCollapsing: true,
+        showTitle: true,
+      });
+    } catch (error) {
+      RNAlert.alert('Could not open the form', error?.message ?? 'Check your connection and try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const planLabel = {
     trial_active: `Trial · ${status?.trialDaysRemaining ?? 0} day${status?.trialDaysRemaining === 1 ? '' : 's'} left`,
@@ -127,6 +195,26 @@ export default function Account() {
         />
       </Group>
 
+      <Group title="Danger zone">
+        {businessId ? (
+          <Item
+            icon="trash-outline"
+            label="Delete store"
+            tone="danger"
+            disabled={busy}
+            onPress={confirmDeleteStore}
+          />
+        ) : null}
+        <Item
+          icon="person-remove-outline"
+          label="Delete account"
+          tone="danger"
+          disabled={busy}
+          onPress={openAccountDeletion}
+          last
+        />
+      </Group>
+
       <Touchable onPress={confirmSignOut} style={styles.signOut} accessibilityLabel="Sign out">
         <Ionicons name="log-out-outline" size={18} color={colors.danger} />
         <Body style={{ color: colors.danger }}>Sign out</Body>
@@ -144,17 +232,24 @@ const Group = ({ title, children }) => (
   </View>
 );
 
-const Item = ({ icon, label, value, onPress, last }) => (
-  <>
-    <Touchable onPress={onPress} style={styles.item} accessibilityLabel={label}>
-      <Ionicons name={icon} size={19} color={colors.ink600} />
-      <Body style={{ flex: 1 }}>{label}</Body>
-      {value}
-      <Ionicons name="chevron-forward" size={17} color={colors.ink400} />
-    </Touchable>
-    {last ? null : <Divider style={styles.itemDivider} />}
-  </>
-);
+const Item = ({ icon, label, value, onPress, last, tone, disabled }) => {
+  const danger = tone === 'danger';
+  return (
+    <>
+      <Touchable
+        onPress={disabled ? undefined : onPress}
+        style={[styles.item, disabled && styles.itemDisabled]}
+        accessibilityLabel={label}
+      >
+        <Ionicons name={icon} size={19} color={danger ? colors.danger : colors.ink600} />
+        <Body style={[{ flex: 1 }, danger && { color: colors.danger }]}>{label}</Body>
+        {value}
+        <Ionicons name="chevron-forward" size={17} color={colors.ink400} />
+      </Touchable>
+      {last ? null : <Divider style={styles.itemDivider} />}
+    </>
+  );
+};
 
 const titleCase = (value) => String(value).charAt(0).toUpperCase() + String(value).slice(1);
 
@@ -176,6 +271,7 @@ const styles = StyleSheet.create({
     paddingVertical: space.lg,
     minHeight: 54,
   },
+  itemDisabled: { opacity: 0.5 },
   itemDivider: { marginLeft: space.lg + 19 + space.md },
 
   signOut: {
