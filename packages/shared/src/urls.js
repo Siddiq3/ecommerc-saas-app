@@ -5,7 +5,45 @@
 
 const trimEnd = (s) => String(s || '').replace(/\/+$/, '');
 
-export const storeUrl = (cfg, slug) => `${trimEnd(cfg.storefrontBaseUrl)}/${slug}`;
+/**
+ * Storefront addresses. Every store lives on its own subdomain: `https://{slug}.storekit.site`.
+ *
+ * `cfg.storefrontBaseUrl` is the storefront *root* — `https://storekit.site` in production,
+ * `http://lvh.me:3000` on a developer machine (`*.localhost` does not resolve reliably;
+ * lvh.me and its subdomains resolve to 127.0.0.1). The scheme and port are carried over as
+ * written, so moving between environments is a configuration change and no caller knows the
+ * difference. A path on the root is ignored: a store is a host, never a path.
+ *
+ * This is the only place a store's address is assembled. Custom domains resolve through the
+ * same Host-header routing on the serving side, and a custom domain's own URL is a separate
+ * concern from this one.
+ *
+ * Slug *rules* (length, characters, reserved names such as `www`, `api`, `cdn`) live in the
+ * validation package's `storeSlug`, which this package cannot import without a cycle. What
+ * is enforced here is narrower and unconditional: the slug must be a single DNS label,
+ * because the host is now built from data. A slug like `evil.com#` would otherwise turn a
+ * store link into a link to somewhere else.
+ */
+const ROOT = /^(https?):\/\/([^/?#\s]+)/i;
+const DNS_LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+
+const parseRoot = (cfg) => {
+  const match = ROOT.exec(String(cfg?.storefrontBaseUrl ?? ''));
+  if (!match) throw new TypeError('storefrontBaseUrl must be an http(s) URL such as https://storekit.site');
+  return { scheme: match[1].toLowerCase(), domain: match[2].toLowerCase() };
+};
+
+/** The storefront root's host, with any port: `storekit.site`, `lvh.me:3000`. */
+export const storefrontDomain = (cfg) => parseRoot(cfg).domain;
+
+/** `{slug}.storekit.site` — the address without a scheme, for display. */
+export const storeHostname = (cfg, slug) => {
+  const label = String(slug ?? '').toLowerCase();
+  if (!DNS_LABEL.test(label)) throw new TypeError(`"${slug}" cannot be used as a store subdomain`);
+  return `${label}.${storefrontDomain(cfg)}`;
+};
+
+export const storeUrl = (cfg, slug) => `${parseRoot(cfg).scheme}://${storeHostname(cfg, slug)}`;
 
 export const productUrl = (cfg, slug, productId, productSlug) =>
   `${storeUrl(cfg, slug)}/products/${productSlug ? `${productSlug}--` : ''}${productId}`;

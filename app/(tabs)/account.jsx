@@ -13,6 +13,7 @@ import { PlanBanner } from '../../src/components/PlanBanner.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { usePlan } from '../../src/state/plan.jsx';
 import { account as accountApi, businesses as businessApi } from '../../src/api/endpoints.js';
+import { storeUrl as storeAddress } from '../../src/lib/storefront.js';
 import { colors, radius, space, type } from '../../src/theme.js';
 
 /**
@@ -38,7 +39,7 @@ export default function Account() {
   const { status, planStatus, refresh } = usePlan();
   const [busy, setBusy] = useState(false);
 
-  const storeUrl = business?.slug ? `https://${STOREFRONT_HOST}/${business.slug}` : null;
+  const storeUrl = business?.slug ? storeAddress(business.slug) : null;
 
   const openStore = () => storeUrl && Linking.openURL(storeUrl).catch(() => undefined);
 

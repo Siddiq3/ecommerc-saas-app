@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { slugify } from '@storekit/shared';
@@ -10,6 +10,7 @@ import { useAuth } from '../../src/state/auth.jsx';
 import { useOnboarding } from '../../src/state/onboarding.jsx';
 import { businesses } from '../../src/api/endpoints.js';
 import { detailsSchema } from '../../src/lib/onboarding.js';
+import { STOREFRONT_DOMAIN } from '../../src/lib/storefront.js';
 import { check } from '../../src/lib/validation.js';
 import { colors } from '../../src/theme.js';
 
@@ -21,8 +22,6 @@ import { colors } from '../../src/theme.js';
  * people have saved it. Availability is checked live, so "taken" is discovered here rather
  * than as a failure after five more screens.
  */
-
-const HOST = String(process.env.EXPO_PUBLIC_STOREFRONT_HOST ?? 'storekit.site');
 
 export default function Details() {
   const router = useRouter();
@@ -121,8 +120,12 @@ export default function Details() {
         returnKeyType="next"
         onSubmitEditing={() => phoneRef.current?.focus()}
         maxLength={40}
-        prefix={<Caption style={styles.prefix}>{HOST}/</Caption>}
-        right={<AvailabilityMark state={availability.state} />}
+        right={(
+          <View style={styles.suffix}>
+            <Caption style={styles.domain}>.{STOREFRONT_DOMAIN}</Caption>
+            <AvailabilityMark state={availability.state} />
+          </View>
+        )}
         hint={availability.state === 'free' ? 'That link is yours.' : 'The address customers will type. Hard to change later.'}
         error={slugProblem}
       />
@@ -154,5 +157,6 @@ const AvailabilityMark = ({ state }) => {
 };
 
 const styles = StyleSheet.create({
-  prefix: { color: colors.ink500, fontSize: 13 },
+  suffix: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  domain: { color: colors.ink500, fontSize: 13 },
 });

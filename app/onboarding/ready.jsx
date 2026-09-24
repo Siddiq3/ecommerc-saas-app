@@ -14,6 +14,7 @@ import { useAuth } from '../../src/state/auth.jsx';
 import { useOnboarding } from '../../src/state/onboarding.jsx';
 import { usePlan } from '../../src/state/plan.jsx';
 import { categoryById } from '../../src/lib/onboarding.js';
+import { storeUrl, storeHostname } from '../../src/lib/storefront.js';
 import { colors, fonts, motion, panelTints, radius, shadow, space } from '../../src/theme.js';
 
 /**
@@ -24,8 +25,6 @@ import { colors, fonts, motion, panelTints, radius, shadow, space } from '../../
  * guard still believes there is no store (it reads the cached owner), which is exactly what
  * keeps the merchant on this screen instead of being swept to the dashboard mid-celebration.
  */
-
-const HOST = String(process.env.EXPO_PUBLIC_STOREFRONT_HOST ?? 'storekit.site');
 
 const initialsOf = (name) => {
   const words = String(name ?? '').trim().split(/\s+/).filter(Boolean);
@@ -52,7 +51,7 @@ export default function Ready() {
     };
   });
   const { name, slug, category } = shown;
-  const url = `https://${HOST}/${slug}`;
+  const url = storeUrl(slug);
 
   useEffect(() => { haptic.success(); }, []);
 
@@ -100,7 +99,7 @@ export default function Ready() {
           ) : null}
           <Touchable onPress={copy} style={styles.urlRow} accessibilityLabel="Copy store link">
             <Ionicons name="link-outline" size={18} color={colors.ink500} />
-            <Body numberOfLines={1} style={styles.url}>{HOST}/{slug}</Body>
+            <Body numberOfLines={1} style={styles.url}>{storeHostname(slug)}</Body>
             <Ionicons name="copy-outline" size={18} color={colors.accent700} />
           </Touchable>
         </FadeIn>

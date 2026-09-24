@@ -2,6 +2,7 @@ import { Image, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { useEffect } from 'react';
 import { Body, Caption } from './ui.jsx';
+import { STOREFRONT_DOMAIN } from '../lib/storefront.js';
 import { colors, fonts, motion, panelTints, radius, shadow, space, type } from '../theme.js';
 
 /**
@@ -18,8 +19,6 @@ import { colors, fonts, motion, panelTints, radius, shadow, space, type } from '
  * and impossible to keep at 60fps while someone types. Everything here is drawn from the
  * same data the storefront will render, so it stays honest.
  */
-
-const STOREFRONT_HOST = String(process.env.EXPO_PUBLIC_STOREFRONT_HOST ?? 'storekit.site');
 
 /**
  * Each category gets its own palette and props, so switching category visibly changes the
@@ -83,7 +82,7 @@ export function StorePreview({
         </View>
         <View style={styles.urlBar}>
           <Caption numberOfLines={1} style={styles.url}>
-            {STOREFRONT_HOST}/<Caption style={[styles.urlSlug, { color: accent }]}>{displaySlug}</Caption>
+            <Caption style={[styles.urlSlug, { color: accent }]}>{displaySlug}</Caption>.{STOREFRONT_DOMAIN}
           </Caption>
         </View>
       </View>

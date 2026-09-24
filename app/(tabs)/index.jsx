@@ -17,6 +17,7 @@ import { useAuth } from '../../src/state/auth.jsx';
 import { useAsync, useRefreshOnFocus } from '../../src/lib/useAsync.js';
 import { analytics, businesses as businessesApi, products as productsApi } from '../../src/api/endpoints.js';
 import { formatMoney, percentChange } from '../../src/lib/format.js';
+import { storeUrl as storeAddress, storeHostname } from '../../src/lib/storefront.js';
 import { colors, fonts, radius, space, type } from '../../src/theme.js';
 
 /**
@@ -31,8 +32,6 @@ import { colors, fonts, radius, space, type } from '../../src/theme.js';
  * dot, the same address, the same open/share actions. The merchant lands here straight
  * after watching their store go live, and it is still right there.
  */
-
-const STOREFRONT_HOST = String(process.env.EXPO_PUBLIC_STOREFRONT_HOST ?? 'storekit.site');
 
 /** Everything a merchant manages, one tap from Home. Settings is the Account tab. */
 const SHORTCUTS = [
@@ -70,7 +69,7 @@ export default function Dashboard() {
   // Coming back from an order detail should show the new status, not a cached row.
   useFocusEffect(useRefreshOnFocus(reload));
 
-  const storeUrl = business?.slug ? `https://${STOREFRONT_HOST}/${business.slug}` : null;
+  const storeUrl = business?.slug ? storeAddress(business.slug) : null;
 
   if (error && !data) return <ErrorState error={error} onRetry={reload} />;
 
@@ -140,7 +139,7 @@ export default function Dashboard() {
               <Ionicons name="share-social-outline" size={16} color={colors.accent700} />
             </Touchable>
           </Row>
-          <Caption numberOfLines={1} style={styles.storeUrl}>{STOREFRONT_HOST}/{business?.slug ?? ''}</Caption>
+          <Caption numberOfLines={1} style={styles.storeUrl}>{business?.slug ? storeHostname(business.slug) : ''}</Caption>
           <Row gap={space.sm}>
             <Touchable onPress={openStore} accessibilityLabel="View store" style={styles.viewButton}>
               <Ionicons name="open-outline" size={17} color={colors.accent700} />

@@ -8,6 +8,7 @@ import { Checklist } from './Stepper.jsx';
 import { StorePreviewDevice } from './StorePreview.jsx';
 import { FadeIn, ProgressBar, haptic } from './motion.jsx';
 import { useToast } from './Toast.jsx';
+import { storeUrl, storeHostname } from '../lib/storefront.js';
 import { colors, radius, space, type } from '../theme.js';
 
 /**
@@ -26,8 +27,6 @@ import { colors, radius, space, type } from '../theme.js';
  * holds back `refreshUser()` until the merchant dismisses this.
  */
 
-const STOREFRONT_HOST = String(process.env.EXPO_PUBLIC_STOREFRONT_HOST ?? 'storekit.site');
-
 const STEPS = [
   { key: 'identity', label: 'Store identity', hint: 'Name, category and contact saved' },
   { key: 'link', label: 'Store link reserved', hint: 'Your address is yours alone' },
@@ -44,7 +43,7 @@ export function StoreLaunch({ name, slug, category, onDone }) {
   const toast = useToast();
   const [completed, setCompleted] = useState(0);
 
-  const url = `https://${STOREFRONT_HOST}/${slug}`;
+  const url = storeUrl(slug);
   const finished = completed >= STEPS.length;
 
   useEffect(() => {
@@ -98,7 +97,7 @@ export function StoreLaunch({ name, slug, category, onDone }) {
           <FadeIn delay={240} style={{ alignSelf: 'stretch' }}>
             <Touchable onPress={copy} style={styles.urlRow} accessibilityLabel="Copy store link">
               <Ionicons name="link-outline" size={17} color={colors.ink500} />
-              <Body numberOfLines={1} style={styles.urlText}>{STOREFRONT_HOST}/{slug}</Body>
+              <Body numberOfLines={1} style={styles.urlText}>{storeHostname(slug)}</Body>
               <Ionicons name="copy-outline" size={17} color={colors.accent700} />
             </Touchable>
 
