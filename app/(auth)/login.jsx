@@ -49,6 +49,7 @@ export default function Login() {
   const fieldErrors = mergeErrors(errors, error);
   const generalError = error && Object.keys(error.fieldErrors ?? {}).length === 0 ? error.message : null;
 
+  const needsVerification = error?.code === 'EMAIL_NOT_VERIFIED';
 
   return (
     <Screen footer={<Button title="Sign in" size="lg" loading={pending} onPress={submit} />}>
@@ -103,6 +104,19 @@ export default function Login() {
           error={fieldErrors.password}
         />
 
+        {needsVerification ? (
+          <Button
+            title="Verify my email"
+            variant="secondary"
+            onPress={() => router.push({ pathname: '/(auth)/verify', params: { email: form.email.trim().toLowerCase() } })}
+          />
+        ) : null}
+
+        <Button
+          title="Forgot your password?"
+          variant="ghost"
+          onPress={() => router.push({ pathname: '/(auth)/forgot-password', params: { email: form.email.trim().toLowerCase() } })}
+        />
       </View>
 
       <Touchable
