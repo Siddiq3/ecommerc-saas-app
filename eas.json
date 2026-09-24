@@ -12,14 +12,15 @@
       "distribution": "internal",
       "android": { "buildType": "apk" },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://REPLACE-WITH-STAGING-API-HOST",
+        "EXPO_PUBLIC_STOREFRONT_URL": "https://storekit.site",
         "EXPO_PUBLIC_STOREFRONT_HOST": "storekit.site"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://REPLACE-WITH-PRODUCTION-API-HOST",
+        "EXPO_PUBLIC_API_URL": "https://api.storekit.site",
+        "EXPO_PUBLIC_STOREFRONT_URL": "https://storekit.site",
         "EXPO_PUBLIC_STOREFRONT_HOST": "storekit.site"
       }
     }

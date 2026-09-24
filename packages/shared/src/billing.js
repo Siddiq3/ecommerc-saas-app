@@ -163,6 +163,10 @@ export const effectiveMonthlyPrice = (planId, cycle) => {
  * Feature comparison for the pricing table. Kept beside the plans so a new plan cannot
  * be added without deciding what it includes.
  *
+ * Not listed, on purpose: team members. Staff accounts exist in the API (`maxStaffAccounts`, still in each
+ * plan's entitlements) but are switched off (`FEATURE_STAFF_ACCOUNTS`), and pricing must not promise what a
+ * customer cannot use. Add the row back in the same change that turns the feature on.
+ *
  * Formats: `number` (a count, `null` = Unlimited), `boolean` (any non-zero value reads as included —
  * so the custom-domain row is a tick, never a count), `bytes`, `days`, and `feature` (a boolean that
  * also reports whether the feature is built yet).
@@ -174,7 +178,6 @@ export const COMPARISON_ROWS = Object.freeze([
   { label: 'Priority support', key: 'prioritySupport', format: 'feature' },
   { label: 'Custom storefront design', key: 'customDesign', format: 'feature' },
   { label: 'Image storage', key: 'maxStorageBytes', format: 'bytes' },
-  { label: 'Team members', key: 'maxStaffAccounts', format: 'number' },
   { label: 'Analytics history', key: 'analyticsRetentionDays', format: 'days' },
   { label: 'Branding removed', key: 'removeBranding', format: 'boolean' },
 ]);

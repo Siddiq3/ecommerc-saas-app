@@ -4,6 +4,7 @@
     "slug": "storekit",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "scheme": "storekit",
@@ -11,6 +12,7 @@
       "**/*"
     ],
     "splash": {
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#e2511e"
     },
@@ -24,6 +26,7 @@
     "android": {
       "package": "site.storekit.owner",
       "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#e2511e"
       },
       "intentFilters": [
