@@ -115,7 +115,7 @@ export default function Account() {
   const planLabel = {
     trial_active: `Trial · ${status?.trialDaysRemaining ?? 0} day${status?.trialDaysRemaining === 1 ? '' : 's'} left`,
     trial_expired: 'Trial ended',
-    subscribed: status?.planId ? `${titleCase(status.planId)} plan` : 'Subscribed',
+    subscribed: status?.plan?.name ? `${status.plan.name} plan` : 'Subscribed',
     cancelled: 'Cancelled',
     past_due: 'Payment failed',
   }[planStatus] ?? '—';
@@ -251,8 +251,6 @@ const Item = ({ icon, label, value, onPress, last, tone, disabled }) => {
     </>
   );
 };
-
-const titleCase = (value) => String(value).charAt(0).toUpperCase() + String(value).slice(1);
 
 const styles = StyleSheet.create({
   title: { fontSize: 28, marginBottom: space.lg },

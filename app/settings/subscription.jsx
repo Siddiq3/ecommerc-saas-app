@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { TRIAL_DAYS } from '@storekit/shared';
+import { COMPARISON_ROWS, TRIAL_DAYS, describeEntitlement, formatMoney } from '@storekit/shared';
 import { Screen } from '../../src/components/Screen.jsx';
 import {
   Alert, Body, Button, Caption, Card, Divider, Heading, Pill, Row,
@@ -28,6 +28,10 @@ import { colors, space, type } from '../../src/theme.js';
  *  belongs on the same web surface as paying.
  * ────────────────────────────────────────────────────────────────────────────
  */
+/** What a merchant asks about their plan first. The rest of the table is on the website. */
+const INCLUDED_KEYS = ['maxProducts', 'monthlyOrderLimit', 'maxCustomDomains', 'prioritySupport', 'customDesign'];
+const INCLUDED_ROWS = COMPARISON_ROWS.filter((row) => INCLUDED_KEYS.includes(row.key));
+
 export default function Subscription() {
   const router = useRouter();
   const { businessId } = useAuth();
@@ -49,6 +53,16 @@ export default function Subscription() {
   };
 
   if (loading && !usage && !status) return <SkeletonScreen />;
+
+  // What the server says the plan is and includes. The bundled table is never consulted here:
+  // this screen describes the merchant's actual plan, so it shows the server's answer.
+  const entitlements = usage?.entitlements ?? status?.entitlements ?? null;
+  const features = usage?.features ?? status?.features ?? null;
+  const domains = usage?.customDomains ?? null;
+  // The name and price come from the same response as the rows below them, so one screen can never
+  // show two different plans. The cached billing status is only the fallback while it loads.
+  const planName = usage?.plan?.name ?? status?.plan?.name ?? 'Your plan';
+  const monthlyPaise = usage?.plan?.priceMonthly ?? status?.plan?.monthlyPaise ?? 0;
 
   const stateCopy = {
     trial_active: {
@@ -82,7 +96,10 @@ export default function Subscription() {
 
       <Card style={styles.card}>
         <Row style={{ justifyContent: 'space-between' }}>
-          <Heading>{status?.planId ? titleCase(status.planId) : 'Your plan'}</Heading>
+          <View style={{ flex: 1 }}>
+            <Heading>{planName}</Heading>
+            {monthlyPaise > 0 ? <Caption>{formatMoney(monthlyPaise)} / month</Caption> : null}
+          </View>
           <Pill label={stateCopy.label} tone={stateCopy.tone} />
         </Row>
         {stateCopy.detail ? <Caption style={styles.detail}>{stateCopy.detail}</Caption> : null}
@@ -113,18 +130,58 @@ export default function Subscription() {
         <Caption>Billing is handled on our website, in your browser.</Caption>
       </Row>
 
+      {entitlements ? (
+        <>
+          <Heading style={styles.usageTitle}>What your plan includes</Heading>
+          <Card style={styles.card}>
+            {INCLUDED_ROWS.map((row, index) => {
+              const value = describeEntitlement(entitlements, row, features);
+              // A plan can promise custom domains while the feature is still switched off in this
+              // environment. Say so, rather than let "1 domain" read as something to go and use.
+              const notSwitchedOn = row.key === 'maxCustomDomains' && value.included && domains?.enabled === false;
+              return (
+                <View key={row.key}>
+                  {index > 0 ? <Divider style={styles.innerDivider} /> : null}
+                  <Row gap={space.md} style={{ justifyContent: 'space-between' }}>
+                    <Body style={{ flex: 1 }}>{row.label}</Body>
+                    <Row gap={space.xs}>
+                      <Ionicons
+                        name={value.included ? 'checkmark-circle' : 'remove-circle-outline'}
+                        size={17}
+                        color={value.included ? colors.accent600 : colors.ink400}
+                      />
+                      <Body style={value.included ? undefined : styles.notIncluded}>{value.text}</Body>
+                    </Row>
+                  </Row>
+                  {value.note || notSwitchedOn ? <Caption style={styles.includedNote}>{value.note ?? 'Not available yet'}</Caption> : null}
+                </View>
+              );
+            })}
+          </Card>
+        </>
+      ) : null}
+
+      {domains?.message ? (
+        <Card style={[styles.card, styles.warnings]}>
+          <Row gap={space.sm} align="flex-start">
+            <Ionicons name="information-circle-outline" size={17} color={colors.warning} />
+            <Body style={{ flex: 1 }}>{domains.message}</Body>
+          </Row>
+        </Card>
+      ) : null}
+
       {usage ? (
         <>
           <Heading style={styles.usageTitle}>What you are using</Heading>
           <Card style={styles.card}>
-            <Usage label="Products" used={usage.usage?.products} limit={usage.limits?.maxProducts} />
+            <Usage label="Products" used={usage.usage?.products} limit={usage.plan?.maxProducts} />
             <Divider style={styles.innerDivider} />
-            <Usage label="Orders this month" used={usage.usage?.ordersThisMonth} limit={usage.limits?.maxOrdersPerMonth} />
+            <Usage label="Orders this month" used={usage.usage?.ordersThisMonth} limit={usage.plan?.monthlyOrderLimit} />
             <Divider style={styles.innerDivider} />
             <Usage
               label="Storage"
               used={usage.usage?.storageBytes}
-              limit={usage.limits?.maxStorageBytes}
+              limit={usage.plan?.maxStorageBytes}
               format={(v) => `${(Number(v ?? 0) / (1024 * 1024)).toFixed(0)} MB`}
             />
           </Card>
@@ -146,8 +203,10 @@ export default function Subscription() {
 }
 
 const Usage = ({ label, used, limit, format = (v) => String(v ?? 0) }) => {
-  const unlimited = limit === null || limit === undefined || limit < 0;
-  const ratio = unlimited ? 0 : Math.min(1, (Number(used) || 0) / Math.max(1, Number(limit)));
+  // `null` is "no limit" and is worth saying; `undefined` is "we were not told", which is not.
+  const unlimited = limit === null || limit < 0;
+  const unknown = limit === undefined;
+  const ratio = unlimited || unknown ? 0 : Math.min(1, (Number(used) || 0) / Math.max(1, Number(limit)));
   const tone = ratio > 0.9 ? colors.danger : ratio > 0.75 ? colors.warning : colors.accent600;
 
   return (
@@ -156,10 +215,10 @@ const Usage = ({ label, used, limit, format = (v) => String(v ?? 0) }) => {
         <Body>{label}</Body>
         <Body style={type.money}>
           {format(used)}
-          {unlimited ? '' : ` / ${format(limit)}`}
+          {unlimited ? ' · Unlimited' : unknown ? '' : ` / ${format(limit)}`}
         </Body>
       </Row>
-      {unlimited ? null : (
+      {unlimited || unknown ? null : (
         <View style={styles.track}>
           <View style={[styles.fill, { width: `${Math.max(2, ratio * 100)}%`, backgroundColor: tone }]} />
         </View>
@@ -167,8 +226,6 @@ const Usage = ({ label, used, limit, format = (v) => String(v ?? 0) }) => {
     </View>
   );
 };
-
-const titleCase = (value) => String(value).charAt(0).toUpperCase() + String(value).slice(1);
 
 const styles = StyleSheet.create({
   card: { marginBottom: space.lg },
@@ -179,4 +236,6 @@ const styles = StyleSheet.create({
   track: { height: 6, borderRadius: 3, backgroundColor: colors.ink200, marginTop: space.sm, overflow: 'hidden' },
   fill: { height: 6, borderRadius: 3 },
   warnings: { gap: space.md },
+  notIncluded: { color: colors.ink500 },
+  includedNote: { marginTop: space.xs, textAlign: 'right', color: colors.ink500 },
 });

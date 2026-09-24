@@ -51,6 +51,11 @@ export const RATE_LIMITS = Object.freeze({
   'owner:write': [120, 60],
   'owner:upload': [60, 300],
   'owner:slug-change': [3, 86400],
+  'owner:domain-add': [10, 3600],
+  'owner:domain-verify': [30, 3600],
+  // The edge asks once per host and caches the answer, but every such request reaches us from
+  // a handful of edge addresses, so this is a per-address ceiling for the whole platform.
+  'public:host-resolve': [1200, 60],
 });
 
 /** Scrubbed from logs, audit diffs and error payloads. */

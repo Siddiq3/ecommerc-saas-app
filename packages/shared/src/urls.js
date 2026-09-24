@@ -3,6 +3,8 @@
  * used to enumerate another business's assets behind the CDN.
  */
 
+import { parseStorefrontRoot } from './hosts.js';
+
 const trimEnd = (s) => String(s || '').replace(/\/+$/, '');
 
 /**
@@ -24,13 +26,11 @@ const trimEnd = (s) => String(s || '').replace(/\/+$/, '');
  * because the host is now built from data. A slug like `evil.com#` would otherwise turn a
  * store link into a link to somewhere else.
  */
-const ROOT = /^(https?):\/\/([^/?#\s]+)/i;
 const DNS_LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 
 const parseRoot = (cfg) => {
-  const match = ROOT.exec(String(cfg?.storefrontBaseUrl ?? ''));
-  if (!match) throw new TypeError('storefrontBaseUrl must be an http(s) URL such as https://storekit.site');
-  return { scheme: match[1].toLowerCase(), domain: match[2].toLowerCase() };
+  const { scheme, domain, port } = parseStorefrontRoot(cfg);
+  return { scheme, domain: port === null ? domain : `${domain}:${port}` };
 };
 
 /** The storefront root's host, with any port: `storekit.site`, `lvh.me:3000`. */

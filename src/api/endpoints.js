@@ -173,6 +173,8 @@ export const uploads = {
 export const subscription = {
   status: () => api.get('/me/status'),
   handoff: () => api.post('/me/billing/handoff', {}),
+  /** The plans as the server sells them: prices, copy and what each includes. Public, no sign-in. */
+  plans: () => api.get('/billing/plans', { auth: false }),
   /** The store's own plan usage (product counts, storage), not the billing state. */
   usage: (businessId) => api.get(`${scope(businessId)}/subscription`),
 };

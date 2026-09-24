@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  BILLING_PLANS, TRIAL_DAYS, effectiveMonthlyPrice, formatMoney, yearlyPrice, yearlySavingPercent,
+  TRIAL_DAYS, formatMoney, yearlyPrice, yearlySavingPercent,
 } from '@storekit/shared';
 import { Screen } from '../src/components/Screen.jsx';
 import {
@@ -12,6 +12,7 @@ import {
 } from '../src/components/ui.jsx';
 import { usePlan } from '../src/state/plan.jsx';
 import { useAction } from '../src/lib/useAsync.js';
+import { usePlanCatalogue } from '../src/lib/usePlanCatalogue.js';
 import { colors, radius, space, type } from '../src/theme.js';
 
 /**
@@ -36,7 +37,10 @@ export default function Paywall() {
   const { status, planStatus, refresh, openBilling, loading } = usePlan();
 
   const [cycle, setCycle] = useState('yearly');
-  const [selected, setSelected] = useState(BILLING_PLANS.find((p) => p.popular)?.planId ?? BILLING_PLANS[0].planId);
+  const plans = usePlanCatalogue();
+  const [picked, setSelected] = useState(null);
+  // Until the merchant picks one, the plan the page draws the eye to.
+  const selected = picked ?? plans.find((p) => p.featured)?.planId ?? plans[0].planId;
   const [refreshing, setRefreshing] = useState(false);
 
   const { run: continueToBrowser, pending, error } = useAction(() => openBilling());
@@ -135,7 +139,7 @@ export default function Paywall() {
           </View>
 
           <View style={styles.plans}>
-            {BILLING_PLANS.map((plan) => {
+            {plans.map((plan) => {
               const active = selected === plan.planId;
               const price = cycle === 'yearly' ? yearlyPrice(plan.monthlyPaise) : plan.monthlyPaise;
 
@@ -149,7 +153,7 @@ export default function Paywall() {
                   <Row style={{ justifyContent: 'space-between' }}>
                     <Row gap={space.sm}>
                       <Body strong style={styles.planName}>{plan.name}</Body>
-                      {plan.popular ? <Pill label="Most popular" tone="accent" /> : null}
+                      {plan.badge ? <Pill label={plan.badge} tone="accent" /> : null}
                     </Row>
                     <Ionicons
                       name={active ? 'radio-button-on' : 'radio-button-off'}
@@ -166,7 +170,7 @@ export default function Paywall() {
                   </Row>
                   {cycle === 'yearly' ? (
                     <Row gap={space.xs} align="center" style={styles.effectiveRow}>
-                      <Caption>{formatMoney(effectiveMonthlyPrice(plan.planId, 'yearly'))}/mo, billed yearly</Caption>
+                      <Caption>{formatMoney(Math.round(yearlyPrice(plan.monthlyPaise) / 12))}/mo, billed yearly</Caption>
                       <Pill label={`Save ${yearlySavingPercent()}%`} tone="accent" style={styles.saveBadge} />
                     </Row>
                   ) : null}
@@ -174,10 +178,19 @@ export default function Paywall() {
                   {active ? (
                     <>
                       <Divider style={styles.planDivider} />
-                      {plan.highlights.map((highlight) => (
-                        <Row key={highlight} gap={space.sm} align="flex-start" style={styles.highlight}>
-                          <Ionicons name="checkmark" size={16} color={colors.accent600} style={{ marginTop: 2 }} />
-                          <Body style={{ flex: 1 }}>{highlight}</Body>
+                      {plan.featureList.map((feature) => (
+                        <Row key={feature.label} gap={space.sm} align="flex-start" style={styles.highlight}>
+                          <Ionicons
+                            name={feature.included ? 'checkmark' : 'close'}
+                            size={16}
+                            color={feature.included ? colors.accent600 : colors.ink400}
+                            style={{ marginTop: 2 }}
+                            accessibilityLabel={feature.included ? 'Included' : 'Not included'}
+                          />
+                          <Body style={[{ flex: 1 }, !feature.included && styles.notIncluded]}>
+                            {feature.label}
+                            {feature.note ? <Caption>{`  ${feature.note}`}</Caption> : null}
+                          </Body>
                         </Row>
                       ))}
                     </>
@@ -204,7 +217,7 @@ export default function Paywall() {
           <Row gap={space.md} align="flex-start">
             <Ionicons name="checkmark-circle" size={22} color={colors.accent600} />
             <View style={{ flex: 1 }}>
-              <Body strong>{status?.planId ? titleCase(status.planId) : 'Your'} plan is active</Body>
+              <Body strong>{status?.plan?.name ?? 'Your'} plan is active</Body>
               <Caption>
                 {status?.currentPeriodEnd ? `Renews on ${new Date(status.currentPeriodEnd).toLocaleDateString('en-IN', { dateStyle: 'medium' })}.` : ''}
               </Caption>
@@ -215,8 +228,6 @@ export default function Paywall() {
     </Screen>
   );
 }
-
-const titleCase = (value) => String(value).charAt(0).toUpperCase() + String(value).slice(1);
 
 const styles = StyleSheet.create({
   head: { marginBottom: space.md },
@@ -232,6 +243,7 @@ const styles = StyleSheet.create({
   headline: { fontSize: 28, lineHeight: 34 },
   subhead: { marginTop: space.sm, marginBottom: space.xl, fontSize: 16, lineHeight: 23 },
   checking: { marginBottom: space.md },
+  notIncluded: { color: colors.ink400 },
 
   toggle: {
     flexDirection: 'row',

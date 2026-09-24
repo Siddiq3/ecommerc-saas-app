@@ -393,6 +393,9 @@ export const RESERVED_SLUGS = new Set([
   'webhook', 'webhooks', 'oauth', 'sitemap', 'robots', 'favicon', 'manifest', 'sw',
   'new', 'edit', 'delete', 'me', 'user', 'users', 'store', 'stores', 'shop', 'null',
   'undefined', 'root', 'system', 'internal', 'security', 'pricing', 'plans', 'c', 'p',
+  // The name customers point their custom-domain CNAME at (docs/CUSTOM_DOMAINS.md). A hostname
+  // the platform really uses, so a store must never be able to register it.
+  'domains',
 ]);
 
 export const storeSlug = z

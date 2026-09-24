@@ -30,6 +30,7 @@ export const PARAM_SCHEMAS = Object.freeze({
   uploadId: objectId,
   sessionId: objectId,
   memberId: objectId,
+  domainId: objectId,
   notificationId,
   slug: storeSlug,
   pageSlug,
