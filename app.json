@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "name": "StoreKit",
+    "slug": "storekit",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "scheme": "storekit",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#e2511e"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "site.storekit.owner",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "site.storekit.owner",
+      "adaptiveIcon": {
+        "backgroundColor": "#e2511e"
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": false,
+          "data": [
+            {
+              "scheme": "storekit",
+              "host": "payment-success"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "StoreKit uses your photos so you can add pictures of your products.",
+          "cameraPermission": "StoreKit uses your camera so you can photograph your products."
+        }
+      ],
+      "@react-native-community/datetimepicker",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "extra": {
+      "router": {}
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "cli": {
+    "version": ">= 12.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://REPLACE-WITH-STAGING-API-HOST",
+        "EXPO_PUBLIC_STOREFRONT_HOST": "storekit.site"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://REPLACE-WITH-PRODUCTION-API-HOST",
+        "EXPO_PUBLIC_STOREFRONT_HOST": "storekit.site"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

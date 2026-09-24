@@ -1,0 +1,42 @@
+name: CI
+
+# This repository is the owner app, so every push and pull request runs the whole suite —
+# there is no sibling project to filter paths against.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Lint and verify
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      # Run from the repository root, which is the workspace root for the
+      # @storekit/shared and @storekit/validation packages this app imports.
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # The compliance, route, style and variant verifiers — the store-policy check
+      # (no payment code in the app) is the one that must never regress silently.
+      - name: Run verification scripts
+        run: npm test

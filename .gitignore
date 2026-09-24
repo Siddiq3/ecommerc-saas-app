@@ -1,0 +1,45 @@
+node_modules/
+dist/
+build/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+
+# Secrets & env — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.p8
+*.key
+.aws/
+secrets/
+
+# Product images MUST NOT live in git (PRD §5 / spec §39).
+# Anchored: an unanchored `uploads/` also matches source directories such as
+# src/modules/uploads/, which silently dropped that module from the first commit.
+/uploads/
+public/uploads/
+*.webp.local
+
+# Mobile
+.expo/
+.expo-shared/
+android/
+ios/
+*.keystore
+google-services.json
+GoogleService-Info.plist
+
+# Local infra
+.dynamodb/
+.localstack/
+docker-volumes/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
