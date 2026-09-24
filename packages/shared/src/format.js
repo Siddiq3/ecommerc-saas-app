@@ -56,14 +56,33 @@ export const formatDate = (iso, locale = DEFAULT_LOCALE, opts = { dateStyle: 'me
   return new Intl.DateTimeFormat(locale, opts).format(new Date(iso));
 };
 
+/**
+ * "5 minutes ago" / "in 2 days".
+ *
+ * Uses the platform's formatter where there is one. The app's JavaScript engine (Hermes) has no
+ * `Intl.RelativeTimeFormat` — calling it throws, and this is called while rendering every order,
+ * customer, notification and session row, so a missing formatter took the whole screen down. The
+ * fallback reads the same in English, which is the only language the app is written in.
+ */
+const relativeWords = (value, unit) => {
+  const n = Math.abs(value);
+  if (n === 0) return unit === 'second' ? 'now' : `this ${unit}`;
+  if (unit === 'day' && n === 1) return value < 0 ? 'yesterday' : 'tomorrow';
+  const label = `${n} ${unit}${n === 1 ? '' : 's'}`;
+  return value < 0 ? `${label} ago` : `in ${label}`;
+};
+
+const formatRelative = (value, unit) =>
+  typeof Intl !== 'undefined' && typeof Intl.RelativeTimeFormat === 'function'
+    ? new Intl.RelativeTimeFormat(DEFAULT_LOCALE, { numeric: 'auto' }).format(value, unit)
+    : relativeWords(value, unit);
+
 export const relativeTime = (iso, now = Date.now()) => {
   if (!iso) return '';
   let value = Math.round((new Date(iso).getTime() - now) / 1000);
   const units = [['second', 60], ['minute', 60], ['hour', 24], ['day', 7], ['week', 4.35], ['month', 12], ['year', Infinity]];
   for (const [unit, size] of units) {
-    if (Math.abs(value) < size) {
-      return new Intl.RelativeTimeFormat(DEFAULT_LOCALE, { numeric: 'auto' }).format(Math.round(value), unit);
-    }
+    if (Math.abs(value) < size) return formatRelative(Math.round(value), unit);
     value /= size;
   }
   return iso;

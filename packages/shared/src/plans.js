@@ -59,7 +59,7 @@ export const PLANS = Object.freeze({
     planId: 'pro', name: 'Pro', priceMonthly: 99900,
     maxProducts: UNLIMITED, maxCategories: 500, maxStorageBytes: 51200 * MB,
     maxImagesPerProduct: 12, maxStaffAccounts: 20, analyticsRetentionDays: 730,
-    customDomain: true, maxCustomDomains: 3, removeBranding: true, monthlyOrderLimit: UNLIMITED,
+    customDomain: true, maxCustomDomains: 1, removeBranding: true, monthlyOrderLimit: UNLIMITED,
     prioritySupport: true, customDesign: true,
   },
 });
@@ -72,9 +72,13 @@ export const getPlan = (planId) => PLANS[planId] ?? PLANS[DEFAULT_PLAN_ID];
 export const PLAN_ORDER = Object.freeze(['free', 'starter', 'growth', 'pro']);
 
 /**
- * Whether a plan may serve a store on domains of its own. `customDomain` is the capability
+ * Whether a plan may serve a store on a domain of its own. `customDomain` is the capability
  * and `maxCustomDomains` the quota; both must allow it, so a plan cannot be left with a
  * quota it is not entitled to use.
+ *
+ * A store has at most ONE custom domain: Starter 0, Business 1, Pro 1. Nothing else in the system
+ * assumes more than one, so raising a quota later is a decision to make everywhere on purpose,
+ * not a table edit (a test fails if any plan is set above one).
  */
 export const customDomainQuota = (planId) => {
   const plan = getPlan(planId);

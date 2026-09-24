@@ -61,10 +61,14 @@ export const ToastProvider = ({ children }) => {
     dismiss,
   }), [show, dismiss]);
 
+  // `key` is taken out before the rest is spread: React wants a key passed directly, and warns when
+  // one arrives inside a spread object.
+  const { key: toastKey, ...toast } = current ?? {};
+
   return (
     <ToastContext.Provider value={api}>
       {children}
-      {current ? <Toast key={current.key} {...current} onDismiss={dismiss} /> : null}
+      {current ? <Toast key={toastKey} {...toast} onDismiss={dismiss} /> : null}
     </ToastContext.Provider>
   );
 };

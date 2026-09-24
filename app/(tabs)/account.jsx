@@ -169,7 +169,16 @@ export default function Account() {
         <Item icon="bar-chart-outline" label="Analytics" onPress={() => router.push('/analytics')} />
         <Item icon="notifications-outline" label="Activity" onPress={() => router.push('/notifications')} />
         <Item icon="folder-outline" label="Categories" onPress={() => router.push('/categories')} />
-        <Item icon="pricetag-outline" label="Coupons" onPress={() => router.push('/coupons')} last />
+        <Item icon="pricetag-outline" label="Coupons" onPress={() => router.push('/coupons')} />
+        <Item
+          icon="globe-outline"
+          label="Custom domain"
+          // Only when the plan does not include it: an included feature needs no label, and
+          // "not included" is the one thing worth saying before they tap.
+          value={status?.entitlements && !status.entitlements.maxCustomDomains ? <Pill label="Not included" tone="slate" /> : null}
+          onPress={() => router.push('/settings/domain')}
+          last
+        />
       </Group>
 
       <Group title="You">

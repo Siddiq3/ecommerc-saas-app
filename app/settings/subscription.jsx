@@ -137,7 +137,7 @@ export default function Subscription() {
             {INCLUDED_ROWS.map((row, index) => {
               const value = describeEntitlement(entitlements, row, features);
               // A plan can promise custom domains while the feature is still switched off in this
-              // environment. Say so, rather than let "1 domain" read as something to go and use.
+              // environment. Say so, rather than let "Included" read as something to go and use.
               const notSwitchedOn = row.key === 'maxCustomDomains' && value.included && domains?.enabled === false;
               return (
                 <View key={row.key}>

@@ -160,6 +160,23 @@ export const uploads = {
   confirm: (businessId, input) => api.post(`${scope(businessId)}/uploads/confirm`, input),
 };
 
+/* ───────────── Custom domains ───────────── */
+
+/**
+ * Connecting a domain the merchant owns to their store. Every call is scoped to the store, and
+ * a domain is addressed by its id (never its hostname). The server decides everything that
+ * matters — whether the plan allows it, whether the name is theirs — and the app only shows it.
+ */
+export const domains = {
+  list: (businessId) => api.get(`${scope(businessId)}/domains`),
+  add: (businessId, hostname) => api.post(`${scope(businessId)}/domains`, { hostname }),
+  /** Asks the server to check the DNS records now. Returns the domain as it now stands. */
+  verify: (businessId, domainId) => api.post(`${scope(businessId)}/domains/${domainId}/verify`, {}),
+  /** `{ isPrimary }` and/or `{ enabled }`. */
+  update: (businessId, domainId, input) => api.patch(`${scope(businessId)}/domains/${domainId}`, input),
+  remove: (businessId, domainId) => api.del(`${scope(businessId)}/domains/${domainId}`),
+};
+
 /* ───────────── Subscription ───────────── */
 
 /**

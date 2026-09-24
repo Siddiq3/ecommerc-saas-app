@@ -113,6 +113,7 @@ const Navigation = () => {
         <Stack.Screen name="settings/profile" options={{ title: 'Your profile' }} />
         <Stack.Screen name="settings/security" options={{ title: 'Security' }} />
         <Stack.Screen name="settings/subscription" options={{ title: 'Subscription' }} />
+        <Stack.Screen name="settings/domain" options={{ title: 'Custom domain' }} />
       </Stack>
     </>
   );
