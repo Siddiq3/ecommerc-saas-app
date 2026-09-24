@@ -1,20 +1,22 @@
 import { useState } from 'react';
-import { Alert as RNAlert, StyleSheet, View } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { Alert as RNAlert, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Stack, useFocusEffect } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { normalizeHostname } from '@storekit/shared';
 import { Screen } from '../../src/components/Screen.jsx';
 import {
-  Alert, Body, Button, Caption, Card, Divider, EmptyState, ErrorState, Field, Heading, Pill, Row, Touchable,
+  Alert, Body, Button, Caption, Card, Divider, ErrorState, Field, Heading, Pill, Row, Touchable,
 } from '../../src/components/ui.jsx';
 import { SkeletonScreen } from '../../src/components/Skeleton.jsx';
 import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
+import { usePlan } from '../../src/state/plan.jsx';
+import { storeHostname } from '../../src/lib/storefront.js';
 import { useAsync, useRefreshOnFocus } from '../../src/lib/useAsync.js';
 import { domains as domainsApi } from '../../src/api/endpoints.js';
 import { formatDate, relativeTime } from '../../src/lib/format.js';
-import { colors, space } from '../../src/theme.js';
+import { colors, radius, shadow, space } from '../../src/theme.js';
 
 /**
  * Custom domain: connect a domain the merchant owns, so the store answers on it as well as on
@@ -238,20 +240,12 @@ const DomainCard = ({ domain, businessId, onChanged, serving }) => {
 
 /* ───────────── Adding one ───────────── */
 
-const AddDomain = ({ businessId, capability, onAdded }) => {
+const AddDomain = ({ businessId, onAdded, onCancel }) => {
   const toast = useToast();
   const [value, setValue] = useState('');
   const [error, setError] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
   const [pending, setPending] = useState(false);
-
-  if (capability.remaining === 0) {
-    return (
-      <Card style={styles.card}>
-        <Body muted>Your plan&apos;s custom domain is already in use. Remove it to connect a different one.</Body>
-      </Card>
-    );
-  }
 
   const submit = async () => {
     setError(null);
@@ -318,15 +312,76 @@ const AddDomain = ({ businessId, capability, onAdded }) => {
       ) : null}
 
       <Button title="Add domain" loading={pending} disabled={!value.trim()} onPress={submit} style={{ marginTop: space.lg }} />
+      <Button title="Cancel" variant="secondary" disabled={pending} onPress={onCancel} style={{ marginTop: space.sm }} />
     </Card>
   );
 };
 
+/* ───────────── "New domain": what can be done from here ───────────── */
+
+/** One row of the dialog. A row that cannot be used yet is shown, greyed, rather than hidden. */
+const Choice = ({ icon, label, onPress, disabled }) => (
+  <Touchable
+    onPress={disabled ? undefined : onPress}
+    accessibilityLabel={label}
+    style={[styles.choice, disabled && styles.choiceOff]}
+  >
+    <View style={styles.choiceIcon}>
+      <Ionicons name={icon} size={20} color={disabled ? colors.ink400 : colors.accent700} />
+    </View>
+    <Body style={[{ flex: 1 }, disabled && { color: colors.ink400 }]}>{label}</Body>
+    <Ionicons name="chevron-forward" size={18} color={disabled ? colors.ink200 : colors.ink400} />
+  </Touchable>
+);
+
+/**
+ * Why the dialog cannot go further, in the words of the situation the merchant is in. Only
+ * `upgrade` has somewhere to go: a plan that lacks custom domains is fixed on the website.
+ */
+const BLOCKED = {
+  upgrade: 'Activate this site on a plan that includes a custom domain to connect yours.',
+  soon: 'Custom domains are coming soon. We will let you know when you can connect yours.',
+  inUse: 'Your plan\'s custom domain is already in use. Remove it to connect a different one.',
+};
+
+const NewDomainDialog = ({ visible, mode, onClose, onAddExisting, onSubscribe }) => (
+  <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+    <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close" />
+    <View style={styles.dialogWrap} pointerEvents="box-none">
+      <View style={styles.dialog}>
+        <Heading style={styles.dialogTitle}>New domain</Heading>
+        <Caption style={styles.dialogSub}>Choose how you want to add a domain</Caption>
+
+        {/* StoreKit does not sell domains, so this is always shown as not available. */}
+        <Choice icon="cart-outline" label="Buy a new domain" disabled />
+        <Choice icon="link-outline" label="Add existing domain" disabled={mode !== 'add'} onPress={onAddExisting} />
+
+        {mode !== 'add' ? (
+          <>
+            <Divider style={styles.dialogDivider} />
+            <Row gap={space.md} align="flex-start">
+              <Ionicons name="information-circle-outline" size={20} color={colors.accent700} />
+              <Body style={{ flex: 1 }}>{BLOCKED[mode]}</Body>
+            </Row>
+          </>
+        ) : null}
+
+        {mode === 'upgrade' ? <Button title="Subscribe" onPress={onSubscribe} style={styles.dialogPrimary} /> : null}
+        <Touchable onPress={onClose} accessibilityLabel="Cancel" style={styles.dialogCancel}>
+          <Body strong>Cancel</Body>
+        </Touchable>
+      </View>
+    </View>
+  </Modal>
+);
+
 /* ───────────── The screen ───────────── */
 
 export default function CustomDomain() {
-  const router = useRouter();
-  const { businessId } = useAuth();
+  const { businessId, business } = useAuth();
+  const { status, openBilling } = usePlan();
+  const [dialog, setDialog] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   const { data, error, loading, reload, refreshing, onRefresh } = useAsync(
     () => (businessId ? domainsApi.list(businessId) : Promise.resolve(null)),
@@ -337,43 +392,71 @@ export default function CustomDomain() {
 
   if (loading && !data) return <SkeletonScreen />;
 
-  if (error && !data) {
-    // The server answers 404 when custom domains are not switched on at all. That is not a fault.
-    if (error.status === 404) {
-      return (
-        <Screen>
-          <EmptyState
-            icon="🌐"
-            title="Custom domains are coming soon"
-            message="Your store works on its StoreKit address, and we will let you know when you can connect your own domain."
-          />
-        </Screen>
-      );
-    }
-    return <ErrorState error={error} onRetry={reload} />;
-  }
+  // The server answers 404 when custom domains are not switched on at all. That is not a fault: the
+  // screen still opens, with the StoreKit address, and the dialog says it is coming.
+  const featureOff = error?.status === 404;
+  if (error && !data && !featureOff) return <ErrorState error={error} onRetry={reload} />;
 
   const items = data?.items ?? [];
   const storekit = items.find((item) => item.type === 'storekit');
   const custom = items.filter((item) => item.type === 'custom');
   const capability = data?.capability ?? {};
 
+  const planIncludes = Number(status?.entitlements?.maxCustomDomains) > 0;
+  const canAdd = !featureOff && Boolean(capability.enabled) && capability.remaining !== 0;
+  let mode = 'add';
+  if (!canAdd) {
+    if (!planIncludes) mode = 'upgrade';
+    else mode = featureOff ? 'soon' : 'inUse';
+  }
+
+  const subscribe = async () => {
+    setDialog(false);
+    try {
+      await openBilling();
+    } catch (failure) {
+      RNAlert.alert('Could not open the plans', failure?.message ?? 'Check your connection and try again.');
+    }
+  };
+
+  const addExisting = () => {
+    setDialog(false);
+    setAdding(true);
+  };
+
   return (
     <Screen refreshing={refreshing} onRefresh={onRefresh}>
-      {storekit ? (
-        <Card style={styles.card}>
-          <Row style={{ justifyContent: 'space-between' }} gap={space.md}>
-            <View style={{ flex: 1 }}>
-              <Caption>Your StoreKit address</Caption>
-              <Body strong numberOfLines={1}>{storekit.hostname}</Body>
-            </View>
-            {storekit.isPrimary ? <Pill label="Primary" tone="accent" /> : null}
-          </Row>
-          <Caption style={styles.line}>Always works, whatever else you connect.</Caption>
-        </Card>
-      ) : null}
+      <Stack.Screen
+        options={{
+          title: 'Manage domains',
+          headerRight: () => (
+            <Touchable onPress={() => setDialog(true)} accessibilityLabel="New domain" style={styles.newButton}>
+              <Ionicons name="add" size={18} color={colors.accent700} />
+              <Body strong style={{ color: colors.accent700 }}>New domain</Body>
+            </Touchable>
+          ),
+        }}
+      />
 
-      {!capability.enabled && capability.message ? (
+      <Heading style={styles.section}>Current StoreKit domain</Heading>
+      <Card style={styles.card}>
+        <Row gap={space.md}>
+          <Ionicons name="globe-outline" size={26} color={colors.ink600} />
+          <View style={{ flex: 1 }}>
+            <Body strong numberOfLines={1}>{storekit?.hostname ?? (business?.slug ? storeHostname(business.slug) : 'Your store')}</Body>
+            <Row gap={space.xs} style={{ marginTop: 2 }}>
+              <View style={styles.dot} />
+              <Caption style={{ color: colors.success }}>Active</Caption>
+            </Row>
+          </View>
+          {storekit?.isPrimary ? <Pill label="Primary" tone="accent" /> : null}
+        </Row>
+        <Caption style={styles.line}>Always works, whatever else you connect.</Caption>
+      </Card>
+
+      <Heading style={styles.section}>Custom domain</Heading>
+
+      {capability.message ? (
         <Card style={styles.card}>
           <Row gap={space.sm} align="flex-start">
             <Ionicons name="information-circle-outline" size={18} color={colors.warning} />
@@ -382,28 +465,80 @@ export default function CustomDomain() {
         </Card>
       ) : null}
 
-      {!capability.enabled ? (
-        <Card style={styles.card}>
-          <Heading>Use your own domain</Heading>
-          <Body muted style={styles.line}>
-            Custom domains are part of the Business and Pro plans. Choose one to connect yours.
-          </Body>
-          <Button title="View plans" onPress={() => router.push('/paywall')} style={{ marginTop: space.lg }} />
-        </Card>
-      ) : null}
-
       {custom.map((domain) => (
         <DomainCard key={domain.domainId} domain={domain} businessId={businessId} onChanged={reload} serving={Boolean(capability.enabled)} />
       ))}
 
-      {capability.enabled ? (
-        <AddDomain businessId={businessId} capability={capability} onAdded={reload} />
+      {adding && canAdd && !custom.length ? (
+        <AddDomain
+          businessId={businessId}
+          onAdded={async () => { setAdding(false); await reload(); }}
+          onCancel={() => setAdding(false)}
+        />
       ) : null}
+
+      {!custom.length && !adding ? (
+        <View style={styles.empty}>
+          <Heading style={{ textAlign: 'center' }}>No custom domain connected</Heading>
+          <Body muted style={styles.emptyText}>
+            Tap &quot;New domain&quot; to connect your own domain, so customers can find your store on an address that is yours.
+          </Body>
+        </View>
+      ) : null}
+
+      <NewDomainDialog
+        visible={dialog}
+        mode={mode}
+        onClose={() => setDialog(false)}
+        onAddExisting={addExisting}
+        onSubscribe={subscribe}
+      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  section: { marginBottom: space.md, marginTop: space.sm },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success, alignSelf: 'center' },
+  newButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: colors.ink200,
+    borderRadius: 999,
+    paddingHorizontal: space.md,
+    paddingVertical: 6,
+  },
+  empty: { alignItems: 'center', paddingVertical: space.xl, gap: space.sm },
+  emptyText: { textAlign: 'center' },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(12,10,9,0.45)' },
+  dialogWrap: { flex: 1, justifyContent: 'center', paddingHorizontal: space.xl },
+  dialog: { backgroundColor: colors.surface, borderRadius: radius.xl, padding: space.xl, ...shadow.lift },
+  dialogTitle: { textAlign: 'center' },
+  dialogSub: { textAlign: 'center', marginTop: space.xs, marginBottom: space.lg },
+  dialogDivider: { marginVertical: space.lg },
+  dialogPrimary: { marginTop: space.lg },
+  dialogCancel: { alignItems: 'center', paddingVertical: space.md, marginTop: space.xs },
+  choice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    borderWidth: 1,
+    borderColor: colors.ink200,
+    borderRadius: radius.lg,
+    padding: space.md,
+    marginBottom: space.md,
+  },
+  choiceOff: { opacity: 0.7 },
+  choiceIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: colors.canvas,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   card: { marginBottom: space.lg },
   line: { marginTop: space.xs },
   divider: { marginVertical: space.md },
