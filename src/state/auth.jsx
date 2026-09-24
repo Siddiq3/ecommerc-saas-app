@@ -101,7 +101,21 @@ export const AuthProvider = ({ children }) => {
     [apply],
   );
 
-  const signUp = useCallback(async (input) => authApi.signup(input), []);
+  // Email codes are off until SES is approved: signing up returns a session, exactly as signing in does.
+  // (The feature/email-otp branch goes back to sending a code and verifying it.)
+  const signUp = useCallback(
+    async (input) => {
+      const result = await authApi.signup(input);
+      if (result?.tokens) {
+        await client.setTokens(result.tokens);
+        const businessId = result.user?.businesses?.[0]?.businessId ?? null;
+        await saveBusinessId(businessId);
+        apply({ status: 'authenticated', user: result.user, businessId });
+      }
+      return result;
+    },
+    [apply],
+  );
 
   /** Completes email verification; the backend returns a session, so this also signs in. */
   const verifyEmail = useCallback(

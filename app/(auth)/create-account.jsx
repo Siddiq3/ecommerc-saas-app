@@ -50,16 +50,11 @@ export default function CreateAccount() {
   const mismatch = account.confirm.length > 0 && account.confirm !== account.password;
   const canContinue = result.ok && account.confirm === account.password;
 
-  const fingerprint = `${account.name}|${account.email}|${account.phone}|${account.password}`;
-
   const { run, pending, error, clearError } = useAction(async () => {
-    // Already signed up with exactly these values (they went back from the code screen):
-    // the account exists, so just move forward.
-    if (draft.submittedAccount !== fingerprint) {
-      await signUp(result.data);
-      update('submittedAccount', fingerprint);
-    }
-    router.push({ pathname: '/(auth)/verify', params: { email: result.data.email } });
+    // Signing up signs the owner in; the app then moves on to setting up the store by itself.
+    await signUp(result.data);
+    // The password has done its job; do not keep it in memory any longer than needed.
+    update('account', { password: '' });
   });
 
   const shown = (key) => mergeErrors(touched[key] ? result.errors : {}, error)[key];
