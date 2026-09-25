@@ -174,10 +174,19 @@ export default function Subscription() {
         <>
           <Heading style={styles.usageTitle}>What you are using</Heading>
           <Card style={styles.card}>
-            <Usage label="Products" used={usage.usage?.products} limit={usage.plan?.maxProducts} />
-            <Divider style={styles.innerDivider} />
-            <Usage label="Orders this month" used={usage.usage?.ordersThisMonth} limit={usage.plan?.monthlyOrderLimit} />
-            <Divider style={styles.innerDivider} />
+            {/* Products and orders have no limit on any plan, so there is nothing to meter: only quotas that exist are shown. */}
+            {usage.plan?.maxProducts != null ? (
+              <>
+                <Usage label="Products" used={usage.usage?.products} limit={usage.plan.maxProducts} />
+                <Divider style={styles.innerDivider} />
+              </>
+            ) : null}
+            {usage.plan?.monthlyOrderLimit != null ? (
+              <>
+                <Usage label="Orders this month" used={usage.usage?.ordersThisMonth} limit={usage.plan.monthlyOrderLimit} />
+                <Divider style={styles.innerDivider} />
+              </>
+            ) : null}
             <Usage
               label="Storage"
               used={usage.usage?.storageBytes}

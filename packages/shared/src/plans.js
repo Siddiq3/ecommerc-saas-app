@@ -26,7 +26,8 @@ export const fitsWithin = (current, increment, max) => isUnlimited(max) || curre
  * Prices are integer paise per month. Yearly billing is derived from them (billing.js), so
  * there is no second price to keep in step.
  *
- * `free` is the trial tier, not a purchasable plan: every store starts on it for the trial.
+ * `free` is the trial tier, not a purchasable plan: every store starts on it for the trial. Like every plan it has no
+ * product or order limit; what a trial does not have is a custom domain, and it has less storage.
  *
  * Quotas that are not in a plan's public description (categories, storage, images per
  * product, team members, analytics history) are operational limits and are unchanged.
@@ -36,9 +37,9 @@ export const fitsWithin = (current, increment, max) => isUnlimited(max) || curre
 export const PLANS = Object.freeze({
   free: {
     planId: 'free', name: 'Free', priceMonthly: 0,
-    maxProducts: 25, maxCategories: 10, maxStorageBytes: 250 * MB,
+    maxProducts: UNLIMITED, maxCategories: 10, maxStorageBytes: 250 * MB,
     maxImagesPerProduct: 4, maxStaffAccounts: 0, analyticsRetentionDays: 30,
-    customDomain: false, maxCustomDomains: 0, removeBranding: false, monthlyOrderLimit: 100,
+    customDomain: false, maxCustomDomains: 0, removeBranding: false, monthlyOrderLimit: UNLIMITED,
     prioritySupport: false, customDesign: false,
   },
   starter: {
