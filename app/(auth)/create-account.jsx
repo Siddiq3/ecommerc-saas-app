@@ -4,12 +4,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { signupSchema } from '@storekit/validation';
 import { StepScreen } from '../../src/components/StepScreen.jsx';
 import { LegalNote } from '../../src/components/LegalNote.jsx';
-import { Alert, Button, Field, Touchable } from '../../src/components/ui.jsx';
+import { Alert, Body, Button, Field, Touchable } from '../../src/components/ui.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { useOnboarding } from '../../src/state/onboarding.jsx';
 import { useAction } from '../../src/lib/useAsync.js';
 import { check, mergeErrors } from '../../src/lib/validation.js';
-import { colors } from '../../src/theme.js';
+import { colors, fonts, space } from '../../src/theme.js';
+
+/** Error codes that mean "this person already has an account". */
+const ALREADY_REGISTERED = ['EMAIL_TAKEN', 'PHONE_TAKEN'];
 
 /**
  * Step 1, continued — who you are and how you'll sign in.
@@ -99,6 +102,16 @@ export default function CreateAccount() {
       }
     >
       <Alert message={generalError} />
+      {ALREADY_REGISTERED.includes(error?.code) ? (
+        <Touchable
+          onPress={() => router.replace('/(auth)/login')}
+          haptics="tap"
+          style={{ alignSelf: 'flex-start', marginBottom: space.lg, minHeight: 44, justifyContent: 'center' }}
+          accessibilityLabel="Sign in to your existing account"
+        >
+          <Body style={{ color: colors.accent700, fontFamily: fonts.semibold }}>Sign in instead</Body>
+        </Touchable>
+      ) : null}
 
       <Field
         label="Your name"

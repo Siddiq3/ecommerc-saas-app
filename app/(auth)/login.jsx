@@ -14,15 +14,16 @@ import { colors, fonts, space } from '../../src/theme.js';
 /**
  * Sign in.
  *
- * Three factors, because that is what the API checks: email, mobile and password. The
- * error copy stays identical for every failure — wrong email, wrong number, wrong
- * password — so the form cannot be used to discover which accounts exist.
+ * One field for the email or the mobile number, whichever the merchant remembers, and the
+ * password. The API tells them apart (an "@" means an email) and checks each with its own
+ * rule. The error copy stays identical for every failure — unknown email, unknown number,
+ * wrong password — so the form cannot be used to discover which accounts exist.
  */
 export default function Login() {
   const router = useRouter();
   const { signIn } = useAuth();
 
-  const [form, setForm] = useState({ email: '', mobile: '', password: '' });
+  const [form, setForm] = useState({ identifier: '', password: '' });
   const [errors, setErrors] = useState({});
 
   const set = (key) => (value) => {
@@ -32,7 +33,7 @@ export default function Login() {
 
   // The device fields are filled in by the auth provider, so the form checks only what the
   // merchant types — against the same schema the API applies.
-  const credentialsSchema = loginSchema.pick({ email: true, mobile: true, password: true });
+  const credentialsSchema = loginSchema.pick({ identifier: true, password: true });
 
   const { run, pending, error } = useAction(async (data) => {
     await signIn(data);
@@ -62,30 +63,18 @@ export default function Login() {
         <Alert message={generalError} />
 
         <Field
-          label="Email"
-          value={form.email}
-          onChangeText={set('email')}
-          placeholder="you@example.com"
+          label="Email or mobile number"
+          value={form.identifier}
+          onChangeText={set('identifier')}
+          placeholder="you@example.com or 98765 43210"
+          // The email keyboard, because it is the one that has both digits and the "@".
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
-          autoComplete="email"
-          textContentType="emailAddress"
+          autoComplete="username"
+          textContentType="username"
           maxLength={254}
-          error={fieldErrors.email}
-        />
-
-        <Field
-          label="Mobile number"
-          value={form.mobile}
-          onChangeText={set('mobile')}
-          placeholder="98765 43210"
-          keyboardType="phone-pad"
-          autoComplete="tel"
-          textContentType="telephoneNumber"
-          prefix="+91"
-          maxLength={17}
-          error={fieldErrors.mobile}
+          error={fieldErrors.identifier}
         />
 
         <Field

@@ -21,8 +21,7 @@ export const signupSchema = z
     email,
     password,
     /**
-     * Required, because login authenticates on email + mobile + password. An account
-     * created without a number could never sign in again.
+     * Required: it is one of the two things a person can sign in with, and it is unique to the account.
      */
     phone: mobile,
     /** Consent captured at signup and stored with a timestamp for DPDP compliance. */
@@ -31,10 +30,29 @@ export const signupSchema = z
   })
   .strict();
 
+/**
+ * One field for either: an "@" means an email, anything else is read as a mobile number. Each is checked with its
+ * own rule, and the value comes out normalised (lower-cased email, ten-digit number).
+ */
+const identifier = z
+  .string({ required_error: 'Enter your email or mobile number', invalid_type_error: 'Enter your email or mobile number' })
+  .trim()
+  .min(1, 'Enter your email or mobile number')
+  .max(254, 'Enter your email or mobile number')
+  .transform((value, ctx) => {
+    const isEmail = value.includes('@');
+    const parsed = (isEmail ? email : mobile).safeParse(value);
+    if (parsed.success) return parsed.data;
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: isEmail ? 'Enter a valid email address' : 'Enter a valid email or 10-digit mobile number',
+    });
+    return z.NEVER;
+  });
+
 export const loginSchema = z
   .object({
-    email,
-    mobile,
+    identifier,
     // Not the full password rules: an existing password predates any rule change, and a
     // login form must never tell someone their stored password is now "invalid".
     password: z.string().min(1, 'Enter your password').max(128, 'Password is too long'),

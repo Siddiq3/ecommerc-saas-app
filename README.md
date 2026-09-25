@@ -55,10 +55,10 @@ src/
 
 ## Things worth knowing before changing them
 
-**Login needs three fields.** The API authenticates on email + mobile + password. Signup
-must therefore collect a mobile number; an account created without one cannot sign in.
-`signupSchema.phone` is still `.optional()` server-side — the app requires it to
-compensate, but the schema should be tightened.
+**Login is one field and a password.** The field takes an email or a mobile number; an "@" means email, and the API
+checks each with its own rule. Both are unique per account, so signup refuses an email or a mobile number that is already
+registered (`EMAIL_TAKEN`, `PHONE_TAKEN`) and the app offers "Sign in instead". Accounts made before mobile numbers were
+locked can sign in by email; that also claims their number, so mobile works from then on.
 
 **Money is integer paise everywhere.** It is converted to and from rupees in exactly one
 place, `ProductForm`, on submit. Nothing else should touch a float.

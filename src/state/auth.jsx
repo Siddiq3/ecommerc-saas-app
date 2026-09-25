@@ -90,8 +90,8 @@ export const AuthProvider = ({ children }) => {
   }, [apply]);
 
   const signIn = useCallback(
-    async ({ email, mobile, password }) => {
-      const result = await authApi.login({ email, mobile, password, ...(await deviceInfo()) });
+    async ({ identifier, password }) => {
+      const result = await authApi.login({ identifier, password, ...(await deviceInfo()) });
       await client.setTokens(result.tokens);
       const businessId = result.user?.businesses?.[0]?.businessId ?? null;
       await saveBusinessId(businessId);
