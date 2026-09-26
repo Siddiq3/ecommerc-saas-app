@@ -88,82 +88,86 @@ export default function Categories() {
   if (loading && !data) return <SkeletonScreen />;
   if (error && !data) return <ErrorState error={error} onRetry={reload} />;
 
+  // The sheet sits beside the Screen, not inside its ScrollView: a Modal nested in a
+  // pull-to-refresh scroller is a known way to get a sheet that never shows on Android.
   return (
-    <Screen
-      refreshing={refreshing}
-      onRefresh={onRefresh}
-      footer={
-        <Button
-          title="New category"
-          onPress={() => { setEditingId(null); setName(''); setSheet('form'); }}
-        />
-      }
-    >
-      <Body muted style={styles.intro}>
-        Categories group your products on your storefront. Customers see them in this order.
-      </Body>
+    <>
+      <Screen
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        footer={
+          <Button
+            title="New category"
+            onPress={() => { setEditingId(null); setName(''); setSheet('form'); }}
+          />
+        }
+      >
+        <Body muted style={styles.intro}>
+          Categories group your products on your storefront. Customers see them in this order.
+        </Body>
 
-      {items.length ? (
-        <Card padded={false} style={styles.card}>
-          {items.map((category, index) => (
-            <View key={category.categoryId}>
-              {index > 0 ? <Divider /> : null}
-              <Row style={styles.row}>
-                <View style={styles.arrows}>
+        {items.length ? (
+          <Card padded={false} style={styles.card}>
+            {items.map((category, index) => (
+              <View key={category.categoryId}>
+                {index > 0 ? <Divider /> : null}
+                <Row style={styles.row}>
+                  <View style={styles.arrows}>
+                    <Touchable
+                      onPress={() => move(category.categoryId, -1)}
+                      disabled={index === 0}
+                      accessibilityLabel="Move up"
+                      style={styles.arrow}
+                    >
+                      <Ionicons name="chevron-up" size={16} color={index === 0 ? colors.ink200 : colors.ink600} />
+                    </Touchable>
+                    <Touchable
+                      onPress={() => move(category.categoryId, 1)}
+                      disabled={index === items.length - 1}
+                      accessibilityLabel="Move down"
+                      style={styles.arrow}
+                    >
+                      <Ionicons
+                        name="chevron-down"
+                        size={16}
+                        color={index === items.length - 1 ? colors.ink200 : colors.ink600}
+                      />
+                    </Touchable>
+                  </View>
+
+                  <View style={{ flex: 1 }}>
+                    <Body strong>{category.name}</Body>
+                    <Caption>{category.productCount ?? 0} product{category.productCount === 1 ? '' : 's'}</Caption>
+                  </View>
+
+                  {!category.active ? <Pill label="Hidden" tone="slate" /> : null}
+
                   <Touchable
-                    onPress={() => move(category.categoryId, -1)}
-                    disabled={index === 0}
-                    accessibilityLabel="Move up"
-                    style={styles.arrow}
+                    onPress={() => { setEditingId(category.categoryId); setName(category.name); setSheet('form'); }}
+                    accessibilityLabel={`Rename ${category.name}`}
+                    style={styles.action}
                   >
-                    <Ionicons name="chevron-up" size={16} color={index === 0 ? colors.ink200 : colors.ink600} />
+                    <Ionicons name="pencil-outline" size={18} color={colors.ink600} />
                   </Touchable>
                   <Touchable
-                    onPress={() => move(category.categoryId, 1)}
-                    disabled={index === items.length - 1}
-                    accessibilityLabel="Move down"
-                    style={styles.arrow}
+                    onPress={() => confirmDelete(category)}
+                    accessibilityLabel={`Delete ${category.name}`}
+                    style={styles.action}
                   >
-                    <Ionicons
-                      name="chevron-down"
-                      size={16}
-                      color={index === items.length - 1 ? colors.ink200 : colors.ink600}
-                    />
+                    <Ionicons name="trash-outline" size={18} color={colors.danger} />
                   </Touchable>
-                </View>
-
-                <View style={{ flex: 1 }}>
-                  <Body strong>{category.name}</Body>
-                  <Caption>{category.productCount ?? 0} product{category.productCount === 1 ? '' : 's'}</Caption>
-                </View>
-
-                {!category.active ? <Pill label="Hidden" tone="slate" /> : null}
-
-                <Touchable
-                  onPress={() => { setEditingId(category.categoryId); setName(category.name); setSheet('form'); }}
-                  accessibilityLabel={`Rename ${category.name}`}
-                  style={styles.action}
-                >
-                  <Ionicons name="pencil-outline" size={18} color={colors.ink600} />
-                </Touchable>
-                <Touchable
-                  onPress={() => confirmDelete(category)}
-                  accessibilityLabel={`Delete ${category.name}`}
-                  style={styles.action}
-                >
-                  <Ionicons name="trash-outline" size={18} color={colors.danger} />
-                </Touchable>
-              </Row>
-            </View>
-          ))}
-        </Card>
-      ) : (
-        <EmptyState
-          icon="📁"
-          title="No categories yet"
-          message="Group your products so customers can find what they came for."
-        />
-      )}
+                </Row>
+              </View>
+            ))}
+          </Card>
+        ) : (
+          <EmptyState
+            icon="📁"
+            title="No categories yet"
+            message="Group your products so customers can find what they came for."
+          />
+        )}
+      </Screen>
 
       <Sheet
         visible={sheet === 'form'}
@@ -187,7 +191,7 @@ export default function Categories() {
           onPress={submit}
         />
       </Sheet>
-    </Screen>
+    </>
   );
 }
 

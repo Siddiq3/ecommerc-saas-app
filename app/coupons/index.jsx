@@ -256,46 +256,50 @@ export default function Coupons() {
   const generalError = saveError && Object.keys(saveError.fieldErrors ?? {}).length === 0 ? saveError.message : null;
   const activeScope = editing ? (editing.scope ?? 'all') : scope;
 
+  // The sheets sit beside the Screen, not inside its ScrollView: a Modal nested in a
+  // pull-to-refresh scroller is a known way to get a sheet that never shows on Android.
   return (
-    <Screen refreshing={refreshing} onRefresh={onRefresh} footer={<Button title="New coupon" onPress={openCreate} />}>
-      <Body muted style={styles.intro}>
-        Discount codes customers enter at checkout on your storefront.
-      </Body>
+    <>
+      <Screen refreshing={refreshing} onRefresh={onRefresh} footer={<Button title="New coupon" onPress={openCreate} />}>
+        <Body muted style={styles.intro}>
+          Discount codes customers enter at checkout on your storefront.
+        </Body>
 
-      {items.length ? (
-        <Card padded={false} style={styles.card}>
-          {items.map((coupon, index) => (
-            <View key={coupon.couponId}>
-              {index > 0 ? <Divider /> : null}
-              <Touchable onPress={() => openEdit(coupon)} accessibilityLabel={`Edit ${coupon.code}`} style={styles.row}>
-                <View style={{ flex: 1 }}>
-                  <Row gap={space.sm}>
-                    <Body strong style={styles.code}>{coupon.code}</Body>
-                    <Pill label={STATE_LABEL[coupon.state] ?? coupon.state} tone={STATE_TONE[coupon.state] ?? 'slate'} />
-                  </Row>
-                  <Caption style={styles.discount}>
-                    {coupon.type === 'percentage' ? `${coupon.value}% off` : `${formatMoney(coupon.value)} off`}
-                  </Caption>
-                  <Caption>{summarize(coupon)}</Caption>
-                </View>
-                <Touchable
-                  onPress={() => confirmDelete(coupon)}
-                  accessibilityLabel={`Delete ${coupon.code}`}
-                  style={styles.action}
-                >
-                  <Ionicons name="trash-outline" size={18} color={colors.danger} />
+        {items.length ? (
+          <Card padded={false} style={styles.card}>
+            {items.map((coupon, index) => (
+              <View key={coupon.couponId}>
+                {index > 0 ? <Divider /> : null}
+                <Touchable onPress={() => openEdit(coupon)} accessibilityLabel={`Edit ${coupon.code}`} style={styles.row}>
+                  <View style={{ flex: 1 }}>
+                    <Row gap={space.sm}>
+                      <Body strong style={styles.code}>{coupon.code}</Body>
+                      <Pill label={STATE_LABEL[coupon.state] ?? coupon.state} tone={STATE_TONE[coupon.state] ?? 'slate'} />
+                    </Row>
+                    <Caption style={styles.discount}>
+                      {coupon.type === 'percentage' ? `${coupon.value}% off` : `${formatMoney(coupon.value)} off`}
+                    </Caption>
+                    <Caption>{summarize(coupon)}</Caption>
+                  </View>
+                  <Touchable
+                    onPress={() => confirmDelete(coupon)}
+                    accessibilityLabel={`Delete ${coupon.code}`}
+                    style={styles.action}
+                  >
+                    <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                  </Touchable>
                 </Touchable>
-              </Touchable>
-            </View>
-          ))}
-        </Card>
-      ) : (
-        <EmptyState
-          icon="🏷️"
-          title="No coupons yet"
-          message="Create a discount code for customers to enter at checkout."
-        />
-      )}
+              </View>
+            ))}
+          </Card>
+        ) : (
+          <EmptyState
+            icon="🏷️"
+            title="No coupons yet"
+            message="Create a discount code for customers to enter at checkout."
+          />
+        )}
+      </Screen>
 
       <Sheet visible={sheet === 'form'} onClose={() => setSheet(null)} title={editing ? editing.code : 'New coupon'}>
         <Alert message={generalError} />
@@ -470,7 +474,7 @@ export default function Coupons() {
           }}
         />
       ) : null}
-    </Screen>
+    </>
   );
 }
 
