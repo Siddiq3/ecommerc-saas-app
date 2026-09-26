@@ -18,6 +18,7 @@ const withKey = () => ({ headers: { 'X-Idempotency-Key': idempotencyKey() } });
 
 export const auth = {
   signup: (input) => api.post('/auth/signup', input, { auth: false }),
+  emailAvailable: (email) => api.get(`/auth/email-available${qs({ email })}`, { auth: false }),
   login: (input) => api.post('/auth/login', input, { auth: false }),
   requestOtp: (email, purpose) => api.post('/auth/otp/request', { email, purpose }, { auth: false }),
   verifyOtp: (input) => api.post('/auth/otp/verify', input, { auth: false }),
