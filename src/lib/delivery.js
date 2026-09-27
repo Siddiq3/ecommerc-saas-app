@@ -145,3 +145,30 @@ export const fromForm = (form) => {
   }
   return Object.keys(errors).length ? { ok: false, errors } : { ok: true, method };
 };
+
+/* ───────────── Editing the settings ───────────── */
+
+/**
+ * The settings with one method added (index -1) or replaced. Making a method the main one makes
+ * every other method not the main one: there is always exactly one.
+ */
+export const withMethod = (settings, index, method) => {
+  const methods = index === -1 ? [...settings.methods, method] : settings.methods.map((m, i) => (i === index ? method : m));
+  const at = index === -1 ? methods.length - 1 : index;
+  return { ...settings, methods: method.primary ? methods.map((m, i) => ({ ...m, primary: i === at })) : methods };
+};
+
+/** The settings without one method. The main method cannot be removed, nor the last one. */
+export const withoutMethod = (settings, index) => {
+  const method = settings.methods[index];
+  if (!method || method.primary || settings.methods.length <= 1) return settings;
+  return { ...settings, methods: settings.methods.filter((_, i) => i !== index) };
+};
+
+/** Adds a delivery-area pincode (or its first digits). Returns { settings } or { error }. */
+export const withArea = (settings, text) => {
+  const prefix = String(text ?? '').trim();
+  if (!/^[1-9]\d{0,5}$/.test(prefix)) return { error: 'Enter a pincode, or its first digits (like 5000)' };
+  if (settings.serviceablePincodePrefixes.includes(prefix)) return { error: 'That pincode is already listed' };
+  return { settings: { ...settings, serviceablePincodePrefixes: [...settings.serviceablePincodePrefixes, prefix] } };
+};

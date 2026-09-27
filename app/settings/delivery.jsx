@@ -12,7 +12,9 @@ import { DeliveryMethodEditor } from '../../src/components/DeliveryMethodEditor.
 import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { useAction, useAsync } from '../../src/lib/useAsync.js';
-import { MAX_DELIVERY_METHODS, blankMethod, estimateSummary, priceSummary } from '../../src/lib/delivery.js';
+import {
+  MAX_DELIVERY_METHODS, blankMethod, estimateSummary, priceSummary, withArea, withMethod, withoutMethod,
+} from '../../src/lib/delivery.js';
 import { delivery as deliveryApi } from '../../src/api/endpoints.js';
 import { colors, radius, space } from '../../src/theme.js';
 
@@ -98,28 +100,22 @@ export default function DeliverySettings() {
 
   /** Applies an edited method. Making one the main method makes every other one not. */
   const applyMethod = (method) => {
-    const methods = editing.index === -1 ? [...draft.methods, method] : draft.methods.map((m, i) => (i === editing.index ? method : m));
-    const index = editing.index === -1 ? methods.length - 1 : editing.index;
-    change({ ...draft, methods: method.primary ? methods.map((m, i) => ({ ...m, primary: i === index })) : methods });
+    change(withMethod(draft, editing.index, method));
     setEditing(null);
   };
 
   const removeMethod = () => {
-    change({ ...draft, methods: draft.methods.filter((_, i) => i !== editing.index) });
+    change(withoutMethod(draft, editing.index));
     setEditing(null);
   };
 
   const addArea = () => {
-    const prefix = newArea.trim();
-    if (!/^[1-9]\d{0,5}$/.test(prefix)) {
-      setAreaError('Enter a pincode, or its first digits (like 5000)');
+    const result = withArea(draft, newArea);
+    if (result.error) {
+      setAreaError(result.error);
       return;
     }
-    if (draft.serviceablePincodePrefixes.includes(prefix)) {
-      setAreaError('That pincode is already listed');
-      return;
-    }
-    change({ ...draft, serviceablePincodePrefixes: [...draft.serviceablePincodePrefixes, prefix] });
+    change(result.settings);
     setNewArea('');
     setAreaError(null);
   };
