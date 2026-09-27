@@ -238,7 +238,8 @@ export const updateBusinessSchema = z
   .object({
     name: businessName.optional(),
     description: optionalProse(500, { label: 'Description' }),
-    logoKey: objectKey.optional(),
+    /** null removes the logo; the storefront then shows the store's name instead. */
+    logoKey: objectKey.nullable().optional(),
     faviconKey: objectKey.optional(),
     contact: z
       .object({

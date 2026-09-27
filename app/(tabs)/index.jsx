@@ -14,7 +14,8 @@ import { SkeletonList, SkeletonStats } from '../../src/components/Skeleton.jsx';
 import { FadeIn, Stagger, haptic } from '../../src/components/motion.jsx';
 import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
-import { useAsync, useRefreshOnFocus } from '../../src/lib/useAsync.js';
+import { useAction, useAsync, useRefreshOnFocus } from '../../src/lib/useAsync.js';
+import { pickAndSaveLogo } from '../../src/lib/upload.js';
 import { analytics, businesses as businessesApi, products as productsApi } from '../../src/api/endpoints.js';
 import { formatMoney, percentChange } from '../../src/lib/format.js';
 import { storeUrl as storeAddress, storeHostname } from '../../src/lib/storefront.js';
@@ -83,6 +84,15 @@ export default function Dashboard() {
   };
 
   const storeUrl = business?.slug ? storeAddress(business.slug) : null;
+
+  const { run: uploadLogo, pending: uploadingLogo } = useAction(async () => {
+    const saved = await pickAndSaveLogo(businessId);
+    if (!saved) return;
+    // The session carries the logo; refreshing it ticks the step off.
+    await refreshUser();
+    haptic.success();
+    toast.success('Logo saved');
+  });
 
   if (error && !data) return <ErrorState error={error} onRetry={reload} />;
 
@@ -172,6 +182,9 @@ export default function Dashboard() {
         <SetupCard
           storeName={business?.name}
           isLive={isLive}
+          hasLogo={Boolean(business?.logoKey)}
+          uploadingLogo={uploadingLogo}
+          onUploadLogo={() => uploadLogo().catch((err) => toast.error(err?.status === 0 ? 'Unable to upload. Please check your internet connection and try again.' : err?.message ?? 'Could not save the logo'))}
           onAddProduct={() => router.push('/products/new')}
           onShare={shareStore}
         />
@@ -303,11 +316,11 @@ export default function Dashboard() {
  * The day-one path. Shown only until the merchant has a product or an order, then it
  * disappears for good — it is scaffolding, not a permanent widget.
  */
-const SetupCard = ({ storeName, isLive, onAddProduct, onShare }) => (
+const SetupCard = ({ storeName, isLive, hasLogo, uploadingLogo, onUploadLogo, onAddProduct, onShare }) => (
   <FadeIn>
     <Card style={styles.setupCard}>
       <Caption style={styles.setupKicker}>GET YOUR STORE SELLING</Caption>
-      <Heading style={styles.setupTitle}>Two steps to your first sale</Heading>
+      <Heading style={styles.setupTitle}>A few steps to your first sale</Heading>
       <Body muted style={styles.setupBody}>
         {isLive
           ? `${storeName ?? 'Your store'} is live, but it needs something to sell before customers can order.`
@@ -318,6 +331,13 @@ const SetupCard = ({ storeName, isLive, onAddProduct, onShare }) => (
         <Checklist
           items={[
             { key: 'created', label: 'Store created', hint: 'Done', state: 'done' },
+            {
+              key: 'logo',
+              label: 'Upload your business logo',
+              hint: hasLogo ? 'Done' : 'Shown at the top of your store',
+              state: hasLogo ? 'done' : 'active',
+              action: hasLogo ? undefined : { label: 'Upload logo', onPress: onUploadLogo, pending: uploadingLogo },
+            },
             { key: 'product', label: 'Add your first product', hint: 'About a minute', state: 'active' },
             { key: 'share', label: 'Share your link with customers', state: 'todo' },
           ]}

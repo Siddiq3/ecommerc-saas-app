@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Alert as RNAlert, StyleSheet, View } from 'react-native';
+import { Image, Alert as RNAlert, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
 import { paymentSettingsSchema, updateBusinessSchema, upiId as upiIdSchema } from '@storekit/validation';
 import { Screen } from '../../src/components/Screen.jsx';
@@ -12,11 +13,15 @@ import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { useAction, useAsync } from '../../src/lib/useAsync.js';
 import { check, mergeErrors } from '../../src/lib/validation.js';
+import { pickAndSaveLogo } from '../../src/lib/upload.js';
 import { businesses as businessesApi, storeSettings } from '../../src/api/endpoints.js';
-import { colors, space } from '../../src/theme.js';
+import { colors, radius, space } from '../../src/theme.js';
 
 /**
  * Store details and payments, after onboarding.
+ *
+ * The logo saves on its own the moment one is chosen (PATCH /businesses/:id { logoKey }), so it
+ * never mixes with unsaved edits below.
  *
  * Two existing endpoints, each sent only what changed:
  *   PATCH /businesses/:id           name, description, contact (contact is replaced whole)
@@ -115,6 +120,17 @@ export default function StoreSettings() {
     setData((prev) => ({ ...prev, business: { ...prev.business, ...updated } }));
     await refreshUser();
     toast.success(publish ? 'Your store is live' : 'Your store is offline');
+  });
+
+  /** Picks, uploads and saves a new logo — or, with `remove`, takes it off the store. */
+  const { run: changeLogo, pending: logoSaving, error: logoError } = useAction(async (remove) => {
+    const updated = remove ? await businessesApi.update(businessId, { logoKey: null }) : await pickAndSaveLogo(businessId);
+    if (!updated) return;
+    // Set explicitly: a removed logo is absent from the response, and must not survive the merge.
+    setData((prev) => ({ ...prev, business: { ...prev.business, ...updated, logoKey: updated.logoKey, logoUrl: updated.logoUrl } }));
+    // Home's setup card reads the logo from the session.
+    await refreshUser();
+    toast.success(remove ? 'Logo removed' : 'Logo saved');
   });
 
   useEffect(() => {
@@ -256,6 +272,48 @@ export default function StoreSettings() {
 
       {/* ───── Store details ───── */}
       <Heading style={styles.section}>Store details</Heading>
+      <Card style={styles.card}>
+        <Row gap={space.lg}>
+          <View style={styles.logoBox}>
+            {data.business?.logoUrl ? (
+              <Image source={{ uri: data.business.logoUrl }} style={styles.logo} resizeMode="contain" accessibilityLabel="Your store logo" />
+            ) : (
+              <Ionicons name="storefront-outline" size={28} color={colors.ink400} />
+            )}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Body strong>Store logo</Body>
+            <Caption>
+              {data.business?.logoUrl
+                ? 'Shown at the top of your store.'
+                : 'Your store shows its name until you add one. A logo on a clear background looks best.'}
+            </Caption>
+          </View>
+        </Row>
+        <Alert message={logoError ? messageFor(logoError, 'Unable to save the logo. Please check your internet connection and try again.') : null} />
+        <Row gap={space.sm}>
+          <Button
+            title={data.business?.logoUrl ? 'Change logo' : 'Upload logo'}
+            variant="secondary"
+            size="sm"
+            full={false}
+            loading={logoSaving}
+            icon={<Ionicons name="image-outline" size={16} color={colors.ink800} />}
+            onPress={() => changeLogo(false).catch(() => undefined)}
+            style={{ flex: 1 }}
+          />
+          {data.business?.logoUrl ? (
+            <Button
+              title="Remove"
+              variant="ghost"
+              size="sm"
+              full={false}
+              disabled={logoSaving}
+              onPress={() => changeLogo(true).catch(() => undefined)}
+            />
+          ) : null}
+        </Row>
+      </Card>
       <Field
         label="Store name"
         placeholder="Enter your store name"
@@ -440,5 +498,17 @@ const styles = StyleSheet.create({
   sectionHint: { marginTop: -space.sm, marginBottom: space.md },
   upiFields: { marginTop: space.md },
   half: { flex: 1 },
+  logoBox: {
+    width: 72,
+    height: 72,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  logo: { width: 64, height: 64 },
   errorText: { color: colors.danger, textAlign: 'center', marginBottom: space.md },
 });

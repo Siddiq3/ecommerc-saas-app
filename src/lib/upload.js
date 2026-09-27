@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { MAX_UPLOAD_BYTES } from '@storekit/shared';
-import { uploads } from '../api/endpoints.js';
+import { businesses, uploads } from '../api/endpoints.js';
 
 /**
  * Image upload: pick, authorize, PUT to storage, confirm.
@@ -18,10 +18,11 @@ const contentTypeOf = (asset) => {
   return MIME_BY_EXTENSION[extension] ?? 'image/jpeg';
 };
 
-export const pickImage = async () => {
+/** `aspect: null` lets the owner crop freely — a logo is rarely square. */
+export const pickImage = async ({ aspect = [1, 1] } = {}) => {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!permission.granted) {
-    const error = new Error('StoreKit needs access to your photos to add product images.');
+    const error = new Error('StoreKit needs access to your photos to add images.');
     error.code = 'PERMISSION_DENIED';
     throw error;
   }
@@ -30,7 +31,7 @@ export const pickImage = async () => {
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
     // Square, because the storefront grid is square and cropping here beats cropping later.
     allowsEditing: true,
-    aspect: [1, 1],
+    ...(aspect ? { aspect } : {}),
     // Recompressed on device: a modern phone photo is 5MB of detail nobody will see in a
     // 400px product tile, and the merchant is probably on mobile data.
     quality: 0.8,
@@ -103,4 +104,15 @@ export const uploadImage = async (businessId, asset, { purpose = 'product', prod
     width: asset.width,
     height: asset.height,
   };
+};
+
+/**
+ * The store logo, from photo to saved: pick (free crop — a logo is rarely square), upload,
+ * and set it on the store. Returns the saved business, or null when the owner cancelled.
+ */
+export const pickAndSaveLogo = async (businessId) => {
+  const asset = await pickImage({ aspect: null });
+  if (!asset) return null;
+  const { imageKey } = await uploadImage(businessId, asset, { purpose: 'logo' });
+  return businesses.update(businessId, { logoKey: imageKey });
 };

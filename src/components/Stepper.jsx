@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import Animated, {
   interpolateColor, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { Body, Caption } from './ui.jsx';
+import { Body, Caption, Touchable } from './ui.jsx';
 import { colors, fonts, motion, radius, space, type } from '../theme.js';
 
 /**
@@ -45,7 +45,9 @@ const Segment = ({ filled, active }) => {
 /**
  * A vertical list of steps that tick themselves off.
  *
- * `items` is `[{ key, label, hint, state }]` where state is 'done' | 'active' | 'todo'.
+ * `items` is `[{ key, label, hint, state, action }]` where state is 'done' | 'active' | 'todo',
+ * and `action` (optional, `{ label, onPress, pending }`) is a link under the row for a step the
+ * merchant can do right there.
  * A done row springs its tick in; an active row shows a pulsing dot. Nothing here is
  * decorative — the movement is the only signal that work is progressing during the launch
  * sequence, where there is otherwise nothing to look at.
@@ -102,6 +104,18 @@ const ChecklistRow = ({ item, last }) => {
       <View style={styles.checkBody}>
         <Body strong style={styles.checkLabel}>{item.label}</Body>
         {item.hint ? <Caption>{item.hint}</Caption> : null}
+        {item.action ? (
+          <Touchable
+            onPress={item.action.pending ? undefined : item.action.onPress}
+            accessibilityLabel={item.action.label}
+            style={styles.checkAction}
+          >
+            <Body strong style={styles.checkActionText}>{item.action.label}</Body>
+            {item.action.pending
+              ? <ActivityIndicator size="small" color={colors.accent700} />
+              : <Ionicons name="chevron-forward" size={15} color={colors.accent700} />}
+          </Touchable>
+        ) : null}
       </View>
     </Animated.View>
   );
@@ -127,4 +141,6 @@ const styles = StyleSheet.create({
   railDone: { backgroundColor: colors.success },
   checkBody: { flex: 1, paddingBottom: space.lg },
   checkLabel: { ...type.bodyStrong, fontFamily: fonts.semibold },
+  checkAction: { flexDirection: 'row', alignItems: 'center', gap: 2, alignSelf: 'flex-start', minHeight: 36 },
+  checkActionText: { color: colors.accent700 },
 });
