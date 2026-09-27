@@ -50,6 +50,7 @@ export default function Profile() {
 
       <Field
         label="Your name"
+        placeholder="Enter your name"
         value={name}
         onChangeText={(v) => { setName(v); if (errors.name) setErrors((p) => ({ ...p, name: undefined })); }}
         autoCapitalize="words"
@@ -59,6 +60,7 @@ export default function Profile() {
 
       <Field
         label="Mobile number"
+        placeholder="Enter your mobile number"
         value={phone}
         onChangeText={(v) => { setPhone(v); if (errors.phone) setErrors((p) => ({ ...p, phone: undefined })); }}
         keyboardType="phone-pad"

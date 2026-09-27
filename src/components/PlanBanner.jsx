@@ -1,20 +1,20 @@
-import { StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Body, Caption, Touchable } from './ui.jsx';
 import { usePlan } from '../state/plan.jsx';
+import { useAction } from '../lib/useAsync.js';
 import { colors, radius, space, type } from '../theme.js';
 
 /**
  * The trial and billing banner.
  *
- * It states the situation and opens the paywall screen — it never opens a browser or
- * mentions a price, because a banner is not a place anyone should be deciding to spend
- * money. The paywall explains, and the website charges.
+ * It states the situation and never mentions a price. "View plans" goes straight to the
+ * billing website in the system browser — plans, prices and payment live only there, never
+ * in the app.
  */
 export const PlanBanner = () => {
-  const router = useRouter();
-  const { status, planStatus } = usePlan();
+  const { status, planStatus, openBilling } = usePlan();
+  const { run: viewPlans, pending } = useAction(() => openBilling({ manage: planStatus === 'past_due' }));
 
   if (!status || planStatus === 'subscribed') return null;
 
@@ -46,7 +46,7 @@ export const PlanBanner = () => {
 
   return (
     <Touchable
-      onPress={() => router.push('/paywall')}
+      onPress={pending ? undefined : () => viewPlans().catch(() => undefined)}
       accessibilityLabel={`${content.title}. ${content.body}`}
       style={[styles.banner, { backgroundColor: palette.bg }]}
     >
@@ -55,7 +55,11 @@ export const PlanBanner = () => {
         <Body strong style={{ color: palette.fg }}>{content.title}</Body>
         <Caption style={{ color: palette.fg, opacity: 0.85 }}>{content.body}</Caption>
       </View>
-      <Body style={[styles.action, { color: palette.icon }]}>View plans</Body>
+      {pending ? (
+        <ActivityIndicator size="small" color={palette.icon} />
+      ) : (
+        <Body style={[styles.action, { color: palette.icon }]}>View plans</Body>
+      )}
     </Touchable>
   );
 };

@@ -312,7 +312,7 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
           label="Product name"
           value={name}
           onChangeText={edit(setName, 'name')}
-          placeholder="Cotton kurta"
+          placeholder="Enter product name"
           autoCapitalize="sentences"
           maxLength={140}
           error={fieldErrors.name}
@@ -333,7 +333,7 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
           value={description}
           onChangeText={edit(setDescription, 'description')}
           maxLength={8000}
-          placeholder="Fabric, fit, care instructions — whatever a customer would ask."
+          placeholder="Enter a product description"
           multiline
           numberOfLines={4}
           style={styles.textarea}
@@ -348,7 +348,7 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
             label="Selling price"
             value={price}
             onChangeText={edit(setPrice, 'price')}
-            placeholder="0"
+            placeholder="Enter price"
             keyboardType="decimal-pad"
             prefix="₹"
             containerStyle={{ flex: 1, marginBottom: 0 }}
@@ -358,7 +358,7 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
             label="MRP"
             value={mrp}
             onChangeText={edit(setMrp, 'mrp')}
-            placeholder="Optional"
+            placeholder="Enter MRP"
             keyboardType="decimal-pad"
             prefix="₹"
             containerStyle={{ flex: 1, marginBottom: 0 }}
@@ -426,6 +426,7 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
             <Row gap={space.md} align="flex-start" style={{ marginTop: space.md }}>
               <Field
                 label="In stock"
+                placeholder="Enter quantity"
                 value={stock}
                 onChangeText={edit(setStock, 'stock')}
                 keyboardType="number-pad"
@@ -434,6 +435,7 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
               />
               <Field
                 label="Warn me at"
+                placeholder="Enter quantity"
                 value={lowStockThreshold}
                 onChangeText={edit(setLowStockThreshold, 'lowStockThreshold')}
                 keyboardType="number-pad"
@@ -450,7 +452,7 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
           value={sku}
           onChangeText={edit(setSku, 'sku')}
           maxLength={64}
-          placeholder="Optional — your own product code"
+          placeholder="Enter SKU (optional)"
           autoCapitalize="characters"
           autoCorrect={false}
           containerStyle={{ marginTop: space.lg, marginBottom: 0 }}

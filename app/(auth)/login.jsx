@@ -68,7 +68,7 @@ export default function Login() {
           label="Email or mobile number"
           value={form.identifier}
           onChangeText={set('identifier')}
-          placeholder="you@example.com or 98765 43210"
+          placeholder="Enter your email or mobile number"
           // The email keyboard, because it is the one that has both digits and the "@".
           keyboardType="email-address"
           autoCapitalize="none"
@@ -83,7 +83,7 @@ export default function Login() {
           label="Password"
           value={form.password}
           onChangeText={set('password')}
-          placeholder="Your password"
+          placeholder="Enter your password"
           secureTextEntry
           autoCapitalize="none"
           autoComplete="current-password"

@@ -57,7 +57,7 @@ export default function Location() {
         value={business.address}
         onChangeText={set('address')}
         onBlur={blur('address')}
-        placeholder="12, MG Road"
+        placeholder="Enter your shop address"
         autoCapitalize="words"
         autoComplete="street-address"
         textContentType="streetAddressLine1"
@@ -73,7 +73,7 @@ export default function Location() {
         value={business.city}
         onChangeText={set('city')}
         onBlur={blur('city')}
-        placeholder="Hyderabad"
+        placeholder="Enter city"
         autoCapitalize="words"
         textContentType="addressCity"
         returnKeyType="next"
@@ -90,7 +90,7 @@ export default function Location() {
           value={business.state}
           onChangeText={set('state')}
           onBlur={blur('state')}
-          placeholder="Telangana"
+          placeholder="Enter state"
           autoCapitalize="words"
           textContentType="addressState"
           returnKeyType="next"
@@ -105,7 +105,7 @@ export default function Location() {
           value={business.pincode}
           onChangeText={(value) => set('pincode')(value.replace(/\D/g, ''))}
           onBlur={blur('pincode')}
-          placeholder="500001"
+          placeholder="Enter pincode"
           keyboardType="number-pad"
           textContentType="postalCode"
           maxLength={6}

@@ -4,7 +4,8 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { searchQuery } from '@storekit/validation';
 import { ListScreen } from '../../src/components/Screen.jsx';
-import { Display, Divider, EmptyState, ErrorState } from '../../src/components/ui.jsx';
+import { Display, Divider, EmptyState, ErrorState, Row } from '../../src/components/ui.jsx';
+import { HelpButton } from '../../src/components/Help.jsx';
 import { OrderRow } from '../../src/components/domain.jsx';
 import { SkeletonList } from '../../src/components/Skeleton.jsx';
 import { FilterChips, SearchBar } from '../../src/components/Filters.jsx';
@@ -89,8 +90,11 @@ export default function Orders() {
 
   const header = (
     <View style={styles.header}>
-      <Display style={styles.title}>Orders</Display>
-      <SearchBar value={search} onChange={setSearch} error={searchError} placeholder="Order number, name or mobile" />
+      <Row style={[styles.title, { justifyContent: 'space-between' }]}>
+        <Display style={styles.titleText}>Orders</Display>
+        <HelpButton context="orders" />
+      </Row>
+      <SearchBar value={search} onChange={setSearch} error={searchError} placeholder="Search by order number, name or mobile" />
       <FilterChips options={STATUS_FILTERS} value={status} onChange={setStatus} />
       {paymentStatus !== 'all' ? (
         <FilterChips
@@ -162,7 +166,8 @@ const styles = StyleSheet.create({
   list: { backgroundColor: colors.canvas },
   content: { backgroundColor: colors.canvas, flexGrow: 1 },
   header: { paddingBottom: space.md, backgroundColor: colors.canvas },
-  title: { fontSize: 28, marginBottom: space.sm },
+  title: { marginBottom: space.sm },
+  titleText: { fontSize: 28 },
   more: { paddingVertical: space.xl },
   skeleton: { paddingHorizontal: space.lg },
 });

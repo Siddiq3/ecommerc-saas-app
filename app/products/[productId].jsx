@@ -330,7 +330,7 @@ export default function ProductDetail() {
           onChangeText={(v) => { setStockValue(v); setStockError(null); }}
           // 'numbers-and-punctuation' is iOS only; Android's 'numeric' pad is the one with a minus key.
           keyboardType={stockMode === 'adjust' ? Platform.select({ ios: 'numbers-and-punctuation', default: 'numeric' }) : 'number-pad'}
-          placeholder={stockMode === 'adjust' ? 'e.g. 12 or -3' : '0'}
+          placeholder={stockMode === 'adjust' ? 'Enter amount (use − to remove)' : 'Enter new stock count'}
           autoFocus
           maxLength={8}
           error={stockError}

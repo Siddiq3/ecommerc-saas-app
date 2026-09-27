@@ -8,6 +8,7 @@ import { ListScreen } from '../../src/components/Screen.jsx';
 import { Body, Button, Display, Divider, EmptyState, ErrorState, Row, Touchable } from '../../src/components/ui.jsx';
 import { ProductRow } from '../../src/components/domain.jsx';
 import { FilterChips, SearchBar } from '../../src/components/Filters.jsx';
+import { HelpButton } from '../../src/components/Help.jsx';
 import { SkeletonList } from '../../src/components/Skeleton.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { usePaginated } from '../../src/lib/usePaginated.js';
@@ -87,14 +88,17 @@ export default function Products() {
     <View style={styles.header}>
       <Row style={{ justifyContent: 'space-between' }}>
         <Display style={styles.title}>Products</Display>
-        <Touchable
-          onPress={() => router.push('/categories')}
-          accessibilityLabel="Categories"
-          style={styles.iconButton}
-        >
-          <Ionicons name="folder-outline" size={18} color={colors.ink700} />
-          <Body style={styles.iconButtonText}>Categories</Body>
-        </Touchable>
+        <Row gap={space.sm} style={{ marginBottom: space.md }}>
+          <HelpButton context="products" />
+          <Touchable
+            onPress={() => router.push('/categories')}
+            accessibilityLabel="Categories"
+            style={styles.iconButton}
+          >
+            <Ionicons name="folder-outline" size={18} color={colors.ink700} />
+            <Body style={styles.iconButtonText}>Categories</Body>
+          </Touchable>
+        </Row>
       </Row>
       <SearchBar value={search} onChange={setSearch} error={searchError} placeholder="Search products" />
       <FilterChips options={FILTERS} value={filter} onChange={setFilter} />

@@ -85,7 +85,7 @@ export default function SignUp() {
         value={value}
         onChangeText={(text) => update('account', { email: text })}
         onBlur={() => setTouched(true)}
-        placeholder="you@example.com"
+        placeholder="Enter your email address"
         keyboardType="email-address"
         autoCapitalize="none"
         autoCorrect={false}

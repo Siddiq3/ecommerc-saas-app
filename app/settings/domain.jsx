@@ -285,7 +285,7 @@ const AddDomain = ({ businessId, onAdded, onCancel }) => {
         label="Domain"
         value={value}
         onChangeText={(text) => { setValue(text); setError(null); setSuggestions([]); }}
-        placeholder="www.yourshop.com"
+        placeholder="Enter your domain name"
         autoCapitalize="none"
         autoCorrect={false}
         keyboardType="url"

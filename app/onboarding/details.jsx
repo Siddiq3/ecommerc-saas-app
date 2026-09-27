@@ -101,7 +101,7 @@ export default function Details() {
         value={business.name}
         onChangeText={onName}
         onBlur={blur('name')}
-        placeholder="Asha Boutique"
+        placeholder="Enter your business name"
         autoCapitalize="words"
         returnKeyType="next"
         onSubmitEditing={() => slugRef.current?.focus()}
@@ -114,7 +114,7 @@ export default function Details() {
         label="Store link"
         value={business.slug}
         onChangeText={(value) => set({ slug: value, slugEdited: true })}
-        placeholder="asha-boutique"
+        placeholder="Enter your store link"
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="next"
@@ -136,7 +136,7 @@ export default function Details() {
         value={business.phone}
         onChangeText={(value) => set({ phone: value })}
         onBlur={blur('phone')}
-        placeholder="98765 43210"
+        placeholder="Enter your mobile number"
         keyboardType="phone-pad"
         autoComplete="tel"
         prefix="+91"

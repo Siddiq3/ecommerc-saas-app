@@ -333,7 +333,7 @@ export default function OrderDetail() {
           onChangeText={(v) => { setNote(v); setNoteError(null); }}
           error={noteError}
           maxLength={300}
-          placeholder="Anything worth recording"
+          placeholder="Enter a note"
           multiline
         />
         {settingStatus ? <Caption>Updating…</Caption> : null}
@@ -352,7 +352,7 @@ export default function OrderDetail() {
           onChangeText={(v) => { setNote(v); setNoteError(null); }}
           error={noteError}
           maxLength={300}
-          placeholder="e.g. matched in HDFC statement"
+          placeholder="Enter a note"
           containerStyle={{ marginTop: space.lg }}
         />
         <Button
@@ -378,7 +378,7 @@ export default function OrderDetail() {
           onChangeText={(v) => { setNote(v); setNoteError(null); }}
           error={noteError}
           maxLength={300}
-          placeholder="Optional"
+          placeholder="Enter a note"
           containerStyle={{ marginTop: space.lg }}
         />
         <Button
@@ -414,7 +414,7 @@ export default function OrderDetail() {
           onChangeText={(v) => { setNote(v); setNoteError(null); }}
           error={noteError}
           maxLength={300}
-          placeholder="Optional"
+          placeholder="Enter a note"
           containerStyle={{ marginTop: space.md }}
         />
         <Button

@@ -8,7 +8,7 @@ import { useRefreshOnFocus } from '../../src/lib/useAsync.js';
 import { colors, type } from '../../src/theme.js';
 
 /**
- * The product's five destinations. Everything else in the app is pushed on top of one of
+ * The product's main destinations. Everything else in the app is pushed on top of one of
  * these rather than hidden in a drawer — a merchant checking an order on a bus should be
  * one tap from anywhere.
  */
@@ -41,6 +41,14 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: icon('home') }} />
+      <Tabs.Screen
+        name="social"
+        options={{
+          title: 'Social',
+          // No outline variant exists for brand logos.
+          tabBarIcon: ({ color, size }) => <Ionicons name="logo-instagram" size={size} color={color} />,
+        }}
+      />
       <Tabs.Screen
         name="orders"
         options={{

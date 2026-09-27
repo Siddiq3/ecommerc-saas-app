@@ -77,7 +77,7 @@ export default function ForgotPassword() {
             label="Email"
             value={email}
             onChangeText={setEmail}
-            placeholder="you@example.com"
+            placeholder="Enter your email address"
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
@@ -114,7 +114,7 @@ export default function ForgotPassword() {
           label="Reset code"
           value={code}
           onChangeText={setCode}
-          placeholder="123456"
+          placeholder="Enter the 6-digit code"
           keyboardType="number-pad"
           autoComplete="one-time-code"
           textContentType="oneTimeCode"
@@ -127,7 +127,7 @@ export default function ForgotPassword() {
           label="New password"
           value={newPassword}
           onChangeText={setNewPassword}
-          placeholder="At least 8 characters"
+          placeholder="Create a new password (min. 8 characters)"
           secureTextEntry
           autoCapitalize="none"
           autoComplete="new-password"

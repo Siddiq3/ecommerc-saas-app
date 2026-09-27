@@ -19,9 +19,8 @@ import { colors, radius, space, type } from '../../src/theme.js';
 /**
  * Account: the store, the plan, and everything that is neither an order nor a product.
  *
- * "Manage subscription" leaves for the browser exactly as the paywall does — there is no
- * second path to billing inside the app, and no screen here that could be mistaken for
- * one.
+ * "Manage subscription" leaves for the browser — plans, prices and payment exist only on
+ * the website, and no screen here could be mistaken for one.
  *
  * The two deletions at the bottom are deliberately different things. Deleting the store
  * is the merchant's own call and happens here, immediately and for good. Deleting the
@@ -36,7 +35,7 @@ export default function Account() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, business, businessId, signOut, refreshUser } = useAuth();
-  const { status, planStatus, refresh } = usePlan();
+  const { status, refresh } = usePlan();
   const [busy, setBusy] = useState(false);
 
   const storeUrl = business?.slug ? storeAddress(business.slug) : null;
@@ -112,6 +111,7 @@ export default function Account() {
     }
   };
 
+  /* Used by the hidden Subscription row below.
   const planLabel = {
     trial_active: `Trial · ${status?.trialDaysRemaining ?? 0} day${status?.trialDaysRemaining === 1 ? '' : 's'} left`,
     trial_expired: 'Trial ended',
@@ -127,6 +127,7 @@ export default function Account() {
     cancelled: 'amber',
     past_due: 'red',
   }[planStatus] ?? 'slate';
+  */
 
   return (
     <Screen contentStyle={{ paddingTop: insets.top + space.md }}>
@@ -139,7 +140,8 @@ export default function Account() {
           <Thumb label={business?.name ?? '?'} size={52} />
           <View style={{ flex: 1 }}>
             <Body strong numberOfLines={1}>{business?.name ?? 'Your store'}</Body>
-            <Caption numberOfLines={1}>{storeUrl ?? 'No store link yet'}</Caption>
+            {/* Selectable: Help tells owners to press and hold it to copy for Instagram. */}
+            <Caption numberOfLines={1} selectable>{storeUrl ?? 'No store link yet'}</Caption>
           </View>
         </Row>
         {storeUrl ? (
@@ -161,12 +163,14 @@ export default function Account() {
 
       <Group>
         <Item icon="storefront-outline" label="Store details & payments" onPress={() => router.push('/settings/store')} />
+        {/* Hidden for now: subscription is managed on the website.
         <Item
           icon="card-outline"
           label="Subscription"
           value={<Pill label={planLabel} tone={planTone} />}
           onPress={() => router.push('/settings/subscription')}
         />
+        */}
         <Item icon="bar-chart-outline" label="Analytics" onPress={() => router.push('/analytics')} />
         <Item icon="notifications-outline" label="Activity" onPress={() => router.push('/notifications')} />
         <Item icon="folder-outline" label="Categories" onPress={() => router.push('/categories')} />
@@ -196,7 +200,7 @@ export default function Account() {
         <Item
           icon="help-circle-outline"
           label="Help"
-          onPress={() => Linking.openURL(`https://${STOREFRONT_HOST}/help`).catch(() => undefined)}
+          onPress={() => router.push('/help')}
         />
         <Item
           icon="document-text-outline"

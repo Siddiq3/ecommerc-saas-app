@@ -7,6 +7,7 @@ import {
   Alert, Body, Button, Caption, Card, ErrorState, Field, Heading, Row, StatusDot, Toggle,
 } from '../../src/components/ui.jsx';
 import { SkeletonCard } from '../../src/components/Skeleton.jsx';
+import { HelpButton } from '../../src/components/Help.jsx';
 import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { useAction, useAsync } from '../../src/lib/useAsync.js';
@@ -115,6 +116,10 @@ export default function StoreSettings() {
     await refreshUser();
     toast.success(publish ? 'Your store is live' : 'Your store is offline');
   });
+
+  useEffect(() => {
+    navigation.setOptions?.({ headerRight: () => <HelpButton context="store" /> });
+  }, [navigation]);
 
   /* Leaving with unsaved edits asks first. On iOS the swipe-back gesture is paused meanwhile. */
   useEffect(() => {
@@ -253,6 +258,7 @@ export default function StoreSettings() {
       <Heading style={styles.section}>Store details</Heading>
       <Field
         label="Store name"
+        placeholder="Enter your store name"
         value={form.name}
         onChangeText={set('name')}
         autoCapitalize="words"
@@ -263,7 +269,7 @@ export default function StoreSettings() {
         label="Description (optional)"
         value={form.description}
         onChangeText={set('description')}
-        placeholder="What you sell, in a sentence or two"
+        placeholder="Enter a short description of what you sell"
         multiline
         maxLength={500}
         error={fieldErrors.description}
@@ -272,6 +278,7 @@ export default function StoreSettings() {
       <Heading style={styles.section}>Contact</Heading>
       <Field
         label="Mobile number"
+        placeholder="Enter your mobile number"
         value={form.phone}
         onChangeText={set('phone')}
         keyboardType="phone-pad"
@@ -284,6 +291,7 @@ export default function StoreSettings() {
       />
       <Field
         label="WhatsApp number (optional)"
+        placeholder="Enter your WhatsApp number"
         value={form.whatsapp}
         onChangeText={set('whatsapp')}
         keyboardType="phone-pad"
@@ -293,6 +301,7 @@ export default function StoreSettings() {
       />
       <Field
         label="Email (optional)"
+        placeholder="Enter your email address"
         value={form.email}
         onChangeText={set('email')}
         keyboardType="email-address"
@@ -307,6 +316,7 @@ export default function StoreSettings() {
       <Heading style={styles.section}>Address</Heading>
       <Field
         label="Shop address (optional)"
+        placeholder="Enter your shop address"
         value={form.addressLine}
         onChangeText={set('addressLine')}
         autoComplete="street-address"
@@ -317,6 +327,7 @@ export default function StoreSettings() {
       <Row gap={space.md} align="flex-start">
         <Field
           label="City"
+        placeholder="Enter city"
           value={form.city}
           onChangeText={set('city')}
           autoCapitalize="words"
@@ -327,6 +338,7 @@ export default function StoreSettings() {
         />
         <Field
           label="State"
+        placeholder="Enter state"
           value={form.state}
           onChangeText={set('state')}
           autoCapitalize="words"
@@ -338,6 +350,7 @@ export default function StoreSettings() {
       </Row>
       <Field
         label="Pincode"
+        placeholder="Enter pincode"
         value={form.pincode}
         onChangeText={set('pincode')}
         keyboardType="number-pad"
@@ -362,7 +375,7 @@ export default function StoreSettings() {
               label="UPI ID"
               value={form.upiId}
               onChangeText={set('upiId')}
-              placeholder="yourname@bank"
+              placeholder="Enter your UPI ID"
               // The email keyboard has "@" and "." on its first layer, which every UPI ID needs.
               keyboardType="email-address"
               autoCapitalize="none"
@@ -374,7 +387,7 @@ export default function StoreSettings() {
               label="Name shown to customers (optional)"
               value={form.upiPayeeName}
               onChangeText={set('upiPayeeName')}
-              placeholder={form.name || 'Your store name'}
+              placeholder="Enter the name customers should see"
               autoCapitalize="words"
               maxLength={80}
               hint="Appears next to your UPI ID. Leave blank to use your store name."

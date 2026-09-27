@@ -72,7 +72,7 @@ export const VariantEditor = ({ options, rows, onChangeOptions, onChangeRows, er
               label="Name"
               value={option.name}
               onChangeText={(value) => setOption(index, { name: value })}
-              placeholder="Size"
+              placeholder="Enter option name"
               autoCapitalize="words"
               maxLength={40}
               containerStyle={{ flex: 1, marginBottom: 0 }}
@@ -81,7 +81,7 @@ export const VariantEditor = ({ options, rows, onChangeOptions, onChangeRows, er
               label="Values"
               value={option.values}
               onChangeText={(value) => setOption(index, { values: value })}
-              placeholder="S, M, L"
+              placeholder="Enter values, separated by commas"
               autoCapitalize="characters"
               autoCorrect={false}
               maxLength={400}
@@ -132,7 +132,7 @@ export const VariantEditor = ({ options, rows, onChangeOptions, onChangeRows, er
                     accessibilityLabel={`Price for ${comboLabel(row.attributes)}`}
                     value={String(row.price ?? '')}
                     onChangeText={(value) => setRow(index, { price: value })}
-                    placeholder="0"
+                    placeholder="Price"
                     keyboardType="decimal-pad"
                     prefix="₹"
                     containerStyle={{ flex: 1.3, marginBottom: 0 }}
@@ -142,7 +142,7 @@ export const VariantEditor = ({ options, rows, onChangeOptions, onChangeRows, er
                     accessibilityLabel={`Stock for ${comboLabel(row.attributes)}`}
                     value={String(row.stock ?? '')}
                     onChangeText={(value) => setRow(index, { stock: value })}
-                    placeholder="0"
+                    placeholder="Stock"
                     keyboardType="number-pad"
                     containerStyle={{ flex: 1, marginBottom: 0 }}
                     error={errors[`variant.${index}.stock`]}

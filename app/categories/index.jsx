@@ -185,7 +185,7 @@ export default function Categories() {
           label="Name"
           value={name}
           onChangeText={(v) => { setName(v); if (errors.name) setErrors({}); }}
-          placeholder="Sarees"
+          placeholder="Enter category name"
           autoCapitalize="words"
           autoFocus
           maxLength={60}

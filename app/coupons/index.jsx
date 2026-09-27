@@ -316,7 +316,7 @@ export default function Coupons() {
               label="Code"
               value={code}
               onChangeText={(v) => { setCode(v.toUpperCase()); if (errors.code) setErrors((p) => ({ ...p, code: undefined })); }}
-              placeholder="WELCOME10"
+              placeholder="Enter coupon code"
               autoCapitalize="characters"
               autoCorrect={false}
               maxLength={24}
@@ -343,7 +343,7 @@ export default function Coupons() {
               label={type === 'percentage' ? 'Discount percentage' : 'Discount amount'}
               value={value}
               onChangeText={(v) => { setValue(v); if (errors.value) setErrors((p) => ({ ...p, value: undefined })); }}
-              placeholder={type === 'percentage' ? '10' : '100'}
+              placeholder={type === 'percentage' ? 'Enter percentage' : 'Enter amount'}
               keyboardType={type === 'percentage' ? 'number-pad' : 'decimal-pad'}
               prefix={type === 'fixed' ? '₹' : undefined}
               hint={type === 'percentage' ? 'A whole number from 1 to 90' : undefined}
@@ -385,7 +385,7 @@ export default function Coupons() {
           label="Description"
           value={description}
           onChangeText={(v) => { setDescription(v); if (errors.description) setErrors((p) => ({ ...p, description: undefined })); }}
-          placeholder="Optional — shown to you only"
+          placeholder="Enter a note for yourself (optional)"
           maxLength={200}
           error={fieldErrors.description}
         />
@@ -395,7 +395,8 @@ export default function Coupons() {
             label="Minimum order"
             value={minOrderValue}
             onChangeText={(v) => { setMinOrderValue(v); if (errors.minOrderValue) setErrors((p) => ({ ...p, minOrderValue: undefined })); }}
-            placeholder="None"
+            placeholder="Enter amount"
+            hint="Leave blank for no minimum"
             keyboardType="decimal-pad"
             prefix="₹"
             containerStyle={{ flex: 1 }}
@@ -405,7 +406,8 @@ export default function Coupons() {
             label="Maximum discount"
             value={maxDiscount}
             onChangeText={(v) => { setMaxDiscount(v); if (errors.maxDiscount) setErrors((p) => ({ ...p, maxDiscount: undefined })); }}
-            placeholder="No cap"
+            placeholder="Enter amount"
+            hint="Leave blank for no limit"
             keyboardType="decimal-pad"
             prefix="₹"
             containerStyle={{ flex: 1 }}
@@ -418,7 +420,8 @@ export default function Coupons() {
             label="Total uses"
             value={usageLimit}
             onChangeText={(v) => { setUsageLimit(v); if (errors.usageLimit) setErrors((p) => ({ ...p, usageLimit: undefined })); }}
-            placeholder="Unlimited"
+            placeholder="Enter a number"
+            hint="Leave blank for unlimited"
             keyboardType="number-pad"
             containerStyle={{ flex: 1 }}
             error={fieldErrors.usageLimit}
@@ -427,7 +430,8 @@ export default function Coupons() {
             label="Per customer"
             value={usageLimitPerCustomer}
             onChangeText={(v) => { setUsageLimitPerCustomer(v); if (errors.usageLimitPerCustomer) setErrors((p) => ({ ...p, usageLimitPerCustomer: undefined })); }}
-            placeholder="Unlimited"
+            placeholder="Enter a number"
+            hint="Leave blank for unlimited"
             keyboardType="number-pad"
             containerStyle={{ flex: 1 }}
             error={fieldErrors.usageLimitPerCustomer}

@@ -68,7 +68,7 @@ export default function Customers() {
   const header = (
     <View style={styles.header}>
       <Display style={styles.title}>Customers</Display>
-      <SearchBar value={search} onChange={setSearch} error={searchError} placeholder="Name, mobile or email" />
+      <SearchBar value={search} onChange={setSearch} error={searchError} placeholder="Search by name, mobile or email" />
       <FilterChips options={SORTS} value={sort} onChange={setSort} />
     </View>
   );

@@ -96,12 +96,6 @@ const Navigation = () => {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
 
-        {/* Presented as a sheet: upgrading is an interruption, not a destination. */}
-        <Stack.Screen
-          name="paywall"
-          options={{ presentation: 'modal', headerShown: false, animation: 'slide_from_bottom' }}
-        />
-
         <Stack.Screen name="orders/[orderId]" options={{ title: 'Order' }} />
         <Stack.Screen name="products/[productId]" options={{ title: 'Product' }} />
         <Stack.Screen name="products/new" options={{ title: 'New product', presentation: 'modal' }} />
@@ -110,6 +104,7 @@ const Navigation = () => {
         <Stack.Screen name="coupons/index" options={{ title: 'Coupons' }} />
         <Stack.Screen name="analytics" options={{ title: 'Analytics' }} />
         <Stack.Screen name="notifications" options={{ title: 'Activity' }} />
+        <Stack.Screen name="help" options={{ title: 'Help' }} />
         <Stack.Screen name="settings/store" options={{ title: 'Store details & payments' }} />
         <Stack.Screen name="settings/profile" options={{ title: 'Your profile' }} />
         <Stack.Screen name="settings/security" options={{ title: 'Security' }} />

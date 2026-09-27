@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { COMPARISON_ROWS, TRIAL_DAYS, describeEntitlement, formatMoney } from '@storekit/shared';
+import { COMPARISON_ROWS, TRIAL_DAYS, describeEntitlement } from '@storekit/shared';
 import { Screen } from '../../src/components/Screen.jsx';
 import {
   Alert, Body, Button, Caption, Card, Divider, Heading, Pill, Row,
@@ -21,8 +20,8 @@ import { colors, space, type } from '../../src/theme.js';
  * ────────────────────────────────────────────────────────────────────────────
  *  GOOGLE PLAY POLICY BOUNDARY
  *
- *  Read-only. It shows what the merchant is on and how much of it they are using.
- *  Both "Change plan" and "Manage subscription" call `openBilling`, which hands a
+ *  Read-only. It shows what the merchant is on and how much of it they are using — never
+ *  a price. "Choose a plan" and "Manage subscription" both call `openBilling`, which hands a
  *  one-time token to the system browser. Nothing here charges, cancels or stores a
  *  payment method — cancellation included, because cancelling is a billing operation and
  *  belongs on the same web surface as paying.
@@ -33,7 +32,6 @@ const INCLUDED_KEYS = ['maxProducts', 'monthlyOrderLimit', 'maxCustomDomains', '
 const INCLUDED_ROWS = COMPARISON_ROWS.filter((row) => INCLUDED_KEYS.includes(row.key));
 
 export default function Subscription() {
-  const router = useRouter();
   const { businessId } = useAuth();
   const { status, planStatus, refresh, openBilling } = usePlan();
 
@@ -45,6 +43,7 @@ export default function Subscription() {
   );
 
   const { run: manage, pending, error } = useAction(() => openBilling({ manage: true }));
+  const { run: choosePlan, pending: choosing, error: chooseError } = useAction(() => openBilling());
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -62,7 +61,6 @@ export default function Subscription() {
   // The name and price come from the same response as the rows below them, so one screen can never
   // show two different plans. The cached billing status is only the fallback while it loads.
   const planName = usage?.plan?.name ?? status?.plan?.name ?? 'Your plan';
-  const monthlyPaise = usage?.plan?.priceMonthly ?? status?.plan?.monthlyPaise ?? 0;
 
   const stateCopy = {
     trial_active: {
@@ -92,13 +90,12 @@ export default function Subscription() {
 
   return (
     <Screen refreshing={refreshing} onRefresh={onRefresh}>
-      <Alert message={error?.message} />
+      <Alert message={(error ?? chooseError)?.message} />
 
       <Card style={styles.card}>
         <Row style={{ justifyContent: 'space-between' }}>
           <View style={{ flex: 1 }}>
             <Heading>{planName}</Heading>
-            {monthlyPaise > 0 ? <Caption>{formatMoney(monthlyPaise)} / month</Caption> : null}
           </View>
           <Pill label={stateCopy.label} tone={stateCopy.tone} />
         </Row>
@@ -122,7 +119,7 @@ export default function Subscription() {
           onPress={() => manage().catch(() => undefined)}
         />
       ) : (
-        <Button title="Choose a plan" onPress={() => router.push('/paywall')} />
+        <Button title="Choose a plan" loading={choosing} onPress={() => choosePlan().catch(() => undefined)} />
       )}
 
       <Row gap={space.xs} style={styles.browserNote}>
