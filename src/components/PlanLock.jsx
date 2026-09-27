@@ -6,7 +6,7 @@ import { Alert, Body, Button, Caption, Card, Row, Title } from './ui.jsx';
 import { useAuth } from '../state/auth.jsx';
 import { usePlan } from '../state/plan.jsx';
 import { useAction } from '../lib/useAsync.js';
-import { STOREFRONT_HOST } from '../lib/help.js';
+import { SUPPORT_URL } from '../lib/help.js';
 import { colors, radius, space } from '../theme.js';
 
 /**
@@ -72,7 +72,7 @@ export const PlanLock = () => {
               title="Contact support"
               variant="secondary"
               icon={<Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.success} />}
-              onPress={() => Linking.openURL(`https://${STOREFRONT_HOST}/help`)}
+              onPress={() => Linking.openURL(SUPPORT_URL).catch(() => undefined)}
             />
           </ScrollView>
 

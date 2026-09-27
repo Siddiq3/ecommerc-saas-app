@@ -14,7 +14,7 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://iodbnjyn79.execute-api.ap-south-1.amazonaws.com",
         "EXPO_PUBLIC_STOREFRONT_URL": "https://storekit.site",
-        "EXPO_PUBLIC_STOREFRONT_HOST": "storekit.site"
+        "EXPO_PUBLIC_WEB_URL": "https://ecommerc-saas-web-1yfy.vercel.app"
       }
     },
     "production": {
@@ -22,7 +22,7 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://iodbnjyn79.execute-api.ap-south-1.amazonaws.com",
         "EXPO_PUBLIC_STOREFRONT_URL": "https://storekit.site",
-        "EXPO_PUBLIC_STOREFRONT_HOST": "storekit.site"
+        "EXPO_PUBLIC_WEB_URL": "https://ecommerc-saas-web-1yfy.vercel.app"
       }
     }
   },

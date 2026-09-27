@@ -10,7 +10,10 @@
  * `action.url` opens outside the app instead.
  */
 
-export const STOREFRONT_HOST = String(process.env.EXPO_PUBLIC_STOREFRONT_HOST ?? 'storekit.site');
+/** The StoreKit website (terms, privacy, billing) — not a store. No trailing slash. */
+export const WEB_URL = String(process.env.EXPO_PUBLIC_WEB_URL ?? 'https://ecommerc-saas-web-1yfy.vercel.app').replace(/\/$/, '');
+/** The website has no help page yet; support is by email, the same address its footer shows. */
+export const SUPPORT_URL = 'mailto:help@storekit.app';
 
 export const HELP_CATEGORIES = [
   {
@@ -455,9 +458,9 @@ export const HELP_CATEGORIES = [
         id: 'contact-support',
         question: 'How do I contact StoreKit support?',
         steps: [
-          'Tap the button below to open StoreKit help and support.',
+          'Tap the button below to email StoreKit support.',
         ],
-        action: { label: 'Contact support', url: `https://${STOREFRONT_HOST}/help` },
+        action: { label: 'Contact support', url: SUPPORT_URL },
       },
     ],
   },

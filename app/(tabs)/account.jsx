@@ -14,6 +14,7 @@ import { useAuth } from '../../src/state/auth.jsx';
 import { usePlan } from '../../src/state/plan.jsx';
 import { account as accountApi, businesses as businessApi } from '../../src/api/endpoints.js';
 import { storeUrl as storeAddress } from '../../src/lib/storefront.js';
+import { WEB_URL } from '../../src/lib/help.js';
 import { colors, radius, space, type } from '../../src/theme.js';
 
 /**
@@ -29,7 +30,6 @@ import { colors, radius, space, type } from '../../src/theme.js';
  * decision that should turn on one mis-tap.
  */
 
-const STOREFRONT_HOST = String(process.env.EXPO_PUBLIC_STOREFRONT_HOST ?? 'storekit.site');
 
 export default function Account() {
   const router = useRouter();
@@ -206,7 +206,7 @@ export default function Account() {
         <Item
           icon="document-text-outline"
           label="Terms and privacy"
-          onPress={() => Linking.openURL(`https://${STOREFRONT_HOST}/terms`).catch(() => undefined)}
+          onPress={() => Linking.openURL(`${WEB_URL}/legal/terms`).catch(() => undefined)}
           last
         />
       </Group>

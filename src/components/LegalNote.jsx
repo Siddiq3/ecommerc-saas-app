@@ -1,5 +1,6 @@
 import { StyleSheet, Text } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
+import { WEB_URL } from '../lib/help.js';
 import { colors, fonts, space, type } from '../theme.js';
 
 /**
@@ -8,8 +9,7 @@ import { colors, fonts, space, type } from '../theme.js';
  * the moment it is given rather than behind a checkbox.
  */
 
-const SITE = String(process.env.EXPO_PUBLIC_STOREFRONT_HOST ?? 'storekit.site');
-const open = (page) => WebBrowser.openBrowserAsync(`https://${SITE}/legal/${page}`).catch(() => undefined);
+const open = (page) => WebBrowser.openBrowserAsync(`${WEB_URL}/legal/${page}`).catch(() => undefined);
 
 export const LegalNote = () => (
   <Text style={styles.note}>
