@@ -263,7 +263,6 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
 
   return (
     <>
-      <Alert message={generalError} />
       <Alert message={uploadError} />
 
       {/* The live card — what a customer will see, updating as the merchant types. */}
@@ -467,6 +466,12 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
         </Card>
       </FormSection>
 
+      {/* Next to the button that was just pressed: at the top of a long form, a failed save
+          (offline, a server error) or a rejected field above would go unseen. */}
+      <Alert message={generalError} />
+      {!generalError && Object.values(fieldErrors).some(Boolean) ? (
+        <Caption style={styles.fixHint}>Check the highlighted fields above.</Caption>
+      ) : null}
       <Button title={submitLabel} size="lg" loading={submitting} onPress={submit} style={{ marginTop: space.sm }} />
 
       <Sheet visible={pickerOpen} onClose={() => setPickerOpen(false)} title="Add a photo">
@@ -503,6 +508,7 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
 };
 
 const styles = StyleSheet.create({
+  fixHint: { color: colors.danger, textAlign: 'center', marginTop: space.sm },
   preview: {
     flexDirection: 'row',
     alignItems: 'center',

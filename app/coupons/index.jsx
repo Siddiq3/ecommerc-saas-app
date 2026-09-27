@@ -10,6 +10,7 @@ import {
 } from '../../src/components/ui.jsx';
 import { SkeletonScreen } from '../../src/components/Skeleton.jsx';
 import { Sheet } from '../../src/components/Sheet.jsx';
+import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { useAction, useAsync } from '../../src/lib/useAsync.js';
 import { check, mergeErrors } from '../../src/lib/validation.js';
@@ -135,6 +136,7 @@ const ProductPicker = ({ visible, onClose, businessId, selected, onToggle }) => 
 
 export default function Coupons() {
   const { businessId } = useAuth();
+  const toast = useToast();
 
   const [sheet, setSheet] = useState(null);
   const [editing, setEditing] = useState(null);
@@ -242,8 +244,12 @@ export default function Coupons() {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            await couponsApi.remove(businessId, coupon.couponId).catch(() => undefined);
-            reload();
+            try {
+              await couponsApi.remove(businessId, coupon.couponId);
+              reload();
+            } catch (err) {
+              toast.error(err?.message ?? 'Could not delete this coupon. Please try again.');
+            }
           },
         },
       ],

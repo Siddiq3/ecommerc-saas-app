@@ -147,6 +147,11 @@ const refreshTokens = async () => {
       body: { refreshToken: memory.refreshToken },
     });
 
+    // A server that is down or rate limiting has said nothing about the session. Ending it
+    // here would sign the merchant out over a temporary outage, so the request fails as
+    // retryable and the tokens stay.
+    if (response.status >= 500 || response.status === 429) raise(response, payload);
+
     // The route answers 200 with a null body when the token is missing, and 401 when it
     // has been revoked or reused. Both mean the same thing here: the session is over.
     if (!response.ok || !payload?.data?.tokens) {

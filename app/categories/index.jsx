@@ -8,6 +8,7 @@ import {
 } from '../../src/components/ui.jsx';
 import { SkeletonScreen } from '../../src/components/Skeleton.jsx';
 import { Sheet } from '../../src/components/Sheet.jsx';
+import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { useAction, useAsync } from '../../src/lib/useAsync.js';
 import { check, mergeErrors } from '../../src/lib/validation.js';
@@ -22,6 +23,7 @@ import { colors, space } from '../../src/theme.js';
  */
 export default function Categories() {
   const { businessId } = useAuth();
+  const toast = useToast();
 
   const [sheet, setSheet] = useState(null);
   const [name, setName] = useState('');
@@ -78,8 +80,12 @@ export default function Categories() {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            await categoriesApi.remove(businessId, category.categoryId).catch(() => undefined);
-            reload();
+            try {
+              await categoriesApi.remove(businessId, category.categoryId);
+              reload();
+            } catch (err) {
+              toast.error(err?.message ?? 'Could not delete this category. Please try again.');
+            }
           },
         },
       ],

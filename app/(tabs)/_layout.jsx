@@ -1,8 +1,10 @@
 import { StyleSheet } from 'react-native';
-import { Tabs } from 'expo-router';
+import { Tabs, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/state/auth.jsx';
 import { useOrderCounts } from '../../src/state/counts.js';
+import { useRefreshOnFocus } from '../../src/lib/useAsync.js';
 import { colors, type } from '../../src/theme.js';
 
 /**
@@ -18,7 +20,12 @@ const icon = (name) =>
 
 export default function TabsLayout() {
   const { businessId } = useAuth();
-  const { needsAttention } = useOrderCounts(businessId);
+  const { needsAttention, reload: reloadCounts } = useOrderCounts(businessId);
+  const insets = useSafeAreaInsets();
+
+  // Back from an order (a payment just verified, an order just shipped): the badge must drop
+  // now, not the next time the app returns from the background.
+  useFocusEffect(useRefreshOnFocus(reloadCounts));
 
   return (
     <Tabs
@@ -27,7 +34,9 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.accent600,
         tabBarInactiveTintColor: colors.ink500,
         tabBarLabelStyle: styles.label,
-        tabBarStyle: styles.bar,
+        // A fixed height is used as-is while the bottom inset is still added as padding inside
+        // it, which squeezed the icons and labels on phones with a home indicator or gesture bar.
+        tabBarStyle: [styles.bar, { height: BAR_HEIGHT + insets.bottom }],
         lazy: true,
       }}
     >
@@ -50,12 +59,13 @@ export default function TabsLayout() {
   );
 }
 
+const BAR_HEIGHT = 60;
+
 const styles = StyleSheet.create({
   bar: {
     backgroundColor: colors.surface,
     borderTopColor: colors.line,
     borderTopWidth: StyleSheet.hairlineWidth,
-    height: 60,
     paddingTop: 6,
   },
   label: { ...type.caption, fontSize: 11, marginBottom: 4 },

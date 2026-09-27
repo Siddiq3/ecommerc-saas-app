@@ -69,6 +69,9 @@ export const useAction = (fn) => {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(null);
   const mounted = useRef(true);
+  // `pending` is state, so two taps inside one frame both read it as false. The ref flips
+  // synchronously, which is what actually stops a double tap from sending the request twice.
+  const inFlight = useRef(false);
 
   useEffect(() => {
     mounted.current = true;
@@ -77,7 +80,8 @@ export const useAction = (fn) => {
 
   const run = useCallback(
     async (...args) => {
-      if (pending) return null;
+      if (inFlight.current) return null;
+      inFlight.current = true;
       setPending(true);
       setError(null);
       try {
@@ -86,10 +90,11 @@ export const useAction = (fn) => {
         if (mounted.current) setError(err);
         throw err;
       } finally {
+        inFlight.current = false;
         if (mounted.current) setPending(false);
       }
     },
-    [fn, pending],
+    [fn],
   );
 
   return { run, pending, error, clearError: () => setError(null) };

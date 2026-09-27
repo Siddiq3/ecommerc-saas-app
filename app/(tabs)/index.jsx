@@ -61,13 +61,26 @@ export default function Dashboard() {
 
   // One cheap call answers "has this merchant added anything yet", which decides between
   // the setup path and the running dashboard. Kept separate so it resolves independently.
-  const { data: firstProducts } = useAsync(
+  const { data: firstProducts, reload: reloadFirstProducts } = useAsync(
     () => (businessId ? productsApi.list(businessId, { limit: 1 }) : Promise.resolve(null)),
     [businessId],
   );
+  const hasProducts = (firstProducts?.items?.length ?? 0) > 0;
 
-  // Coming back from an order detail should show the new status, not a cached row.
-  useFocusEffect(useRefreshOnFocus(reload));
+  // Coming back from an order detail should show the new status, not a cached row. While the
+  // store has no products yet, the product check is repeated too, so the setup card goes
+  // away once the merchant comes back from adding their first one; after that it costs nothing.
+  useFocusEffect(useRefreshOnFocus(() => {
+    reload();
+    if (!hasProducts) reloadFirstProducts();
+  }));
+
+  const refreshAll = () => {
+    onRefresh();
+    if (!hasProducts) reloadFirstProducts();
+    // Opened offline, the owner and store never loaded; a pull is the natural moment to retry.
+    if (!user) refreshUser();
+  };
 
   const storeUrl = business?.slug ? storeAddress(business.slug) : null;
 
@@ -76,7 +89,6 @@ export default function Dashboard() {
   const today = data?.today ?? {};
   const yesterday = data?.yesterday ?? {};
   const pending = data?.pending ?? {};
-  const hasProducts = (firstProducts?.items?.length ?? 0) > 0;
   const hasOrders = (data?.recentOrders?.length ?? 0) > 0;
   const isNew = firstProducts != null && !hasProducts && !hasOrders;
 
@@ -117,7 +129,7 @@ export default function Dashboard() {
   const openStore = () => storeUrl && Linking.openURL(storeUrl).catch(() => toast.error('Could not open your store'));
 
   return (
-    <Screen refreshing={refreshing} onRefresh={onRefresh} contentStyle={{ paddingTop: insets.top + space.md }}>
+    <Screen refreshing={refreshing} onRefresh={refreshAll} contentStyle={{ paddingTop: insets.top + space.md }}>
       <Row style={styles.header}>
         <View style={{ flex: 1 }}>
           <Caption>{greeting()}, {firstName(user?.name)}</Caption>
@@ -159,6 +171,7 @@ export default function Dashboard() {
       {isNew ? (
         <SetupCard
           storeName={business?.name}
+          isLive={isLive}
           onAddProduct={() => router.push('/products/new')}
           onShare={shareStore}
         />
@@ -290,13 +303,15 @@ export default function Dashboard() {
  * The day-one path. Shown only until the merchant has a product or an order, then it
  * disappears for good — it is scaffolding, not a permanent widget.
  */
-const SetupCard = ({ storeName, onAddProduct, onShare }) => (
+const SetupCard = ({ storeName, isLive, onAddProduct, onShare }) => (
   <FadeIn>
     <Card style={styles.setupCard}>
       <Caption style={styles.setupKicker}>GET YOUR STORE SELLING</Caption>
       <Heading style={styles.setupTitle}>Two steps to your first sale</Heading>
       <Body muted style={styles.setupBody}>
-        {storeName ?? 'Your store'} is live, but it needs something to sell before customers can order.
+        {isLive
+          ? `${storeName ?? 'Your store'} is live, but it needs something to sell before customers can order.`
+          : `Add something to sell, then publish ${storeName ?? 'your store'} so customers can order.`}
       </Body>
 
       <View style={styles.setupListWrap}>
@@ -440,10 +455,11 @@ const styles = StyleSheet.create({
   },
   publishText: { color: '#ffffff', fontSize: 14.5 },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  // Four to a row at every width: tiles take a fixed share and the row spreads the rest as
+  // gaps. A fixed 8pt gap plus 23% tiles overflowed by 1pt at 320pt and wrapped into 3+3+2.
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: space.sm },
   gridTile: {
-    // Four to a row, allowing for three gaps.
-    width: '23%',
+    width: '23.5%',
     alignItems: 'center',
     gap: space.xs,
     paddingVertical: space.md,

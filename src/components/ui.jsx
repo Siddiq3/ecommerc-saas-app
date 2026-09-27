@@ -103,6 +103,7 @@ export const Button = ({
         { backgroundColor: tone.bg },
         tone.border && styles.buttonBordered,
         full && { alignSelf: 'stretch' },
+        !full && size !== 'sm' && styles.buttonCompact,
         style,
       ]}
     >
@@ -111,7 +112,14 @@ export const Button = ({
       ) : (
         <>
           {icon}
-          <Text style={[styles.buttonText, size === 'sm' && styles.buttonTextSm, { color: tone.fg }]}>
+          {/* One line, shrinking a little before it would wrap: side by side on a 320-375pt
+              phone, labels like "Cancel order" otherwise broke onto two lines. */}
+          <Text
+            style={[styles.buttonText, size === 'sm' && styles.buttonTextSm, { color: tone.fg }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}
+          >
             {title}
           </Text>
         </>
@@ -358,11 +366,14 @@ export const EmptyState = ({ title, message, action, icon, tint = colors.accent5
   </FadeIn>
 );
 
+/** No response at all (offline, or a timeout), as opposed to the API answering with an error. */
+const isConnectionError = (error) => error?.status === 0 || error?.code === 'NETWORK' || error?.code === 'TIMEOUT';
+
 export const ErrorState = ({ error, onRetry }) => (
   <EmptyState
-    icon="⚠"
+    icon={isConnectionError(error) ? '📶' : '⚠'}
     tint={colors.dangerTint}
-    title="Could not load this"
+    title={isConnectionError(error) ? 'No internet connection' : 'Could not load this'}
     message={error?.message ?? 'Something went wrong. Please try again.'}
     action={onRetry ? <Button title="Try again" variant="secondary" onPress={onRetry} /> : null}
   />
@@ -421,10 +432,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   buttonSm: { minHeight: 40, paddingHorizontal: space.lg, borderRadius: radius.sm },
+  /** Side-by-side buttons share a row; the full-width padding left too little room for the label. */
+  buttonCompact: { paddingHorizontal: space.lg },
   /** The same 58pt as an input, so a form reads as one stack of equal blocks. */
   buttonLg: { minHeight: 58, borderRadius: radius.md },
   buttonBordered: { borderWidth: 1.5, borderColor: colors.line },
-  buttonText: { ...type.bodyStrong, fontFamily: fonts.bold, fontSize: 16.5, letterSpacing: -0.2 },
+  buttonText: { ...type.bodyStrong, fontFamily: fonts.bold, fontSize: 16.5, letterSpacing: -0.2, flexShrink: 1 },
   buttonTextSm: { fontSize: 14.5 },
 
   pill: {
