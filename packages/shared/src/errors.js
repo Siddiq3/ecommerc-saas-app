@@ -26,6 +26,7 @@ export const ERROR_CODES = Object.freeze({
   COUPON_MIN_ORDER_NOT_MET: 'COUPON_MIN_ORDER_NOT_MET',
 
   DELIVERY_UNAVAILABLE: 'DELIVERY_UNAVAILABLE',
+  DELIVERY_METHOD_UNAVAILABLE: 'DELIVERY_METHOD_UNAVAILABLE',
   PAYMENT_METHOD_UNAVAILABLE: 'PAYMENT_METHOD_UNAVAILABLE',
   PAYMENT_ALREADY_SETTLED: 'PAYMENT_ALREADY_SETTLED',
   DUPLICATE_UTR: 'DUPLICATE_UTR',
@@ -75,6 +76,7 @@ export const ERROR_MESSAGES = Object.freeze({
   COUPON_EXPIRED: 'That coupon has expired.',
   COUPON_MIN_ORDER_NOT_MET: 'Your order does not meet this coupon’s minimum value.',
   DELIVERY_UNAVAILABLE: 'We do not deliver to this pincode yet.',
+  DELIVERY_METHOD_UNAVAILABLE: 'That delivery option is no longer available. Please choose another.',
   ORDERING_PAUSED: 'This store is not taking orders right now.',
   DUPLICATE_UTR: 'This payment reference was already submitted.',
   INTERNAL_ERROR: 'Something went wrong. Please try again.',

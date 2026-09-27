@@ -5,6 +5,7 @@ import {
   placeName, searchQuery, trackingReference, trackingToken, utr,
 } from './primitives.js';
 import { CANCELLATION_REASONS, ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES } from '@storekit/shared';
+import { deliveryMethodId } from './settings.js';
 
 /**
  * Checkout and order schemas. Every object is `.strict()`: unknown keys are rejected.
@@ -66,6 +67,8 @@ export const quoteSchema = z
     couponCode: emptyable(couponCode),
     pincode: pincode.optional(),
     paymentMethod: paymentMethodSchema.optional(),
+    /** Which of the store's delivery methods to price. Absent: the store's main method. */
+    deliveryMethodId: deliveryMethodId.optional(),
   })
   .strict();
 
@@ -75,6 +78,7 @@ export const createOrderSchema = z
     address: addressSchema,
     couponCode: emptyable(couponCode),
     paymentMethod: paymentMethodSchema,
+    deliveryMethodId: deliveryMethodId.optional(),
     /**
      * The total the customer saw. The server recomputes the real total and refuses the
      * order on mismatch, so a stale price is never silently charged in either direction.

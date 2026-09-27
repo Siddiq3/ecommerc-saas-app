@@ -70,13 +70,22 @@ export const account = {
   deletionHandoff: () => api.post('/me/account/deletion-handoff', {}),
 };
 
-/** Storefront configuration — theme, sections, policies. Merged one level deep by the API. */
+/** Storefront configuration — theme, sections, payments, policies. Merged one level deep by the API. Delivery has its own endpoint. */
 export const storeSettings = {
   get: (businessId) => api.get(`/businesses/${businessId}/settings`),
   update: (businessId, input) => api.patch(`/businesses/${businessId}/settings`, input),
 };
 
 const scope = (businessId) => `/businesses/${businessId}`;
+
+/**
+ * Delivery methods and areas. Saved whole (PUT), never merged: the body is the complete
+ * settings, so a save can never quietly reset something it left out.
+ */
+export const delivery = {
+  get: (businessId) => api.get(`${scope(businessId)}/delivery`),
+  save: (businessId, settings) => api.put(`${scope(businessId)}/delivery`, settings),
+};
 
 /* ───────────── Catalogue ───────────── */
 

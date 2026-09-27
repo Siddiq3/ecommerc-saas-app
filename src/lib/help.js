@@ -278,27 +278,36 @@ export const HELP_CATEGORIES = [
         id: 'delivery-charges',
         question: 'How do I set delivery charges?',
         steps: [
-          'Delivery is free on every order right now.',
-          'Delivery charges can’t be changed in the app yet.',
-          'Contact StoreKit support if you need them set up.',
+          'Open **Account** and tap **Delivery**.',
+          'Tap a delivery method, or **Add delivery method**.',
+          'Under **Price**, choose **Flat fee** — or **By area** to charge by district, state and rest of India.',
+          'Tap **Done**, then **Save delivery settings**.',
         ],
-        action: { label: 'Contact support', url: `https://${STOREFRONT_HOST}/help` },
+        note: 'Customers see the charge at checkout, before they place the order. **Pincode prices** set a different charge for specific pincodes.',
+        action: { label: 'Open delivery settings', href: '/settings/delivery' },
       },
       {
         id: 'free-delivery',
         question: 'How do I offer free delivery?',
         steps: [
-          'You don’t need to do anything — delivery is free on every order by default.',
+          'Open **Account** and tap **Delivery**, then tap a method.',
+          'Choose **Free** under **Price** for every order — or turn on **Free above an order value**.',
+          'Tap **Done**, then **Save delivery settings**.',
         ],
+        note: 'Checkout tells customers how much more to add for free delivery.',
+        action: { label: 'Open delivery settings', href: '/settings/delivery' },
       },
       {
         id: 'delivery-settings',
         question: 'How do I change my delivery settings?',
         steps: [
-          'Delivery settings can’t be changed in the app yet.',
-          'Contact StoreKit support and tell us what you need.',
+          'Open **Account** and tap **Delivery**.',
+          'Add up to 5 methods — like Standard, Express or **Pickup from store** — each with its own price and delivery time.',
+          'Under **Where you deliver**, add pincodes to deliver only to those areas.',
+          'Tap **Save delivery settings**.',
         ],
-        action: { label: 'Contact support', url: `https://${STOREFRONT_HOST}/help` },
+        note: 'The **Main** method is chosen for customers until they pick another.',
+        action: { label: 'Open delivery settings', href: '/settings/delivery' },
       },
       {
         id: 'delivery-address',
@@ -459,6 +468,7 @@ export const HELP_CONTEXTS = {
   products: ['add-product', 'edit-product', 'product-images', 'product-variants'],
   orders: ['order-status', 'verify-upi', 'accept-order', 'cancel-order'],
   store: ['store-name', 'share-link', 'customize-store', 'upi-how'],
+  delivery: ['delivery-charges', 'free-delivery', 'delivery-address'],
 };
 
 const BY_ID = new Map(HELP_CATEGORIES.flatMap((c) => c.questions.map((q) => [q.id, q])));

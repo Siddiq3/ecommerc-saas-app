@@ -259,9 +259,9 @@ export default function OrderDetail() {
               <View style={{ flex: 1 }}>
                 <Body strong numberOfLines={2}>{item.name}</Body>
                 {item.variantLabel ? <Caption>{item.variantLabel}</Caption> : null}
-                <Caption>{item.quantity} × {formatMoney(item.price)}</Caption>
+                <Caption>{item.quantity} × {formatMoney(item.unitPrice)}</Caption>
               </View>
-              <Body style={type.money}>{formatMoney(item.price * item.quantity)}</Body>
+              <Body style={type.money}>{formatMoney(item.lineTotal)}</Body>
             </Row>
           </View>
         ))}
@@ -269,9 +269,17 @@ export default function OrderDetail() {
         <Divider />
         <View style={styles.totals}>
           <TotalLine label="Subtotal" value={order.totals?.subtotal} />
-          {order.totals?.discount ? <TotalLine label="Discount" value={-order.totals.discount} /> : null}
-          {order.totals?.shipping ? <TotalLine label="Delivery" value={order.totals.shipping} /> : null}
-          {order.totals?.tax ? <TotalLine label="Tax" value={order.totals.tax} /> : null}
+          {order.totals?.couponDiscount ? (
+            <TotalLine label={order.coupon?.code ? `Coupon ${order.coupon.code}` : 'Coupon'} value={-order.totals.couponDiscount} />
+          ) : null}
+          <TotalLine
+            label={order.delivery?.name ?? 'Delivery'}
+            value={order.totals?.deliveryFee ?? 0}
+            display={order.totals?.deliveryFee ? undefined : 'Free'}
+          />
+          {order.delivery?.estimate ? (
+            <Caption style={styles.estimate}>{order.delivery.estimate.label} (estimated at checkout)</Caption>
+          ) : null}
           <Divider style={styles.innerDivider} />
           <Row style={{ justifyContent: 'space-between' }}>
             <Body strong>Total</Body>
@@ -294,7 +302,7 @@ export default function OrderDetail() {
         <Caption>{order.customer?.mobile ? `+91 ${order.customer.mobile}` : 'No number on file'}</Caption>
         {order.address ? (
           <Body muted style={styles.address}>
-            {[order.address.line1, order.address.line2, order.address.city, order.address.state, order.address.pincode]
+            {[order.address.houseNo, order.address.street, order.address.area, order.address.landmark, order.address.city, order.address.state, order.address.pincode]
               .filter(Boolean)
               .join(', ')}
           </Body>
@@ -428,14 +436,15 @@ export default function OrderDetail() {
   );
 }
 
-const TotalLine = ({ label, value }) => (
+const TotalLine = ({ label, value, display }) => (
   <Row style={{ justifyContent: 'space-between', marginBottom: space.sm }}>
-    <Caption>{label}</Caption>
-    <Body style={type.money}>{formatMoney(value)}</Body>
+    <Caption style={{ flex: 1 }}>{label}</Caption>
+    <Body style={type.money}>{display ?? formatMoney(value)}</Body>
   </Row>
 );
 
 const styles = StyleSheet.create({
+  estimate: { marginTop: -space.xs, marginBottom: space.sm },
   verifyActions: { marginTop: space.md, gap: space.sm },
   head: { marginBottom: space.lg },
   card: { marginBottom: space.lg },

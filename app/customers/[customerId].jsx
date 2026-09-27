@@ -108,8 +108,9 @@ export default function CustomerDetail() {
           <Divider style={styles.innerDivider} />
           <Body muted>
             {[
-              customer.lastAddress.line1,
-              customer.lastAddress.line2,
+              customer.lastAddress.houseNo,
+              customer.lastAddress.street,
+              customer.lastAddress.area,
               customer.lastAddress.city,
               customer.lastAddress.state,
               customer.lastAddress.pincode,

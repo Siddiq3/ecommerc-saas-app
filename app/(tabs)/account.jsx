@@ -163,6 +163,7 @@ export default function Account() {
 
       <Group>
         <Item icon="storefront-outline" label="Store details & payments" onPress={() => router.push('/settings/store')} />
+        <Item icon="bicycle-outline" label="Delivery" onPress={() => router.push('/settings/delivery')} />
         {/* Hidden for now: subscription is managed on the website.
         <Item
           icon="card-outline"
