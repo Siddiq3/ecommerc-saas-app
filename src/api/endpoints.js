@@ -42,11 +42,15 @@ export const auth = {
 
 export const businesses = {
   list: () => api.get('/businesses'),
+  /** The full store record, with `description` and `contact`, which `/auth/me` does not carry. */
+  get: (businessId) => api.get(`/businesses/${businessId}`),
   create: (input) => api.post('/businesses', input),
   /** Replaces `contact` wholesale — send every contact field, not just the changed one. */
   update: (businessId, input) => api.patch(`/businesses/${businessId}`, input),
   /** Makes the storefront publicly reachable; refused with a list of what is still missing. */
   publish: (businessId) => api.post(`/businesses/${businessId}/publish`, {}),
+  /** Takes the storefront offline again; nothing is deleted. */
+  unpublish: (businessId) => api.post(`/businesses/${businessId}/unpublish`, {}),
   slugAvailable: (slug) => api.get(`/businesses/slug-available${qs({ slug })}`),
   /**
    * Deletes the store and everything in it, permanently. The slug is sent back so the
