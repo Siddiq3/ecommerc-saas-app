@@ -102,7 +102,7 @@ export default function Social() {
           <View style={{ flex: 1 }}>
             <Row gap={space.xs}>
               <Ionicons name="sparkles" size={13} color={colors.accent900} />
-              <Body strong style={{ color: colors.accent900 }}>Launching soon in StoreKit V2</Body>
+              <Body strong style={{ color: colors.accent900 }}>Launching soon</Body>
             </Row>
             <Caption style={{ color: colors.accent700 }}>Get ready to turn more views into orders.</Caption>
           </View>
