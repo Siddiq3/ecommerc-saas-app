@@ -87,6 +87,14 @@ export const delivery = {
   save: (businessId, settings) => api.put(`${scope(businessId)}/delivery`, settings),
 };
 
+export const policies = {
+  get: (businessId) => api.get(`${scope(businessId)}/policies`),
+  /** Only what changed: `{ trade? , documents?: { [type]: { enabled?, content? } } }`. */
+  update: (businessId, patch) => api.patch(`${scope(businessId)}/policies`, patch),
+  /** The standard text from the store's current settings. Not saved. */
+  template: (businessId, type) => api.get(`${scope(businessId)}/policies/${type}/template`),
+};
+
 /* ───────────── Catalogue ───────────── */
 
 export const products = {

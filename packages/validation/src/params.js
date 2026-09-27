@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { cursor, objectId, pageSlug, productParam, storeSlug } from './primitives.js';
 import { PLAN_ORDER } from '@storekit/shared';
+import { policyType } from './settings.js';
 
 /**
  * Path parameters.
@@ -35,6 +36,7 @@ export const PARAM_SCHEMAS = Object.freeze({
   slug: storeSlug,
   pageSlug,
   productParam,
+  policyType,
 });
 
 export const changePlanSchema = z.object({ planId: z.enum(PLAN_ORDER) }).strict();

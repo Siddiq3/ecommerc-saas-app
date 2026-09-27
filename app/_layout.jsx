@@ -108,6 +108,8 @@ const Navigation = () => {
         <Stack.Screen name="help" options={{ title: 'Help' }} />
         <Stack.Screen name="settings/store" options={{ title: 'Store details & payments' }} />
         <Stack.Screen name="settings/delivery" options={{ title: 'Delivery' }} />
+        <Stack.Screen name="settings/policies/index" options={{ title: 'Store Policies' }} />
+        <Stack.Screen name="settings/policies/[type]" options={{ title: 'Policy' }} />
         <Stack.Screen name="settings/profile" options={{ title: 'Your profile' }} />
         <Stack.Screen name="settings/security" options={{ title: 'Security' }} />
         <Stack.Screen name="settings/subscription" options={{ title: 'Subscription' }} />

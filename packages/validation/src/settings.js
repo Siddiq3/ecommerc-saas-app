@@ -256,6 +256,64 @@ export const updateBusinessSchema = z
   })
   .strict();
 
+/* ───────────── Policies ───────────── */
+
+/**
+ * The four customer-facing policy documents. Fixed: a store cannot add a fifth. `slug` is the
+ * storefront address (/policies/<slug>); `title` is the standard name a new document starts with.
+ */
+export const POLICY_DOCUMENTS = Object.freeze({
+  privacy: Object.freeze({ slug: 'privacy-policy', title: 'Privacy Policy' }),
+  terms: Object.freeze({ slug: 'terms', title: 'Terms & Conditions' }),
+  refund: Object.freeze({ slug: 'refund-policy', title: 'Refund & Cancellation Policy' }),
+  shipping: Object.freeze({ slug: 'shipping-policy', title: 'Shipping & Delivery Policy' }),
+});
+export const POLICY_TYPES = Object.freeze(Object.keys(POLICY_DOCUMENTS));
+export const policyType = z.enum(POLICY_TYPES, { errorMap: () => ({ message: 'Unknown policy' }) });
+
+/**
+ * A policy's text. Markdown-style plain text: "<" is refused (prose), so no document can ever
+ * carry an HTML tag, and the storefront renders it as text. 10,000 characters is a long policy;
+ * four of them stay well inside the settings item's size.
+ */
+export const POLICY_MAX_CHARS = 10000;
+export const RETURN_WINDOW_MAX_DAYS = 365;
+
+/**
+ * One document's changes. Every field is optional and there are no defaults: what is sent is
+ * changed, what is left out is kept, so saving one document never touches another.
+ */
+export const policyDocumentPatchSchema = z
+  .object({
+    enabled: z.boolean({ invalid_type_error: 'Choose whether customers can see it' }).optional(),
+    title: shortText(2, 80, 'Title').optional(),
+    content: prose(POLICY_MAX_CHARS, { label: 'Policy text' }).optional(),
+  })
+  .strict();
+
+export const updatePoliciesSchema = z
+  .object({
+    /** The return rule customers see: "[N]-day return policy", or "No returns allowed". */
+    trade: z
+      .object({
+        returnsAllowed: z.boolean({ invalid_type_error: 'Choose whether you accept returns' }).optional(),
+        returnWindowDays: z
+          .number({ invalid_type_error: 'Enter the number of days' })
+          .int('Enter whole days')
+          .min(1, 'The return window is at least 1 day')
+          .max(RETURN_WINDOW_MAX_DAYS, `The return window is at most ${RETURN_WINDOW_MAX_DAYS} days`)
+          .optional(),
+      })
+      .strict()
+      .optional(),
+    documents: z
+      .object(Object.fromEntries(POLICY_TYPES.map((type) => [type, policyDocumentPatchSchema.optional()])))
+      .strict()
+      .optional(),
+  })
+  .strict()
+  .refine((v) => v.trade !== undefined || v.documents !== undefined, 'Nothing to save');
+
 /** Changing a slug breaks every shared link, so it is separate and heavily rate limited. */
 export const changeSlugSchema = z
   .object({

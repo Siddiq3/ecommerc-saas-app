@@ -9,7 +9,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "lint": "eslint app src --ext .js,.jsx",
-    "test": "node scripts/verify-no-payment-code.mjs && node scripts/verify-routes.mjs && node scripts/verify-store-styles.mjs && node scripts/verify-variants.mjs && node scripts/verify-help.mjs && node scripts/verify-delivery.mjs",
+    "test": "node scripts/verify-no-payment-code.mjs && node scripts/verify-routes.mjs && node scripts/verify-store-styles.mjs && node scripts/verify-variants.mjs && node scripts/verify-help.mjs && node scripts/verify-delivery.mjs && node scripts/verify-policies.mjs",
     "verify:compliance": "node scripts/verify-no-payment-code.mjs",
     "verify:endpoints": "node scripts/verify-endpoints.mjs",
     "bundle:check": "expo export --platform all --output-dir .expo/export-check",
