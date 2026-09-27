@@ -15,6 +15,7 @@ import { AuthProvider, useAuth } from '../src/state/auth.jsx';
 import { OnboardingProvider } from '../src/state/onboarding.jsx';
 import { PlanProvider, usePlan } from '../src/state/plan.jsx';
 import { ToastProvider } from '../src/components/Toast.jsx';
+import { PlanLock } from '../src/components/PlanLock.jsx';
 import { colors, type } from '../src/theme.js';
 
 /**
@@ -112,6 +113,8 @@ const Navigation = () => {
         <Stack.Screen name="settings/subscription" options={{ title: 'Subscription' }} />
         <Stack.Screen name="settings/domain" options={{ title: 'Custom domain' }} />
       </Stack>
+      {/* Over every screen once the plan lapses: nothing else is reachable until they pay or sign out. */}
+      <PlanLock />
     </>
   );
 };

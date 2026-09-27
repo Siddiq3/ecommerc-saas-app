@@ -10,7 +10,7 @@
  * `action.url` opens outside the app instead.
  */
 
-const STOREFRONT_HOST = String(process.env.EXPO_PUBLIC_STOREFRONT_HOST ?? 'storekit.site');
+export const STOREFRONT_HOST = String(process.env.EXPO_PUBLIC_STOREFRONT_HOST ?? 'storekit.site');
 
 export const HELP_CATEGORIES = [
   {
