@@ -18,6 +18,7 @@ const withKey = () => ({ headers: { 'X-Idempotency-Key': idempotencyKey() } });
 
 export const auth = {
   signup: (input) => api.post('/auth/signup', input, { auth: false }),
+  emailAvailable: (email) => api.get(`/auth/email-available${qs({ email })}`, { auth: false }),
   login: (input) => api.post('/auth/login', input, { auth: false }),
   requestOtp: (email, purpose) => api.post('/auth/otp/request', { email, purpose }, { auth: false }),
   verifyOtp: (input) => api.post('/auth/otp/verify', input, { auth: false }),
@@ -41,11 +42,15 @@ export const auth = {
 
 export const businesses = {
   list: () => api.get('/businesses'),
+  /** The full store record, with `description` and `contact`, which `/auth/me` does not carry. */
+  get: (businessId) => api.get(`/businesses/${businessId}`),
   create: (input) => api.post('/businesses', input),
   /** Replaces `contact` wholesale — send every contact field, not just the changed one. */
   update: (businessId, input) => api.patch(`/businesses/${businessId}`, input),
   /** Makes the storefront publicly reachable; refused with a list of what is still missing. */
   publish: (businessId) => api.post(`/businesses/${businessId}/publish`, {}),
+  /** Takes the storefront offline again; nothing is deleted. */
+  unpublish: (businessId) => api.post(`/businesses/${businessId}/unpublish`, {}),
   slugAvailable: (slug) => api.get(`/businesses/slug-available${qs({ slug })}`),
   /**
    * Deletes the store and everything in it, permanently. The slug is sent back so the

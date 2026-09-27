@@ -8,6 +8,7 @@ import {
 } from '../../src/components/ui.jsx';
 import { SkeletonScreen } from '../../src/components/Skeleton.jsx';
 import { Thumb } from '../../src/components/domain.jsx';
+import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { useAction, useAsync } from '../../src/lib/useAsync.js';
 import { customers as customersApi } from '../../src/api/endpoints.js';
@@ -20,6 +21,7 @@ export default function CustomerDetail() {
   const router = useRouter();
   const navigation = useNavigation();
   const { businessId } = useAuth();
+  const toast = useToast();
 
   const { data: customer, error, loading, refreshing, onRefresh, reload, setData } = useAsync(
     () => (businessId && customerId ? customersApi.get(businessId, String(customerId)) : Promise.resolve(null)),
@@ -49,7 +51,10 @@ export default function CustomerDetail() {
         : 'Blocking flags them on future orders so you can decide before you pack. It does not stop them ordering.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: customer.blocked ? 'Unblock' : 'Block', onPress: () => toggleBlock().catch(() => undefined) },
+        {
+          text: customer.blocked ? 'Unblock' : 'Block',
+          onPress: () => toggleBlock().catch((err) => toast.error(err?.message ?? 'Could not update this customer. Please try again.')),
+        },
       ],
     );
 

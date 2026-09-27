@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { loginSchema } from '@storekit/validation';
 import { Screen } from '../../src/components/Screen.jsx';
 import { Alert, Body, Button, Display, Field, Touchable } from '../../src/components/ui.jsx';
@@ -22,8 +22,10 @@ import { colors, fonts, space } from '../../src/theme.js';
 export default function Login() {
   const router = useRouter();
   const { signIn } = useAuth();
+  // Sign-up sends a returning merchant here with the email they just typed.
+  const params = useLocalSearchParams();
 
-  const [form, setForm] = useState({ identifier: '', password: '' });
+  const [form, setForm] = useState({ identifier: String(params.email ?? ''), password: '' });
   const [errors, setErrors] = useState({});
 
   const set = (key) => (value) => {

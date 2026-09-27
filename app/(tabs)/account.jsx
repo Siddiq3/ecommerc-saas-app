@@ -160,6 +160,7 @@ export default function Account() {
       </Card>
 
       <Group>
+        <Item icon="storefront-outline" label="Store details & payments" onPress={() => router.push('/settings/store')} />
         <Item
           icon="card-outline"
           label="Subscription"

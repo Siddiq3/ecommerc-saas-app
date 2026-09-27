@@ -4,7 +4,8 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { searchQuery } from '@storekit/validation';
 import { ListScreen } from '../../src/components/Screen.jsx';
-import { Display, Divider, EmptyState, ErrorState, Loading } from '../../src/components/ui.jsx';
+import { Display, Divider, EmptyState, ErrorState } from '../../src/components/ui.jsx';
+import { SkeletonList } from '../../src/components/Skeleton.jsx';
 import { CustomerRow } from '../../src/components/domain.jsx';
 import { FilterChips, SearchBar } from '../../src/components/Filters.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
@@ -72,15 +73,7 @@ export default function Customers() {
     </View>
   );
 
-  if (list.loading && !list.items.length) {
-    return (
-      <ListScreen>
-        <View style={{ paddingTop: insets.top + space.md, paddingHorizontal: space.lg }}>{header}</View>
-        <Loading />
-      </ListScreen>
-    );
-  }
-
+  // One list for every state, so the search box keeps focus while a new query loads.
   return (
     <ListScreen>
       <FlatList
@@ -104,7 +97,9 @@ export default function Customers() {
         onEndReachedThreshold={0.4}
         ListFooterComponent={list.loadingMore ? <ActivityIndicator style={styles.more} color={colors.accent600} /> : null}
         ListEmptyComponent={
-          list.error ? (
+          list.loading ? (
+            <View style={styles.skeleton}><SkeletonList count={6} /></View>
+          ) : list.error ? (
             <ErrorState error={list.error} onRetry={list.reload} />
           ) : (
             <EmptyState
@@ -129,4 +124,5 @@ const styles = StyleSheet.create({
   header: { paddingBottom: space.md, backgroundColor: colors.canvas },
   title: { fontSize: 28, marginBottom: space.sm },
   more: { paddingVertical: space.xl },
+  skeleton: { paddingHorizontal: space.lg },
 });

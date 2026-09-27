@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Alert as RNAlert, Image, StyleSheet, View } from 'react-native';
+import { Alert as RNAlert, BackHandler, Image, Platform, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { formatMoney, discountPercent } from '@storekit/shared';
 import { updateStockSchema, wholeNumberText } from '@storekit/validation';
 import { Screen } from '../../src/components/Screen.jsx';
 import {
-  Body, Button, Caption, Card, Divider, ErrorState, Field, Figure, Heading, Pill, Row, Touchable,
+  Alert, Body, Button, Caption, Card, Divider, ErrorState, Field, Figure, Heading, Pill, Row, Touchable,
 } from '../../src/components/ui.jsx';
 import { Thumb } from '../../src/components/domain.jsx';
 import { Sheet } from '../../src/components/Sheet.jsx';
@@ -55,7 +55,7 @@ export default function ProductDetail() {
     toast.success('Changes saved');
   });
 
-  const { run: adjustStock, pending: adjusting } = useAction(async (payload) => {
+  const { run: adjustStock, pending: adjusting, error: adjustError, clearError: clearAdjustError } = useAction(async (payload) => {
     const updated = await productsApi.setStock(businessId, String(productId), payload);
     setData((prev) => ({ ...prev, stock: updated.stock ?? prev.stock }));
     setStockSheet(false);
@@ -100,6 +100,14 @@ export default function ProductDetail() {
     toast.success(updated.active ? 'Product is live' : 'Product hidden');
   });
 
+  // Reports success only once the API has actually deleted it: a failed request (offline, a
+  // server error) says so and leaves the merchant on the product, which still exists.
+  const { run: removeProduct, pending: removing } = useAction(async () => {
+    await productsApi.remove(businessId, String(productId));
+    toast.info('Product deleted');
+    router.back();
+  });
+
   const confirmDelete = () =>
     RNAlert.alert(
       'Delete this product?',
@@ -109,14 +117,28 @@ export default function ProductDetail() {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: async () => {
-            await productsApi.remove(businessId, String(productId)).catch(() => undefined);
-            toast.info('Product deleted');
-            router.back();
-          },
+          onPress: () =>
+            removeProduct().catch((err) => toast.error(err?.message ?? 'Could not delete this product. Please try again.')),
         },
       ],
     );
+
+  const openStockSheet = () => {
+    clearAdjustError();
+    setStockError(null);
+    setStockSheet(true);
+  };
+
+  // Editing is a mode of this screen, not a screen of its own, so Android's back button
+  // would otherwise leave the product and throw the edits away. Back ends the edit instead.
+  useEffect(() => {
+    if (!editing) return undefined;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setEditing(false);
+      return true;
+    });
+    return () => sub.remove();
+  }, [editing]);
 
   useEffect(() => {
     if (product) navigation.setOptions?.({ title: editing ? 'Edit product' : product.name });
@@ -165,7 +187,7 @@ export default function ProductDetail() {
             full={false}
             style={{ flex: 1 }}
             loading={toggling}
-            onPress={() => toggleVisibility().catch(() => undefined)}
+            onPress={() => toggleVisibility().catch((err) => toast.error(err?.message ?? 'Could not update this product. Please try again.'))}
           />
           <Button title="Edit" full={false} style={{ flex: 1.4 }} onPress={() => setEditing(true)} />
         </Row>
@@ -232,7 +254,7 @@ export default function ProductDetail() {
               <Caption style={styles.updateLinkText}>Per option</Caption>
             </Touchable>
           ) : product.trackInventory ? (
-            <Touchable onPress={() => setStockSheet(true)} haptics="tap" style={styles.updateLink}>
+            <Touchable onPress={openStockSheet} haptics="tap" style={styles.updateLink}>
               <Ionicons name="add-circle-outline" size={14} color={colors.accent700} />
               <Caption style={styles.updateLinkText}>Update</Caption>
             </Touchable>
@@ -281,12 +303,13 @@ export default function ProductDetail() {
         </Card>
       ) : null}
 
-      <Touchable onPress={confirmDelete} style={styles.deleteRow} accessibilityLabel="Delete product">
+      <Touchable onPress={confirmDelete} disabled={removing} style={styles.deleteRow} accessibilityLabel="Delete product">
         <Ionicons name="trash-outline" size={18} color={colors.danger} />
-        <Body style={{ color: colors.danger }}>Delete this product</Body>
+        <Body style={{ color: colors.danger }}>{removing ? 'Deleting…' : 'Delete this product'}</Body>
       </Touchable>
 
       <Sheet visible={stockSheet} onClose={() => setStockSheet(false)} title="Update stock">
+        <Alert message={adjustError?.message} />
         <Row gap={space.sm} style={styles.modeRow}>
           {[
             { value: 'set', label: 'Set to' },
@@ -305,7 +328,8 @@ export default function ProductDetail() {
           label={stockMode === 'set' ? 'New stock count' : 'Change by'}
           value={stockValue}
           onChangeText={(v) => { setStockValue(v); setStockError(null); }}
-          keyboardType={stockMode === 'adjust' ? 'numbers-and-punctuation' : 'number-pad'}
+          // 'numbers-and-punctuation' is iOS only; Android's 'numeric' pad is the one with a minus key.
+          keyboardType={stockMode === 'adjust' ? Platform.select({ ios: 'numbers-and-punctuation', default: 'numeric' }) : 'number-pad'}
           placeholder={stockMode === 'adjust' ? 'e.g. 12 or -3' : '0'}
           autoFocus
           maxLength={8}

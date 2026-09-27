@@ -66,7 +66,7 @@ export default function OrderDetail() {
     if (order) navigation.setOptions?.({ title: order.orderNumber });
   }, [order, navigation]);
 
-  const { run: setStatus, pending: settingStatus, error: statusError } = useAction(async (payload) => {
+  const { run: setStatus, pending: settingStatus, error: statusError, clearError: clearStatusError } = useAction(async (payload) => {
     const updated = await ordersApi.setStatus(businessId, String(orderId), payload);
     setData(updated);
     setSheet(null);
@@ -74,7 +74,7 @@ export default function OrderDetail() {
     toast.success('Order updated');
   });
 
-  const { run: verifyPayment, pending: verifying, error: verifyError } = useAction(async (payload) => {
+  const { run: verifyPayment, pending: verifying, error: verifyError, clearError: clearVerifyError } = useAction(async (payload) => {
     const updated = await paymentsApi.verify(businessId, String(orderId), payload);
     setData(updated);
     setSheet(null);
@@ -82,7 +82,7 @@ export default function OrderDetail() {
     toast.success('Payment verified');
   });
 
-  const { run: rejectPayment, pending: rejecting, error: rejectError } = useAction(async (payload) => {
+  const { run: rejectPayment, pending: rejecting, error: rejectError, clearError: clearRejectError } = useAction(async (payload) => {
     const updated = await paymentsApi.reject(businessId, String(orderId), payload);
     setData(updated);
     setSheet(null);
@@ -90,7 +90,7 @@ export default function OrderDetail() {
     toast.info('Payment rejected');
   });
 
-  const { run: cancelOrder, pending: cancelling, error: cancelError } = useAction(async (payload) => {
+  const { run: cancelOrder, pending: cancelling, error: cancelError, clearError: clearCancelError } = useAction(async (payload) => {
     const updated = await ordersApi.cancel(businessId, String(orderId), payload);
     setData(updated);
     setSheet(null);
@@ -115,6 +115,17 @@ export default function OrderDetail() {
   };
 
   const noteValue = note.trim() ? { note } : {};
+
+  /** Every sheet opens clean: no note or error carried over from another action. */
+  const openSheet = (name) => {
+    clearStatusError();
+    clearVerifyError();
+    clearRejectError();
+    clearCancelError();
+    setNote('');
+    setNoteError(null);
+    setSheet(name);
+  };
 
   if (loading && !order) {
     return (
@@ -154,10 +165,10 @@ export default function OrderDetail() {
         nextStatuses.length || canCancel ? (
           <Row gap={space.sm}>
             {canCancel ? (
-              <Button title="Cancel order" variant="danger" full={false} style={{ flex: 1 }} onPress={() => setSheet('cancel')} />
+              <Button title="Cancel order" variant="danger" full={false} style={{ flex: 1 }} onPress={() => openSheet('cancel')} />
             ) : null}
             {nextStatuses.length ? (
-              <Button title="Update status" full={false} style={{ flex: 1.4 }} onPress={() => setSheet('status')} />
+              <Button title="Update status" full={false} style={{ flex: 1.4 }} onPress={() => openSheet('status')} />
             ) : null}
           </Row>
         ) : null
@@ -205,10 +216,11 @@ export default function OrderDetail() {
             <Image source={{ uri: order.upi.screenshotUrl }} style={styles.screenshot} resizeMode="contain" />
           ) : null}
 
-          <Row gap={space.sm} style={{ marginTop: space.md }}>
-            <Button title="Not received" variant="secondary" full={false} style={{ flex: 1 }} onPress={() => setSheet('reject')} />
-            <Button title="Payment received" full={false} style={{ flex: 1.3 }} onPress={() => setSheet('verify')} />
-          </Row>
+          {/* Stacked, full width: side by side, both labels wrap onto two lines on phones up to 375pt. */}
+          <View style={styles.verifyActions}>
+            <Button title="Payment received" onPress={() => openSheet('verify')} />
+            <Button title="Not received" variant="secondary" onPress={() => openSheet('reject')} />
+          </View>
         </Card>
       ) : null}
 
@@ -304,6 +316,7 @@ export default function OrderDetail() {
       {/* ───────── Sheets ───────── */}
 
       <Sheet visible={sheet === 'status'} onClose={() => setSheet(null)} title="Move this order to">
+        <Alert message={statusError?.message} />
         {nextStatuses.map((status) => (
           <Touchable
             key={status}
@@ -327,6 +340,7 @@ export default function OrderDetail() {
       </Sheet>
 
       <Sheet visible={sheet === 'verify'} onClose={() => setSheet(null)} title="Confirm you received the money">
+        <Alert message={verifyError?.message} />
         <Body muted>
           Only verify once you have seen {formatMoney(order.totals?.total)} in your own bank or UPI app. Verifying
           marks the order paid and cannot be undone.
@@ -349,6 +363,7 @@ export default function OrderDetail() {
       </Sheet>
 
       <Sheet visible={sheet === 'reject'} onClose={() => setSheet(null)} title="Why are you rejecting this?">
+        <Alert message={rejectError?.message} />
         {REJECT_REASONS.map((reason) => (
           <Touchable key={reason.value} onPress={() => setRejectReason(reason.value)} style={styles.sheetRow}>
             <Body style={{ flex: 1 }}>{reason.label}</Body>
@@ -375,6 +390,7 @@ export default function OrderDetail() {
       </Sheet>
 
       <Sheet visible={sheet === 'cancel'} onClose={() => setSheet(null)} title="Cancel this order">
+        <Alert message={cancelError?.message} />
         {CANCELLATION_REASONS.map((reason) => (
           <Touchable key={reason} onPress={() => setCancelReason(reason)} style={styles.sheetRow}>
             <Body style={{ flex: 1 }}>{CANCELLATION_REASON_LABELS[reason]}</Body>
@@ -420,6 +436,7 @@ const TotalLine = ({ label, value }) => (
 );
 
 const styles = StyleSheet.create({
+  verifyActions: { marginTop: space.md, gap: space.sm },
   head: { marginBottom: space.lg },
   card: { marginBottom: space.lg },
   cardHead: { padding: space.lg, paddingBottom: space.md },

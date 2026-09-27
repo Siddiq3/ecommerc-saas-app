@@ -6,6 +6,7 @@ import { Screen } from '../../src/components/Screen.jsx';
 import {
   Alert, Body, Button, Caption, Card, Divider, Field, Heading, Loading, Pill, Row, Touchable,
 } from '../../src/components/ui.jsx';
+import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { useAction, useAsync } from '../../src/lib/useAsync.js';
 import { check, mergeErrors } from '../../src/lib/validation.js';
@@ -21,6 +22,7 @@ import { colors, space } from '../../src/theme.js';
  */
 export default function Security() {
   const { signOut } = useAuth();
+  const toast = useToast();
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -52,7 +54,14 @@ export default function Security() {
           text: 'Sign out everywhere',
           style: 'destructive',
           onPress: async () => {
-            await authApi.revokeAllSessions().catch(() => undefined);
+            // Only once the other devices really are signed out: signing out just this phone
+            // after a failed call would leave the merchant believing the rest are too.
+            try {
+              await authApi.revokeAllSessions();
+            } catch (err) {
+              toast.error(err?.message ?? 'Could not sign out your other devices. Please try again.');
+              return;
+            }
             await signOut();
           },
         },

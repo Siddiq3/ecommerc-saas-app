@@ -101,17 +101,7 @@ export default function Products() {
     </View>
   );
 
-  if (list.loading && !list.items.length) {
-    return (
-      <ListScreen>
-        <View style={{ paddingTop: insets.top + space.md, paddingHorizontal: space.lg }}>
-          {header}
-          <SkeletonList count={6} thumb={58} />
-        </View>
-      </ListScreen>
-    );
-  }
-
+  // One list for every state, so the search box keeps focus while a new query loads.
   return (
     <ListScreen
       footer={(
@@ -140,7 +130,9 @@ export default function Products() {
         onEndReachedThreshold={0.4}
         ListFooterComponent={list.loadingMore ? <ActivityIndicator style={styles.more} color={colors.accent600} /> : null}
         ListEmptyComponent={
-          list.error ? (
+          list.loading ? (
+            <View style={styles.skeleton}><SkeletonList count={6} thumb={58} /></View>
+          ) : list.error ? (
             <ErrorState error={list.error} onRetry={list.reload} />
           ) : (
             <EmptyState
@@ -183,4 +175,5 @@ const styles = StyleSheet.create({
   },
   iconButtonText: { fontSize: 13, color: colors.ink700 },
   more: { paddingVertical: space.xl },
+  skeleton: { paddingHorizontal: space.lg },
 });

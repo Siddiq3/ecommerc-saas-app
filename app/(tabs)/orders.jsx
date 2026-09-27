@@ -64,10 +64,14 @@ export default function Orders() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  /* Arriving from a dashboard shortcut carries a filter in the route params. */
+  /*
+   * Arriving from a dashboard shortcut carries a filter in the route params. A shortcut sets
+   * the whole filter: "New orders" after "Payments" must not keep the payment filter too.
+   */
   useEffect(() => {
-    if (params.status) setStatus(String(params.status));
-    if (params.paymentStatus) setPaymentStatus(String(params.paymentStatus));
+    if (!params.status && !params.paymentStatus) return;
+    setStatus(String(params.status ?? 'all'));
+    setPaymentStatus(String(params.paymentStatus ?? 'all'));
   }, [params.status, params.paymentStatus]);
 
   const list = usePaginated(
@@ -79,6 +83,9 @@ export default function Orders() {
   );
 
   useFocusEffect(useRefreshOnFocus(list.reload));
+
+  const filtered = Boolean(query) || status !== 'all' || paymentStatus !== 'all';
+  const verifying = !query && status === 'all' && paymentStatus === 'PENDING_VERIFICATION';
 
   const header = (
     <View style={styles.header}>
@@ -99,17 +106,9 @@ export default function Orders() {
     </View>
   );
 
-  if (list.loading && !list.items.length) {
-    return (
-      <ListScreen>
-        <View style={{ paddingTop: insets.top + space.md, paddingHorizontal: space.lg }}>
-          {header}
-          <SkeletonList count={6} />
-        </View>
-      </ListScreen>
-    );
-  }
-
+  // One list for every state, so the header (and the search box being typed in) stays
+  // mounted while a new filter loads; swapping to a separate loading layout would drop the
+  // keyboard mid-word.
   return (
     <ListScreen>
       <FlatList
@@ -135,17 +134,21 @@ export default function Orders() {
           list.loadingMore ? <ActivityIndicator style={styles.more} color={colors.accent600} /> : null
         }
         ListEmptyComponent={
-          list.error ? (
+          list.loading ? (
+            <View style={styles.skeleton}><SkeletonList count={6} /></View>
+          ) : list.error ? (
             <ErrorState error={list.error} onRetry={list.reload} />
           ) : (
             <EmptyState
-              icon="🧾"
-              tint={query || status !== 'all' ? colors.sunken : colors.accent50}
-              title={query || status !== 'all' ? 'Nothing matches' : 'No orders yet'}
+              icon={verifying ? '✅' : '🧾'}
+              tint={filtered && !verifying ? colors.sunken : colors.accent50}
+              title={verifying ? 'No payments to verify' : filtered ? 'Nothing matches' : 'No orders yet'}
               message={
-                query || status !== 'all'
-                  ? 'Try a different filter or search term.'
-                  : 'Orders placed on your store will appear here as they come in. Share your store link to get your first one.'
+                verifying
+                  ? 'When a customer sends a UPI reference, the order shows up here for you to check.'
+                  : filtered
+                    ? 'Try a different filter or search term.'
+                    : 'Orders placed on your store will appear here as they come in. Share your store link to get your first one.'
               }
             />
           )
@@ -161,4 +164,5 @@ const styles = StyleSheet.create({
   header: { paddingBottom: space.md, backgroundColor: colors.canvas },
   title: { fontSize: 28, marginBottom: space.sm },
   more: { paddingVertical: space.xl },
+  skeleton: { paddingHorizontal: space.lg },
 });
