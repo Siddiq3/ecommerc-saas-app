@@ -53,7 +53,8 @@
         "expo-image-picker",
         {
           "photosPermission": "StoreKit uses your photos so you can add pictures of your products.",
-          "cameraPermission": "StoreKit uses your camera so you can photograph your products."
+          "cameraPermission": "StoreKit uses your camera so you can photograph your products.",
+          "microphonePermission": false
         }
       ],
       "@react-native-community/datetimepicker",
@@ -63,7 +64,12 @@
       "typedRoutes": false
     },
     "extra": {
-      "router": {}
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "895e1749-cc6e-484b-b5c3-724556156a81"
+      }
     }
   }
 }
