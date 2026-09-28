@@ -4,6 +4,7 @@ import { Stack, useRouter, useSegments, useRootNavigationState } from 'expo-rout
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
+import { Ionicons } from '@expo/vector-icons';
 import { Urbanist_600SemiBold, Urbanist_700Bold } from '@expo-google-fonts/urbanist';
 import {
   PlusJakartaSans_400Regular,
@@ -130,6 +131,9 @@ export default function RootLayout() {
    * screen for a few hundred milliseconds is the cheaper trade.
    */
   const [fontsLoaded, fontError] = useFonts({
+    // The icon font too: left to load itself on first use, it can fail in a release build and
+    // every icon renders blank. Loaded here, it is ready before any screen draws.
+    ...Ionicons.font,
     Urbanist_600SemiBold,
     Urbanist_700Bold,
     PlusJakartaSans_400Regular,
