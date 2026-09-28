@@ -32,7 +32,8 @@ const httpsUrl = (name, value) => {
 
 httpsUrl('EXPO_PUBLIC_API_URL', need('EXPO_PUBLIC_API_URL'));
 httpsUrl('EXPO_PUBLIC_STOREFRONT_URL', need('EXPO_PUBLIC_STOREFRONT_URL'));
-need('EXPO_PUBLIC_STOREFRONT_HOST');
+// The StoreKit website (terms, privacy): replaced EXPO_PUBLIC_STOREFRONT_HOST.
+httpsUrl('EXPO_PUBLIC_WEB_URL', need('EXPO_PUBLIC_WEB_URL'));
 
 for (const name of Object.keys(process.env)) {
   if (name.startsWith('EXPO_PUBLIC_') && /(SECRET|TOKEN|PASSWORD|PRIVATE|API_KEY)/i.test(name)) {
