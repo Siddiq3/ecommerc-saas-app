@@ -12,6 +12,7 @@ import { useAction } from '../src/lib/useAsync.js';
 import { notifications as notificationsApi } from '../src/api/endpoints.js';
 import { relativeTime } from '../src/lib/format.js';
 import { colors, radius, space } from '../src/theme.js';
+import { notificationTarget } from '../src/lib/notifications.js';
 
 /** Activity: what happened in the store while the merchant was not looking. */
 
@@ -47,8 +48,8 @@ export default function Notifications() {
       list.patchItem('notificationId', item.notificationId, { read: true });
       notificationsApi.markRead(businessId, item.notificationId).catch(() => undefined);
     }
-    if (item.orderId) router.push(`/orders/${item.orderId}`);
-    else if (item.productId) router.push(`/products/${item.productId}`);
+    const target = notificationTarget(item);
+    if (target) router.push(target);
   };
 
   if (list.loading && !list.items.length) return <SkeletonScreen />;
