@@ -3,9 +3,7 @@ import { Alert as RNAlert, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { changePasswordSchema } from '@storekit/validation';
 import { Screen } from '../../src/components/Screen.jsx';
-import {
-  Alert, Body, Button, Caption, Card, Divider, Field, Heading, Loading, Pill, Row, Touchable,
-} from '../../src/components/ui.jsx';
+import { Alert, Body, Button, Caption, Card, Divider, Heading, Loading, PasswordField, Pill, Row, Touchable } from '../../src/components/ui.jsx';
 import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { useAction, useAsync } from '../../src/lib/useAsync.js';
@@ -87,24 +85,22 @@ export default function Security() {
       <Alert message={generalError} />
       {changed && !changeError ? <Alert message="Your password has been changed." tone="success" /> : null}
 
-      <Field
+      <PasswordField
         label="Current password"
         placeholder="Enter your current password"
         value={currentPassword}
         onChangeText={(v) => { setCurrentPassword(v); if (errors.currentPassword) setErrors((p) => ({ ...p, currentPassword: undefined })); }}
         maxLength={128}
-        secureTextEntry
         autoCapitalize="none"
         autoComplete="current-password"
         error={fieldErrors.currentPassword}
       />
-      <Field
+      <PasswordField
         label="New password"
         placeholder="Enter a new password"
         value={newPassword}
         onChangeText={(v) => { setNewPassword(v); if (errors.newPassword) setErrors((p) => ({ ...p, newPassword: undefined })); }}
         maxLength={128}
-        secureTextEntry
         autoCapitalize="none"
         autoComplete="new-password"
         hint="Twelve characters or more, with at least one letter and one number."

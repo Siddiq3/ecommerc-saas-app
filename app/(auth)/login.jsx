@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { loginSchema } from '@storekit/validation';
 import { Screen } from '../../src/components/Screen.jsx';
-import { Alert, Body, Button, Display, Field, Touchable } from '../../src/components/ui.jsx';
+import { Alert, Body, Button, Display, Field, PasswordField, Touchable } from '../../src/components/ui.jsx';
 import { Logo } from '../../src/components/Brand.jsx';
 import { FadeIn } from '../../src/components/motion.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
@@ -79,12 +79,11 @@ export default function Login() {
           error={fieldErrors.identifier}
         />
 
-        <Field
+        <PasswordField
           label="Password"
           value={form.password}
           onChangeText={set('password')}
           placeholder="Enter your password"
-          secureTextEntry
           autoCapitalize="none"
           autoComplete="current-password"
           textContentType="password"

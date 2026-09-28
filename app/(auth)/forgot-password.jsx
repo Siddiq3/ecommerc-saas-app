@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { forgotPasswordSchema, resetPasswordSchema } from '@storekit/validation';
 import { Screen } from '../../src/components/Screen.jsx';
-import { Alert, Body, Button, Display, Field } from '../../src/components/ui.jsx';
+import { Alert, Body, Button, Display, Field, PasswordField } from '../../src/components/ui.jsx';
 import { Logo } from '../../src/components/Brand.jsx';
 import { FadeIn } from '../../src/components/motion.jsx';
 import { useAction } from '../../src/lib/useAsync.js';
@@ -123,12 +123,11 @@ export default function ForgotPassword() {
           error={fieldErrors.code}
         />
 
-        <Field
+        <PasswordField
           label="New password"
           value={newPassword}
           onChangeText={setNewPassword}
           placeholder="Create a new password (min. 8 characters)"
-          secureTextEntry
           autoCapitalize="none"
           autoComplete="new-password"
           textContentType="newPassword"

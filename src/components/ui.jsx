@@ -3,6 +3,7 @@ import { ActivityIndicator, StyleSheet, Text, TextInput, View } from 'react-nati
 import Animated, {
   interpolateColor, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withSpring, withTiming,
 } from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
 import { Collapsible, FadeIn, Press } from './motion.jsx';
 import { colors, fonts, motion, radius, shadow, space, tones, type, MIN_TAP } from '../theme.js';
 
@@ -261,6 +262,34 @@ export const Field = forwardRef(function Field(
       </Collapsible>
       {!error && hint ? <Caption style={styles.fieldHint}>{hint}</Caption> : null}
     </View>
+  );
+});
+
+/**
+ * A password Field with an eye button: tap to see what was typed, tap again to hide it.
+ * Hidden by default; every other Field prop (ref, autoComplete, errors, ...) passes through.
+ */
+export const PasswordField = forwardRef(function PasswordField(props, ref) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <Field
+      ref={ref}
+      {...props}
+      secureTextEntry={!visible}
+      autoCapitalize="none"
+      autoCorrect={false}
+      right={(
+        <Touchable
+          onPress={() => setVisible((v) => !v)}
+          haptics={null}
+          scaleTo={1}
+          hitSlop={10}
+          accessibilityLabel={visible ? 'Hide password' : 'Show password'}
+        >
+          <Ionicons name={visible ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.ink500} />
+        </Touchable>
+      )}
+    />
   );
 });
 
