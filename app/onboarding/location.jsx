@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StepScreen } from '../../src/components/StepScreen.jsx';
 import { Button, Field } from '../../src/components/ui.jsx';
+import { StateField } from '../../src/components/StateField.jsx';
 import { useOnboarding } from '../../src/state/onboarding.jsx';
 import { locationSchema } from '../../src/lib/onboarding.js';
 import { check } from '../../src/lib/validation.js';
@@ -21,7 +22,6 @@ export default function Location() {
 
   const [touched, setTouched] = useState({});
   const cityRef = useRef(null);
-  const stateRef = useRef(null);
   const pincodeRef = useRef(null);
 
   const set = (key) => (value) => update('business', { [key]: value });
@@ -77,25 +77,17 @@ export default function Location() {
         autoCapitalize="words"
         textContentType="addressCity"
         returnKeyType="next"
-        onSubmitEditing={() => stateRef.current?.focus()}
+        onSubmitEditing={() => pincodeRef.current?.focus()}
         maxLength={60}
         error={err('city')}
       />
 
       <View style={styles.pair}>
-        <Field
-          ref={stateRef}
+        <StateField
           containerStyle={styles.state}
-          label="State"
           value={business.state}
-          onChangeText={set('state')}
+          onChange={set('state')}
           onBlur={blur('state')}
-          placeholder="Enter state"
-          autoCapitalize="words"
-          textContentType="addressState"
-          returnKeyType="next"
-          onSubmitEditing={() => pincodeRef.current?.focus()}
-          maxLength={60}
           error={err('state')}
         />
         <Field

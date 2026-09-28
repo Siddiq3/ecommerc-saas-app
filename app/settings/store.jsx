@@ -14,6 +14,7 @@ import { useAuth } from '../../src/state/auth.jsx';
 import { useAction, useAsync } from '../../src/lib/useAsync.js';
 import { check, mergeErrors } from '../../src/lib/validation.js';
 import { pickAndSaveLogo } from '../../src/lib/upload.js';
+import { StateField } from '../../src/components/StateField.jsx';
 import { businesses as businessesApi, storeSettings } from '../../src/api/endpoints.js';
 import { colors, radius, space } from '../../src/theme.js';
 
@@ -394,14 +395,9 @@ export default function StoreSettings() {
           containerStyle={styles.half}
           error={fieldErrors['contact.city']}
         />
-        <Field
-          label="State"
-        placeholder="Enter state"
+        <StateField
           value={form.state}
-          onChangeText={set('state')}
-          autoCapitalize="words"
-          textContentType="addressState"
-          maxLength={60}
+          onChange={set('state')}
           containerStyle={styles.half}
           error={fieldErrors['contact.state']}
         />
