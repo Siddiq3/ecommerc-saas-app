@@ -13,7 +13,7 @@ import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { useAction, useAsync } from '../../src/lib/useAsync.js';
 import { check, mergeErrors } from '../../src/lib/validation.js';
-import { pickAndSaveLogo } from '../../src/lib/upload.js';
+import { pickAndSaveLogo, pickImage, uploadImage } from '../../src/lib/upload.js';
 import { StateField } from '../../src/components/StateField.jsx';
 import { businesses as businessesApi, storeSettings } from '../../src/api/endpoints.js';
 import { colors, radius, space } from '../../src/theme.js';
@@ -21,8 +21,9 @@ import { colors, radius, space } from '../../src/theme.js';
 /**
  * Store details and payments, after onboarding.
  *
- * The logo saves on its own the moment one is chosen (PATCH /businesses/:id { logoKey }), so it
- * never mixes with unsaved edits below.
+ * The logo and the UPI QR save on their own the moment one is chosen (PATCH /businesses/:id
+ * { logoKey }, PATCH .../settings { payments: { ..., upiQrImageKey } }), so neither mixes with
+ * unsaved edits below.
  *
  * Two existing endpoints, each sent only what changed:
  *   PATCH /businesses/:id           name, description, contact (contact is replaced whole)
@@ -132,6 +133,23 @@ export default function StoreSettings() {
     // Home's setup card reads the logo from the session.
     await refreshUser();
     toast.success(remove ? 'Logo removed' : 'Logo saved');
+  });
+
+  /**
+   * Picks, uploads and saves the UPI QR customers scan — or, with `remove`, takes it off. The
+   * payments object is validated whole, so it is sent with its saved values, not unsaved edits.
+   */
+  const { run: changeQr, pending: qrSaving, error: qrError } = useAction(async (remove) => {
+    let upiQrImageKey = null;
+    if (!remove) {
+      const asset = await pickImage();
+      if (!asset) return;
+      upiQrImageKey = (await uploadImage(businessId, asset, { purpose: 'qr' })).imageKey;
+    }
+    const saved = pickKeys(data.settings?.payments ?? {}, [...KEPT_PAYMENT_KEYS, ...PAYMENT_KEYS]);
+    const settings = await storeSettings.update(businessId, { payments: { ...saved, upiQrImageKey } });
+    setData((prev) => ({ ...prev, settings }));
+    toast.success(remove ? 'QR removed' : 'QR saved');
   });
 
   useEffect(() => {
@@ -447,6 +465,32 @@ export default function StoreSettings() {
               hint="Appears next to your UPI ID. Leave blank to use your store name."
               error={fieldErrors['payments.upiPayeeName']}
             />
+
+            <Body strong>Payment QR</Body>
+            <Caption style={styles.qrHint}>Add your UPI QR so customers can scan it to pay.</Caption>
+            <Row gap={space.lg} align="flex-start">
+              <View style={styles.qrBox}>
+                {data.settings?.payments?.upiQrImageUrl ? (
+                  <Image source={{ uri: data.settings.payments.upiQrImageUrl }} style={styles.qr} resizeMode="contain" accessibilityLabel="Your UPI QR" />
+                ) : (
+                  <Ionicons name="qr-code-outline" size={36} color={colors.ink400} />
+                )}
+              </View>
+              <View style={styles.qrActions}>
+                <Button
+                  title={data.settings?.payments?.upiQrImageUrl ? 'Replace QR' : 'Upload QR'}
+                  variant="secondary"
+                  size="sm"
+                  loading={qrSaving}
+                  icon={<Ionicons name="image-outline" size={16} color={colors.ink800} />}
+                  onPress={() => changeQr(false).catch(() => undefined)}
+                />
+                {data.settings?.payments?.upiQrImageUrl ? (
+                  <Button title="Remove" variant="ghost" size="sm" disabled={qrSaving} onPress={() => changeQr(true).catch(() => undefined)} />
+                ) : null}
+              </View>
+            </Row>
+            <Alert message={qrError ? messageFor(qrError, 'Unable to save the QR. Please check your internet connection and try again.') : null} />
           </View>
         ) : null}
       </Card>
@@ -493,6 +537,20 @@ const styles = StyleSheet.create({
   section: { marginTop: space.lg, marginBottom: space.md },
   sectionHint: { marginTop: -space.sm, marginBottom: space.md },
   upiFields: { marginTop: space.md },
+  qrHint: { marginTop: 2, marginBottom: space.md },
+  qrBox: {
+    width: 104,
+    height: 104,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  qr: { width: 96, height: 96 },
+  qrActions: { flex: 1, gap: space.sm, alignItems: 'flex-start' },
   half: { flex: 1 },
   logoBox: {
     width: 72,

@@ -137,7 +137,8 @@ export const paymentSettingsSchema = z
     upiEnabled: z.boolean().default(false),
     upiId: emptyable(upiId),
     upiPayeeName: personName.optional().or(businessName.optional()),
-    upiQrImageKey: objectKey.optional(),
+    /** The owner's own UPI QR, uploaded as an image. null removes it. */
+    upiQrImageKey: objectKey.nullable().optional(),
     upiRequireUtr: z.boolean().default(true),
     upiAllowScreenshot: z.boolean().default(true),
     upiPendingExpiryMinutes: z.number().int().min(0).max(4320).default(1440),
