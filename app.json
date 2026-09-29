@@ -58,7 +58,20 @@
         }
       ],
       "@react-native-community/datetimepicker",
-      "expo-font"
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/ionicons.ttf",
+            "./node_modules/@expo-google-fonts/urbanist/600SemiBold/Urbanist_600SemiBold.ttf",
+            "./node_modules/@expo-google-fonts/urbanist/700Bold/Urbanist_700Bold.ttf",
+            "./node_modules/@expo-google-fonts/plus-jakarta-sans/400Regular/PlusJakartaSans_400Regular.ttf",
+            "./node_modules/@expo-google-fonts/plus-jakarta-sans/500Medium/PlusJakartaSans_500Medium.ttf",
+            "./node_modules/@expo-google-fonts/plus-jakarta-sans/600SemiBold/PlusJakartaSans_600SemiBold.ttf",
+            "./node_modules/@expo-google-fonts/plus-jakarta-sans/700Bold/PlusJakartaSans_700Bold.ttf"
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false
