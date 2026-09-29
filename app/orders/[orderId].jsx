@@ -11,7 +11,7 @@ import {
 } from '@storekit/validation';
 import { Screen } from '../../src/components/Screen.jsx';
 import {
-  Alert, Body, Button, Caption, Card, Divider, ErrorState, Field, Heading, Row, Touchable,
+  Alert, Body, Button, Caption, Card, Divider, ErrorState, Field, Row, Touchable,
 } from '../../src/components/ui.jsx';
 import { OrderTimeline, PaymentPill, StatusPill, Thumb } from '../../src/components/domain.jsx';
 import { Sheet } from '../../src/components/Sheet.jsx';
@@ -168,16 +168,24 @@ export default function OrderDetail() {
               <Button title="Cancel order" variant="danger" full={false} style={{ flex: 1 }} onPress={() => openSheet('cancel')} />
             ) : null}
             {nextStatuses.length ? (
-              <Button title="Update status" full={false} style={{ flex: 1.4 }} onPress={() => openSheet('status')} />
+              // Quieter while a payment waits to be checked: that card holds the one primary action.
+              <Button
+                title="Update status"
+                variant={awaitingVerification ? 'secondary' : 'primary'}
+                full={false}
+                style={{ flex: 1.4 }}
+                onPress={() => openSheet('status')}
+              />
             ) : null}
           </Row>
         ) : null
       }
     >
       <Row style={styles.head}>
+        {/* The order number is already the screen title. */}
         <View style={{ flex: 1 }}>
-          <Heading>{order.orderNumber}</Heading>
-          <Caption>Placed {formatDate(order.createdAt)} · {relativeTime(order.createdAt)}</Caption>
+          <Body strong>Placed {relativeTime(order.createdAt)}</Body>
+          <Caption>{formatDate(order.createdAt)}</Caption>
         </View>
         <StatusPill status={order.status} />
       </Row>

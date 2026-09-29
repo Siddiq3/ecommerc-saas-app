@@ -103,7 +103,7 @@ export default function Security() {
         maxLength={128}
         autoCapitalize="none"
         autoComplete="new-password"
-        hint="Twelve characters or more, with at least one letter and one number."
+        hint="8 or more characters, with a letter and a number."
         error={fieldErrors.newPassword}
       />
       <Button

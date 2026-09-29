@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { Tabs, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,6 +12,18 @@ import { colors, type } from '../../src/theme.js';
  * these rather than hidden in a drawer — a merchant checking an order on a bus should be
  * one tap from anywhere.
  */
+
+/**
+ * Six tabs leave each label about 60pt on a 360pt phone, where "Customers" was cut to
+ * "Custo…". The label shrinks a little to fit instead of truncating.
+ */
+function TabLabel({ color, children }) {
+  return (
+    <Text style={[styles.label, { color }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+      {children}
+    </Text>
+  );
+}
 
 const icon = (name) =>
   function TabIcon({ color, size, focused }) {
@@ -33,7 +45,7 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.accent600,
         tabBarInactiveTintColor: colors.ink500,
-        tabBarLabelStyle: styles.label,
+        tabBarLabel: TabLabel,
         // A fixed height is used as-is while the bottom inset is still added as padding inside
         // it, which squeezed the icons and labels on phones with a home indicator or gesture bar.
         tabBarStyle: [styles.bar, { height: BAR_HEIGHT + insets.bottom }],

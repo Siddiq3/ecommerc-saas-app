@@ -305,7 +305,7 @@ export default function StoreSettings() {
             <Caption>
               {data.business?.logoUrl
                 ? 'Shown at the top of your store.'
-                : 'Your store shows its name until you add one. A logo on a clear background looks best.'}
+                : 'Shown at the top of your store. Works best on a plain background.'}
             </Caption>
           </View>
         </Row>
@@ -422,7 +422,7 @@ export default function StoreSettings() {
       </Row>
       <Field
         label="Pincode"
-        placeholder="Enter pincode"
+        placeholder="6 digits"
         value={form.pincode}
         onChangeText={set('pincode')}
         keyboardType="number-pad"
@@ -459,7 +459,7 @@ export default function StoreSettings() {
               label="Name shown to customers (optional)"
               value={form.upiPayeeName}
               onChangeText={set('upiPayeeName')}
-              placeholder="Enter the name customers should see"
+              placeholder="Your store name"
               autoCapitalize="words"
               maxLength={80}
               hint="Appears next to your UPI ID. Leave blank to use your store name."

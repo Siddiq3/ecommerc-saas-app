@@ -47,7 +47,8 @@ export default function Details() {
 
   const onName = (value) => {
     // Suggest a link from the name until the merchant writes their own.
-    set(business.slugEdited ? { name: value } : { name: value, slug: slugify(value).slice(0, 40) });
+    // Cut to length, a long name could end the link on a hyphen, which the link rule refuses.
+    set(business.slugEdited ? { name: value } : { name: value, slug: slugify(value).slice(0, 40).replace(/-+$/, '') });
   };
 
   const checkSlug = useCallback(async (candidate) => {

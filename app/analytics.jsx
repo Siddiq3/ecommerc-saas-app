@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { formatMoney } from '@storekit/shared';
+import { formatDate, formatMoney } from '@storekit/shared';
 import { Screen } from '../src/components/Screen.jsx';
 import {
   Alert, Body, Caption, Card, Divider, ErrorState, Figure, Heading, Row, Touchable,
@@ -36,6 +36,9 @@ const PRESETS = [
   { value: '30d', label: '30 days' },
   { value: '90d', label: '90 days' },
 ];
+
+/** "30 Aug" for the chart's ends; the API's days are local calendar dates (YYYY-MM-DD). */
+const dayLabel = (day) => (day ? formatDate(`${day}T00:00:00`, undefined, { day: 'numeric', month: 'short' }) : '');
 
 export default function Analytics() {
   const router = useRouter();
@@ -90,7 +93,7 @@ export default function Analytics() {
                 <View style={styles.heroSplit} />
                 <View>
                   <Caption>Avg order</Caption>
-                  <Body strong style={styles.heroMetaValue}>{formatMoney(data?.averageOrderValue)}</Body>
+                  <Body strong style={styles.heroMetaValue}>{formatMoney(Math.round((data?.averageOrderValue ?? 0) / 100) * 100)}</Body>
                 </View>
               </Row>
 
@@ -114,11 +117,11 @@ export default function Analytics() {
                     })}
                   </View>
                   <Row style={styles.chartAxis}>
-                    <Caption>{daily[0]?.date}</Caption>
+                    <Caption>{dayLabel(daily[0]?.date)}</Caption>
                     {daily[peakIndex]?.revenue > 0 ? (
                       <Caption style={styles.peakLabel}>Peak {compactMoney(daily[peakIndex].revenue)}</Caption>
                     ) : null}
-                    <Caption>{daily[daily.length - 1]?.date}</Caption>
+                    <Caption>{dayLabel(daily[daily.length - 1]?.date)}</Caption>
                   </Row>
                 </>
               ) : null}

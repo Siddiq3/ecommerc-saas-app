@@ -94,7 +94,7 @@ export default function Orders() {
         <Display style={styles.titleText}>Orders</Display>
         <HelpButton context="orders" />
       </Row>
-      <SearchBar value={search} onChange={setSearch} error={searchError} placeholder="Search by order number, name or mobile" />
+      <SearchBar value={search} onChange={setSearch} error={searchError} placeholder="Order no., name or mobile" />
       <FilterChips options={STATUS_FILTERS} value={status} onChange={setStatus} />
       {paymentStatus !== 'all' ? (
         <FilterChips

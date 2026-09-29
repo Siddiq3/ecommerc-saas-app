@@ -382,10 +382,10 @@ export default function Coupons() {
         ) : null}
 
         <Field
-          label="Description"
+          label="Description (optional)"
           value={description}
           onChangeText={(v) => { setDescription(v); if (errors.description) setErrors((p) => ({ ...p, description: undefined })); }}
-          placeholder="Enter a note for yourself (optional)"
+          placeholder="A note for yourself"
           maxLength={200}
           error={fieldErrors.description}
         />

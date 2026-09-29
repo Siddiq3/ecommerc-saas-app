@@ -97,7 +97,7 @@ export default function Location() {
           value={business.pincode}
           onChangeText={(value) => set('pincode')(value.replace(/\D/g, ''))}
           onBlur={blur('pincode')}
-          placeholder="Enter pincode"
+          placeholder="6 digits"
           keyboardType="number-pad"
           textContentType="postalCode"
           maxLength={6}

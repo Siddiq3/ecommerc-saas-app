@@ -27,3 +27,21 @@ export const initials = (name) =>
     .join('') || '?';
 
 export const pluralize = (count, singular, plural) => `${count} ${count === 1 ? singular : plural ?? `${singular}s`}`;
+
+/**
+ * A short age for dense list rows: "just now", "22 min ago", "3 hr ago", "yesterday",
+ * "4 days ago", then the date. The full "22 minutes ago" cut off beside an order number on a
+ * 360pt phone. A time in the future (a skewed clock) reads as "just now".
+ */
+export const shortAgo = (iso, now = Date.now()) => {
+  if (!iso) return '';
+  const minutes = Math.floor((now - new Date(iso).getTime()) / 60_000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hr ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'yesterday';
+  if (days < 7) return `${days} days ago`;
+  return formatDate(iso, undefined, { day: 'numeric', month: 'short' });
+};

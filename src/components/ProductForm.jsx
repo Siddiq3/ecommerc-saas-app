@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { formatMoney, toMajor } from '@storekit/shared';
 import { createProductSchema, rupeesText, updateProductSchema, wholeNumberText } from '@storekit/validation';
 import {
-  Alert, Body, Button, Caption, Card, Field, Heading, Row, Toggle, Touchable,
+  Alert, Body, Button, Caption, Card, Field, Heading, Row, SelectField, Toggle, Touchable,
 } from './ui.jsx';
 import { Sheet } from './Sheet.jsx';
 import { VariantEditor, optionsFromVariants, parseValues } from './VariantEditor.jsx';
@@ -45,7 +45,7 @@ const previewPaise = (text) => {
 /** A section heading with an optional caption, so each group reads as a deliberate step. */
 const FormSection = ({ title, hint, children, delay = 0 }) => (
   <FadeIn delay={delay} style={styles.section}>
-    <Heading style={styles.sectionTitle}>{title}</Heading>
+    <Heading style={[styles.sectionTitle, !hint && styles.sectionTitleSolo]}>{title}</Heading>
     {hint ? <Caption style={styles.sectionHint}>{hint}</Caption> : null}
     {children}
   </FadeIn>
@@ -318,15 +318,12 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
           error={fieldErrors.name}
         />
 
-        <Touchable onPress={() => setCategorySheet(true)} style={styles.selectRow} scaleTo={1}>
-          <View style={{ flex: 1 }}>
-            <Caption style={styles.selectLabel}>Category</Caption>
-            <Body style={{ color: selectedCategory ? colors.ink900 : colors.ink400 }}>
-              {selectedCategory?.name ?? 'No category'}
-            </Body>
-          </View>
-          <Ionicons name="chevron-down" size={18} color={colors.ink400} />
-        </Touchable>
+        <SelectField
+          label="Category"
+          value={selectedCategory?.name}
+          placeholder="No category"
+          onPress={() => setCategorySheet(true)}
+        />
 
         <Field
           label="Description"
@@ -337,7 +334,7 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
           multiline
           numberOfLines={4}
           style={styles.textarea}
-          containerStyle={{ marginTop: space.lg, marginBottom: 0 }}
+          containerStyle={{ marginBottom: 0 }}
           error={fieldErrors.description}
         />
       </FormSection>
@@ -548,6 +545,8 @@ const styles = StyleSheet.create({
 
   section: { marginBottom: space.xl },
   sectionTitle: { fontSize: 16, marginBottom: space.xs },
+  /** With no hint beneath, the first label needs the gap the hint would have left. */
+  sectionTitleSolo: { marginBottom: space.md },
   sectionHint: { marginBottom: space.md },
 
   images: { gap: space.sm, paddingVertical: space.xs },
@@ -587,19 +586,6 @@ const styles = StyleSheet.create({
     gap: 2,
   },
 
-  selectRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 60,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.lineStrong,
-    paddingHorizontal: space.lg,
-    paddingVertical: space.sm,
-    marginTop: space.lg,
-  },
-  selectLabel: { marginBottom: 2 },
   textarea: { minHeight: 96, textAlignVertical: 'top', paddingTop: space.md },
   card: {},
   cardDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.line, marginVertical: space.xs },

@@ -127,12 +127,12 @@ export default function ForgotPassword() {
           label="New password"
           value={newPassword}
           onChangeText={setNewPassword}
-          placeholder="Create a new password (min. 8 characters)"
+          placeholder="Create a new password"
           autoCapitalize="none"
           autoComplete="new-password"
           textContentType="newPassword"
           maxLength={128}
-          hint="Eight characters or more, with at least one letter and one number."
+          hint="8 or more characters, with a letter and a number."
           error={fieldErrors.newPassword}
         />
 

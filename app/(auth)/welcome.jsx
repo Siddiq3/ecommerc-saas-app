@@ -7,7 +7,7 @@ import { Logo } from '../../src/components/Brand.jsx';
 import { HeroShowcase } from '../../src/components/HeroShowcase.jsx';
 import { Body, Button, Caption, Display, Row, Touchable } from '../../src/components/ui.jsx';
 import { FadeIn } from '../../src/components/motion.jsx';
-import { colors, fonts, radius, space, type } from '../../src/theme.js';
+import { colors, fonts, space } from '../../src/theme.js';
 
 /**
  * First run.
@@ -22,12 +22,6 @@ import { colors, fonts, radius, space, type } from '../../src/theme.js';
  * here is a fixed offset that would strand the CTA mid-screen on one device and off it on
  * another.
  */
-
-const FEATURES = [
-  { icon: 'receipt-outline', label: 'Orders' },
-  { icon: 'pricetags-outline', label: 'Products' },
-  { icon: 'trending-up-outline', label: 'Insights' },
-];
 
 export default function Welcome() {
   const router = useRouter();
@@ -55,19 +49,6 @@ export default function Welcome() {
           <Body style={styles.subhead}>
             Take orders, manage products and get paid — all from your phone.
           </Body>
-        </FadeIn>
-
-        <FadeIn delay={520}>
-          <Row style={styles.features} gap={space.sm}>
-            {FEATURES.map((feature) => (
-              <View key={feature.label} style={styles.feature}>
-                <View style={styles.featureIcon}>
-                  <Ionicons name={feature.icon} size={17} color={colors.accent700} />
-                </View>
-                <Caption style={styles.featureLabel}>{feature.label}</Caption>
-              </View>
-            ))}
-          </Row>
         </FadeIn>
       </View>
 
@@ -119,18 +100,6 @@ const styles = StyleSheet.create({
     color: colors.ink600,
     maxWidth: 320,
   },
-
-  features: { marginTop: space.xl },
-  feature: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  featureIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: radius.pill,
-    backgroundColor: colors.accent50,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  featureLabel: { ...type.label, color: colors.ink700, marginRight: space.md },
 
   actions: {},
   signInRow: {

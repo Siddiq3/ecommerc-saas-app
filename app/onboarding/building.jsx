@@ -30,17 +30,19 @@ import { colors, fonts, motion, space } from '../../src/theme.js';
  * onboarding draft and a retry starts at the first step that hasn't.
  */
 
+/** Only what the app really does here: create the store, save its details, apply the style. */
 const MESSAGES = [
   'Creating your storefront...',
   'Adding your business details...',
-  'Preparing your product catalog...',
   'Applying your store design...',
-  'Optimizing your storefront...',
   'Almost ready...',
 ];
 
-/** How long the sequence runs at minimum. Six messages at about a second and a half each. */
-const DURATION = 9000;
+/**
+ * How long the sequence runs at minimum: long enough to register, short enough not to feel
+ * like waiting. Four messages at about a second each.
+ */
+const DURATION = 4500;
 const TICK = 250;
 /** Where the bar waits for the real work to finish. */
 const HOLD = 0.96;

@@ -16,15 +16,14 @@ import { notificationTarget } from '../src/lib/notifications.js';
 
 /** Activity: what happened in the store while the merchant was not looking. */
 
+/** One per type the API sends (backend notifications service); anything newer gets a bell. */
 const ICONS = {
   order_created: 'receipt-outline',
   order_cancelled: 'close-circle-outline',
-  payment_submitted: 'card-outline',
-  payment_verified: 'checkmark-circle-outline',
-  payment_rejected: 'alert-circle-outline',
+  upi_submitted: 'shield-checkmark-outline',
   low_stock: 'trending-down-outline',
-  out_of_stock: 'warning-outline',
-  plan_limit: 'lock-closed-outline',
+  domain_active: 'globe-outline',
+  domain_disabled: 'globe-outline',
 };
 
 export default function Notifications() {
@@ -76,7 +75,7 @@ export default function Notifications() {
           <Touchable onPress={() => open(item)} style={styles.row} accessibilityLabel={item.title}>
             <View style={[styles.icon, !item.read && styles.iconUnread]}>
               <Ionicons
-                name={ICONS[item.type] ?? 'ellipse-outline'}
+                name={ICONS[item.type] ?? 'notifications-outline'}
                 size={18}
                 color={item.read ? colors.ink500 : colors.accent700}
               />

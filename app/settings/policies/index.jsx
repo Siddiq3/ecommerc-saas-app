@@ -4,7 +4,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Screen } from '../../../src/components/Screen.jsx';
 import {
-  Alert, Body, Button, Caption, Card, ErrorState, Field, Heading, Pill, Toggle, Touchable,
+  Alert, Body, Button, Caption, Card, Divider, ErrorState, Field, Heading, Toggle, Touchable,
 } from '../../../src/components/ui.jsx';
 import { SkeletonCard } from '../../../src/components/Skeleton.jsx';
 import { useToast } from '../../../src/components/Toast.jsx';
@@ -82,8 +82,8 @@ export default function StorePolicies() {
   return (
     <Screen>
       {/* ───── Product returns ───── */}
-      <Heading style={styles.heading}>Product Returns</Heading>
-      <Caption style={styles.intro}>Set the return rule shown to customers.</Caption>
+      <Heading style={styles.heading}>Returns</Heading>
+      <Caption style={styles.intro}>The return rule customers see on your store.</Caption>
       <Card style={styles.card}>
         <Toggle
           label="Product returns"
@@ -121,30 +121,35 @@ export default function StorePolicies() {
       </Card>
 
       {/* ───── Documents ───── */}
-      <Heading style={styles.heading}>Policy Documents</Heading>
+      <Heading style={styles.heading}>Policy pages</Heading>
       <Caption style={styles.intro}>
-        Shown in your store’s footer. Each starts from a StoreKit template: review and customise it for your business.
+        Linked in your store’s footer. Each starts from a template — review it for your business.
       </Caption>
-      {documentRows(data.documents).map((row) => (
-        <Card key={row.type} style={styles.docCard}>
-          <Toggle
-            label={row.title}
-            hint={row.enabled ? 'Shown on your store' : 'Hidden from customers'}
-            value={row.enabled}
-            disabled={switching}
-            onChange={(enabled) => setVisible(row.type, enabled).catch((err) => toast.error(err?.details?.[0]?.message ?? err?.message ?? 'Could not save'))}
-          />
-          <Touchable
-            onPress={() => router.push(`/settings/policies/${row.type}`)}
-            accessibilityLabel={`Edit ${row.title}`}
-            style={styles.editRow}
-          >
-            <Pill label={row.enabled ? 'Active' : 'Hidden'} tone={row.enabled ? 'green' : 'slate'} />
-            <Body strong style={styles.editText}>Edit policy</Body>
-            <Ionicons name="chevron-forward" size={18} color={colors.accent700} />
-          </Touchable>
-        </Card>
-      ))}
+      {/* One group, like any settings list: the switch says whether it is shown, so no badge repeats it. */}
+      <Card padded={false} style={styles.docList}>
+        {documentRows(data.documents).map((row, index) => (
+          <View key={row.type}>
+            {index > 0 ? <Divider /> : null}
+            <View style={styles.docRow}>
+              <Toggle
+                label={row.title}
+                hint={row.enabled ? 'Shown on your store' : 'Hidden from customers'}
+                value={row.enabled}
+                disabled={switching}
+                onChange={(enabled) => setVisible(row.type, enabled).catch((err) => toast.error(err?.details?.[0]?.message ?? err?.message ?? 'Could not save'))}
+              />
+              <Touchable
+                onPress={() => router.push(`/settings/policies/${row.type}`)}
+                accessibilityLabel={`Edit ${row.title}`}
+                style={styles.editRow}
+              >
+                <Body strong style={styles.editText}>Edit text</Body>
+                <Ionicons name="chevron-forward" size={16} color={colors.accent700} />
+              </Touchable>
+            </View>
+          </View>
+        ))}
+      </Card>
     </Screen>
   );
 }
@@ -155,7 +160,8 @@ const styles = StyleSheet.create({
   card: { marginBottom: space.lg, gap: space.sm },
   days: { marginTop: space.md, marginBottom: space.sm },
   preview: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: space.xs },
-  docCard: { marginBottom: space.md, gap: space.xs },
-  editRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 44 },
-  editText: { flex: 1, textAlign: 'right', color: colors.accent700 },
+  docList: { overflow: 'hidden' },
+  docRow: { paddingHorizontal: space.lg, paddingTop: space.xs },
+  editRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: space.xs, minHeight: 44 },
+  editText: { color: colors.accent700 },
 });

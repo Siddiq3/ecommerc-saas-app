@@ -13,7 +13,7 @@ import { PlanBanner } from '../../src/components/PlanBanner.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { usePlan } from '../../src/state/plan.jsx';
 import { account as accountApi, businesses as businessApi } from '../../src/api/endpoints.js';
-import { storeUrl as storeAddress } from '../../src/lib/storefront.js';
+import { storeUrl as storeAddress, storeHostname } from '../../src/lib/storefront.js';
 import { WEB_URL } from '../../src/lib/help.js';
 import { colors, radius, space, type } from '../../src/theme.js';
 
@@ -48,7 +48,7 @@ export default function Account() {
   };
 
   const confirmSignOut = () =>
-    RNAlert.alert('Sign out?', 'You will need your email, mobile and password to get back in.', [
+    RNAlert.alert('Sign out?', 'You will need your email or mobile number and your password to sign back in.', [
       { text: 'Stay', style: 'cancel' },
       { text: 'Sign out', style: 'destructive', onPress: signOut },
     ]);
@@ -141,7 +141,7 @@ export default function Account() {
           <View style={{ flex: 1 }}>
             <Body strong numberOfLines={1}>{business?.name ?? 'Your store'}</Body>
             {/* Selectable: Help tells owners to press and hold it to copy for Instagram. */}
-            <Caption numberOfLines={1} selectable>{storeUrl ?? 'No store link yet'}</Caption>
+            <Caption numberOfLines={1} selectable>{business?.slug ? storeHostname(business.slug) : 'No store link yet'}</Caption>
           </View>
         </Row>
         {storeUrl ? (
@@ -161,7 +161,7 @@ export default function Account() {
         ) : null}
       </Card>
 
-      <Group>
+      <Group title="Store">
         <Item icon="storefront-outline" label="Store details & payments" onPress={() => router.push('/settings/store')} />
         <Item icon="bicycle-outline" label="Delivery" onPress={() => router.push('/settings/delivery')} />
         <Item icon="shield-checkmark-outline" label="Policies" onPress={() => router.push('/settings/policies')} />

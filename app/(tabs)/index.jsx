@@ -16,7 +16,9 @@ import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { useAction, useAsync, useRefreshOnFocus } from '../../src/lib/useAsync.js';
 import { pickAndSaveLogo } from '../../src/lib/upload.js';
-import { analytics, businesses as businessesApi, products as productsApi } from '../../src/api/endpoints.js';
+import {
+  analytics, businesses as businessesApi, notifications as notificationsApi, products as productsApi,
+} from '../../src/api/endpoints.js';
 import { formatMoney, percentChange } from '../../src/lib/format.js';
 import { storeUrl as storeAddress, storeHostname } from '../../src/lib/storefront.js';
 import { colors, fonts, radius, space, type } from '../../src/theme.js';
@@ -34,18 +36,16 @@ import { colors, fonts, radius, space, type } from '../../src/theme.js';
  * after watching their store go live, and it is still right there.
  */
 
-/** Everything a merchant manages, one tap from Home. Settings is the Account tab. */
+/**
+ * One tap to the store settings a merchant returns to most. Orders, Products, Customers and
+ * Account are tabs, the store opens from the card above, and payments to verify appear in
+ * the attention list — so none of those is repeated here.
+ */
 const SHORTCUTS = [
-  { label: 'Orders', icon: 'receipt-outline', href: '/(tabs)/orders' },
-  { label: 'Products', icon: 'pricetag-outline', href: '/(tabs)/products' },
-  { label: 'Customers', icon: 'people-outline', href: '/(tabs)/customers' },
-  // Payments here means the customer payments waiting on the merchant to confirm them. Where
-  // the store's own payout details are entered is deliberately not in this app (see plan.jsx).
-  { label: 'Payments', icon: 'card-outline', href: '/(tabs)/orders?paymentStatus=PENDING_VERIFICATION' },
+  { label: 'Categories', icon: 'folder-outline', href: '/categories' },
   { label: 'Coupons', icon: 'ticket-outline', href: '/coupons' },
-  { label: 'Website', icon: 'globe-outline', action: 'website' },
+  { label: 'Delivery', icon: 'bicycle-outline', href: '/settings/delivery' },
   { label: 'Analytics', icon: 'bar-chart-outline', href: '/analytics' },
-  { label: 'Settings', icon: 'settings-outline', href: '/(tabs)/account' },
 ];
 
 export default function Dashboard() {
@@ -68,16 +68,25 @@ export default function Dashboard() {
   );
   const hasProducts = (firstProducts?.items?.length ?? 0) > 0;
 
+  // The bell's count. Cosmetic: if it fails, the bell simply shows no number.
+  const { data: unread, reload: reloadUnread } = useAsync(
+    () => (businessId ? notificationsApi.unreadCount(businessId).catch(() => null) : Promise.resolve(null)),
+    [businessId],
+  );
+  const unreadCount = unread?.unread ?? 0;
+
   // Coming back from an order detail should show the new status, not a cached row. While the
   // store has no products yet, the product check is repeated too, so the setup card goes
   // away once the merchant comes back from adding their first one; after that it costs nothing.
   useFocusEffect(useRefreshOnFocus(() => {
     reload();
+    reloadUnread();
     if (!hasProducts) reloadFirstProducts();
   }));
 
   const refreshAll = () => {
     onRefresh();
+    reloadUnread();
     if (!hasProducts) reloadFirstProducts();
     // Opened offline, the owner and store never loaded; a pull is the natural moment to retry.
     if (!user) refreshUser();
@@ -145,8 +154,17 @@ export default function Dashboard() {
           <Caption>{greeting()}, {firstName(user?.name)}</Caption>
           <Display style={styles.storeName} numberOfLines={1}>{business?.name ?? 'Your store'}</Display>
         </View>
-        <Touchable onPress={() => router.push('/notifications')} accessibilityLabel="Activity" style={styles.iconButton}>
+        <Touchable
+          onPress={() => router.push('/notifications')}
+          accessibilityLabel={unreadCount ? `Activity, ${unreadCount} unread` : 'Activity'}
+          style={styles.iconButton}
+        >
           <Ionicons name="notifications-outline" size={22} color={colors.ink700} />
+          {unreadCount ? (
+            <View style={styles.bellBadge}>
+              <Caption style={styles.bellBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Caption>
+            </View>
+          ) : null}
         </Touchable>
       </Row>
 
@@ -168,8 +186,16 @@ export default function Dashboard() {
               <Body strong style={styles.viewText}>View store</Body>
             </Touchable>
             {!isLive ? (
-              <Touchable onPress={publish} disabled={publishing} accessibilityLabel="Publish store" style={styles.publishButton}>
-                <Body strong style={styles.publishText}>{publishing ? 'Publishing…' : 'Publish'}</Body>
+              // Quieter while the setup card is showing: adding a product comes first there.
+              <Touchable
+                onPress={publish}
+                disabled={publishing}
+                accessibilityLabel="Publish store"
+                style={[styles.publishButton, isNew && styles.publishButtonQuiet]}
+              >
+                <Body strong style={[styles.publishText, isNew && styles.publishTextQuiet]}>
+                  {publishing ? 'Publishing…' : 'Publish'}
+                </Body>
               </Touchable>
             ) : null}
           </Row>
@@ -180,7 +206,6 @@ export default function Dashboard() {
 
       {isNew ? (
         <SetupCard
-          storeName={business?.name}
           isLive={isLive}
           hasLogo={Boolean(business?.logoKey)}
           uploadingLogo={uploadingLogo}
@@ -218,7 +243,7 @@ export default function Dashboard() {
           {SHORTCUTS.map((item) => (
             <Touchable
               key={item.label}
-              onPress={() => (item.action === 'website' ? openStore() : router.push(item.href))}
+              onPress={() => router.push(item.href)}
               accessibilityLabel={item.label}
               style={styles.gridTile}
             >
@@ -231,62 +256,68 @@ export default function Dashboard() {
         </View>
       </FadeIn>
 
-      {/* Today's business. The sales figure leads; orders and visitors support it. */}
-      <SectionHeader title="Today" action="Full report" onAction={() => router.push('/analytics')} />
-      {loading && !data ? (
-        <SkeletonStats />
-      ) : (
-        <FadeIn>
-          <Card style={styles.todayCard}>
-            <Row style={styles.todayHead} align="flex-end">
+      {/* Day one: the setup card is the whole story. Three zeroes and an empty order list
+          would only repeat "nothing yet" under it. */}
+      {isNew ? null : (
+        <>
+          {/* Today's business. The sales figure leads; orders and visitors support it. */}
+          <SectionHeader title="Today" action="Full report" onAction={() => router.push('/analytics')} />
+          {loading && !data ? (
+            <SkeletonStats />
+          ) : (
+            <FadeIn>
+              <Card style={styles.todayCard}>
+                <Row style={styles.todayHead} align="flex-end">
+                  <View style={{ flex: 1 }}>
+                    <Caption>Sales today</Caption>
+                    <Figure style={styles.salesFigure}>{formatMoney(today.sales ?? 0)}</Figure>
+                  </View>
+                  <Delta value={percentChange(today.sales ?? 0, yesterday.sales ?? 0)} />
+                </Row>
+
+                {data?.trend?.length ? <Sparkline points={data.trend.map((d) => d.sales)} /> : null}
+
+                <Row style={styles.todayStats}>
+                  <MiniStat label="Orders" value={String(today.orders ?? 0)} icon="receipt-outline" />
+                  <View style={styles.statSplit} />
+                  <MiniStat label="Visitors" value={String(today.visitors ?? 0)} icon="eye-outline" />
+                  <View style={styles.statSplit} />
+                  <MiniStat label="Views" value={String(today.pageViews ?? 0)} icon="albums-outline" />
+                </Row>
+              </Card>
+            </FadeIn>
+          )}
+
+          <SectionHeader
+            title="Recent orders"
+            action={hasOrders ? 'See all' : undefined}
+            onAction={() => router.push('/(tabs)/orders')}
+          />
+          {loading && !data ? (
+            <SkeletonList count={3} />
+          ) : hasOrders ? (
+            <Card padded={false} style={styles.listCard}>
+              <Stagger>
+                {data.recentOrders.map((order, index) => (
+                  <View key={order.orderId}>
+                    {index > 0 ? <Divider /> : null}
+                    <OrderRow order={order} onPress={() => router.push(`/orders/${order.orderId}`)} />
+                  </View>
+                ))}
+              </Stagger>
+            </Card>
+          ) : (
+            <Card style={styles.emptyOrders}>
+              <View style={styles.emptyIcon}>
+                <Ionicons name="receipt-outline" size={22} color={colors.accent700} />
+              </View>
               <View style={{ flex: 1 }}>
-                <Caption>Sales today</Caption>
-                <Figure style={styles.salesFigure}>{formatMoney(today.sales ?? 0)}</Figure>
+                <Body strong>No orders yet</Body>
+                <Caption>Share your store link and your first order will land here.</Caption>
               </View>
-              <Delta value={percentChange(today.sales ?? 0, yesterday.sales ?? 0)} />
-            </Row>
-
-            {data?.trend?.length ? <Sparkline points={data.trend.map((d) => d.sales)} /> : null}
-
-            <Row style={styles.todayStats}>
-              <MiniStat label="Orders" value={String(today.orders ?? 0)} icon="receipt-outline" />
-              <View style={styles.statSplit} />
-              <MiniStat label="Visitors" value={String(today.visitors ?? 0)} icon="eye-outline" />
-              <View style={styles.statSplit} />
-              <MiniStat label="Views" value={String(today.pageViews ?? 0)} icon="albums-outline" />
-            </Row>
-          </Card>
-        </FadeIn>
-      )}
-
-      <SectionHeader
-        title="Recent orders"
-        action={hasOrders ? 'See all' : undefined}
-        onAction={() => router.push('/(tabs)/orders')}
-      />
-      {loading && !data ? (
-        <SkeletonList count={3} />
-      ) : hasOrders ? (
-        <Card padded={false} style={styles.listCard}>
-          <Stagger>
-            {data.recentOrders.map((order, index) => (
-              <View key={order.orderId}>
-                {index > 0 ? <Divider /> : null}
-                <OrderRow order={order} onPress={() => router.push(`/orders/${order.orderId}`)} />
-              </View>
-            ))}
-          </Stagger>
-        </Card>
-      ) : (
-        <Card style={styles.emptyOrders}>
-          <View style={styles.emptyIcon}>
-            <Ionicons name="receipt-outline" size={22} color={colors.accent700} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Body strong>No orders yet</Body>
-            <Caption>Share your store link and your first order will land here.</Caption>
-          </View>
-        </Card>
+            </Card>
+          )}
+        </>
       )}
 
       {data?.lowStockProducts?.length ? (
@@ -316,15 +347,15 @@ export default function Dashboard() {
  * The day-one path. Shown only until the merchant has a product or an order, then it
  * disappears for good — it is scaffolding, not a permanent widget.
  */
-const SetupCard = ({ storeName, isLive, hasLogo, uploadingLogo, onUploadLogo, onAddProduct, onShare }) => (
+const SetupCard = ({ isLive, hasLogo, uploadingLogo, onUploadLogo, onAddProduct, onShare }) => (
   <FadeIn>
     <Card style={styles.setupCard}>
       <Caption style={styles.setupKicker}>GET YOUR STORE SELLING</Caption>
       <Heading style={styles.setupTitle}>A few steps to your first sale</Heading>
       <Body muted style={styles.setupBody}>
         {isLive
-          ? `${storeName ?? 'Your store'} is live, but it needs something to sell before customers can order.`
-          : `Add something to sell, then publish ${storeName ?? 'your store'} so customers can order.`}
+          ? 'Your store is live. Add something to sell so customers can order.'
+          : 'Add something to sell, then publish your store so customers can order.'}
       </Body>
 
       <View style={styles.setupListWrap}>
@@ -442,6 +473,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
+  bellBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    backgroundColor: colors.accent600,
+    borderWidth: 2,
+    borderColor: colors.canvas,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bellBadgeText: { color: '#ffffff', fontFamily: fonts.bold, fontSize: 10, lineHeight: 12 },
+
   storeStrip: {
     gap: space.sm,
     backgroundColor: colors.surface,
@@ -474,6 +521,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent600,
   },
   publishText: { color: '#ffffff', fontSize: 14.5 },
+  publishButtonQuiet: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.accent200 },
+  publishTextQuiet: { color: colors.accent700 },
 
   // Four to a row at every width: tiles take a fixed share and the row spreads the rest as
   // gaps. A fixed 8pt gap plus 23% tiles overflowed by 1pt at 320pt and wrapped into 3+3+2.

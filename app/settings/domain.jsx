@@ -428,7 +428,7 @@ export default function CustomDomain() {
     <Screen refreshing={refreshing} onRefresh={onRefresh}>
       <Stack.Screen
         options={{
-          title: 'Manage domains',
+          title: 'Custom domain',
           headerRight: () => (
             <Touchable onPress={() => setDialog(true)} accessibilityLabel="New domain" style={styles.newButton}>
               <Ionicons name="add" size={18} color={colors.accent700} />
@@ -438,7 +438,7 @@ export default function CustomDomain() {
         }}
       />
 
-      <Heading style={styles.section}>Current StoreKit domain</Heading>
+      <Heading style={styles.section}>StoreKit address</Heading>
       <Card style={styles.card}>
         <Row gap={space.md}>
           <Ionicons name="globe-outline" size={26} color={colors.ink600} />
@@ -454,7 +454,7 @@ export default function CustomDomain() {
         <Caption style={styles.line}>Always works, whatever else you connect.</Caption>
       </Card>
 
-      <Heading style={styles.section}>Custom domain</Heading>
+      <Heading style={styles.section}>Your own domain</Heading>
 
       {capability.message ? (
         <Card style={styles.card}>
@@ -479,9 +479,9 @@ export default function CustomDomain() {
 
       {!custom.length && !adding ? (
         <View style={styles.empty}>
-          <Heading style={{ textAlign: 'center' }}>No custom domain connected</Heading>
+          <Heading style={{ textAlign: 'center' }}>No domain connected</Heading>
           <Body muted style={styles.emptyText}>
-            Tap &quot;New domain&quot; to connect your own domain, so customers can find your store on an address that is yours.
+            Use an address you own, like yourshop.in, for your store.
           </Body>
         </View>
       ) : null}

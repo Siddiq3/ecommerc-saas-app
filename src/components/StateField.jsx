@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Sheet } from './Sheet.jsx';
-import { Body, Caption, Field, Label, Touchable } from './ui.jsx';
+import { Body, Caption, Field, SelectField, Touchable } from './ui.jsx';
 import { canonicalState, matchStates } from '../lib/states.js';
-import { colors, fonts, radius, space, type } from '../theme.js';
+import { colors, fonts, space } from '../theme.js';
 
 /**
  * The state of an address, picked from a list instead of typed — no misspellings, and one tap
@@ -29,17 +29,7 @@ export const StateField = ({ label = 'State', value, onChange, onBlur, error, co
 
   return (
     <View style={[styles.group, containerStyle]}>
-      {label ? <Label style={styles.label}>{label}</Label> : null}
-      <Touchable
-        onPress={() => setOpen(true)}
-        accessibilityRole="button"
-        accessibilityLabel={`${label}: ${value || 'not selected'}. Tap to choose.`}
-        style={[styles.box, error && styles.boxError]}
-      >
-        <Text style={[styles.value, !value && styles.placeholder]} numberOfLines={1}>{value || placeholder}</Text>
-        <Ionicons name="chevron-down" size={18} color={colors.ink500} />
-      </Touchable>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      <SelectField label={label} value={value} placeholder={placeholder} onPress={() => setOpen(true)} error={error} containerStyle={styles.flush} />
 
       <Sheet visible={open} onClose={close} title="Select state">
         <Field
@@ -65,23 +55,8 @@ export const StateField = ({ label = 'State', value, onChange, onBlur, error, co
 
 const styles = StyleSheet.create({
   group: { marginBottom: space.xl },
-  label: { marginBottom: 10, color: colors.ink700 },
-  // The same box as Field, so a form reads as one set of inputs.
-  box: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    minHeight: 58,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderColor: colors.line,
-    paddingHorizontal: space.lg + 2,
-  },
-  boxError: { borderColor: colors.danger, backgroundColor: colors.dangerTint },
-  value: { flex: 1, ...type.body, fontSize: 16.5, lineHeight: 22, fontFamily: fonts.medium, color: colors.ink900 },
-  placeholder: { color: colors.ink400 },
-  error: { ...type.caption, color: colors.danger, marginTop: 7, marginLeft: 2 },
+  // The field brings its own spacing; this wrapper only anchors the sheet.
+  flush: { marginBottom: 0 },
   search: { marginBottom: space.sm },
   empty: { paddingVertical: space.md },
   row: { flexDirection: 'row', alignItems: 'center', minHeight: 48, paddingVertical: space.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line },

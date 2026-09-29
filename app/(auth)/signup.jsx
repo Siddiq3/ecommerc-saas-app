@@ -38,7 +38,9 @@ export default function SignUp() {
   const isTaken = taken !== null && taken === value;
 
   const next = async () => {
-    if (!parsed.success || checking) return;
+    // Pressing Continue on a mistyped address says what is wrong, rather than doing nothing.
+    if (!parsed.success) { setTouched(true); return; }
+    if (checking) return;
     setChecking(true);
     try {
       const { available } = await authApi.emailAvailable(parsed.data);
@@ -60,12 +62,12 @@ export default function SignUp() {
       center
       step={1}
       progress={0.06}
-      title="Create your account on StoreKit"
-      subtitle="This is the gateway to your online store. Enter your email to continue."
+      title="Create your account"
+      subtitle="Start with your email."
       onBack={() => router.back()}
-      footer={
+      footer={<Button title="Continue" size="lg" loading={checking} disabled={!value.trim() || isTaken} onPress={next} />}
+      footerNote={
         <>
-          <Button title="Continue" size="lg" loading={checking} disabled={!parsed.success || isTaken} onPress={next} />
           <Touchable
             onPress={() => router.replace('/(auth)/login')}
             haptics="tap"

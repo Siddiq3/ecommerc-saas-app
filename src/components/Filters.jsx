@@ -57,6 +57,8 @@ export const SearchBar = ({ value, onChange, placeholder = 'Search', error }) =>
       autoCapitalize="none"
       autoCorrect={false}
       returnKeyType="search"
+      // A search box is one line; a long placeholder must never make it two.
+      numberOfLines={1}
       clearButtonMode="while-editing"
       containerStyle={styles.searchField}
       error={error}

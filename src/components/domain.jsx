@@ -5,7 +5,7 @@ import {
 } from '@storekit/shared';
 import { Body, Caption, Pill, Row, Touchable } from './ui.jsx';
 import { colors, fonts, radius, space, type } from '../theme.js';
-import { formatMoney, formatDate, relativeTime, initials } from '../lib/format.js';
+import { formatMoney, formatDate, initials, shortAgo } from '../lib/format.js';
 
 /** Shared pieces that know about the domain: orders, products, customers. */
 
@@ -56,12 +56,21 @@ export const OrderRow = ({ order, onPress }) => (
         </Body>
         <Body style={styles.money}>{formatMoney(order.total)}</Body>
       </Row>
-      <Caption numberOfLines={1}>
-        {order.orderNumber} · {relativeTime(order.createdAt)}
-        {order.itemCount ? ` · ${order.itemCount} item${order.itemCount === 1 ? '' : 's'}` : ''}
-      </Caption>
+      {/* The item count sits under the total, in its own column: at 360pt a third part on the
+          reference line was cut to "3 ite…". The reference line keeps number and age. */}
+      <Row style={{ justifyContent: 'space-between' }} gap={space.sm}>
+        <Caption numberOfLines={1} style={{ flex: 1 }}>
+          {order.orderNumber} · {shortAgo(order.createdAt)}
+        </Caption>
+        {order.itemCount ? (
+          <Caption>{order.itemCount} item{order.itemCount === 1 ? '' : 's'}</Caption>
+        ) : null}
+      </Row>
       <Row gap={space.sm} style={styles.rowPills}>
-        <StatusPill status={order.status} />
+        {/* "Verify payment" says everything "Awaiting payment" would, plus what to do about it. */}
+        {order.paymentStatus === 'PENDING_VERIFICATION' && order.status === 'PENDING_PAYMENT'
+          ? null
+          : <StatusPill status={order.status} />}
         {order.paymentStatus === 'PENDING_VERIFICATION' ? <Pill label="Verify payment" tone="amber" /> : null}
         {order.duplicateUtr ? <Pill label="Duplicate reference" tone="red" /> : null}
       </Row>
@@ -124,7 +133,7 @@ export const CustomerRow = ({ customer, onPress }) => (
       <Caption numberOfLines={1}>
         {customer.mobile ?? '—'}
         {customer.city ? ` · ${customer.city}` : ''}
-        {customer.lastOrderAt ? ` · ${relativeTime(customer.lastOrderAt)}` : ''}
+        {customer.lastOrderAt ? ` · ${shortAgo(customer.lastOrderAt)}` : ''}
       </Caption>
       <Row gap={space.sm} style={styles.rowPills}>
         <Pill label={`${customer.orderCount} order${customer.orderCount === 1 ? '' : 's'}`} tone="slate" />

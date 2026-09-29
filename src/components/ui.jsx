@@ -253,6 +253,9 @@ export const Field = forwardRef(function Field(
           onFocus={(e) => { setFocused(true); onFocus?.(e); }}
           onBlur={(e) => { setFocused(false); onBlur?.(e); }}
           accessibilityLabel={label}
+          // Android measures a one-line input as if its text wrapped, so a long value (an
+          // address, a UPI ID) made the box a line taller than its neighbours.
+          numberOfLines={rest.multiline ? undefined : 1}
           {...rest}
         />
         {right}
@@ -292,6 +295,28 @@ export const PasswordField = forwardRef(function PasswordField(props, ref) {
     />
   );
 });
+
+/**
+ * A field that opens a picker (a sheet) instead of taking typing: the same label, box and
+ * error as Field, with a chevron, so a form reads as one set of inputs.
+ */
+export const SelectField = ({ label, value, placeholder = 'Select', onPress, error, containerStyle }) => (
+  <View style={[styles.fieldGroup, containerStyle]}>
+    {label ? <Label style={styles.fieldLabel}>{label}</Label> : null}
+    <Touchable
+      onPress={onPress}
+      scaleTo={1}
+      accessibilityLabel={`${label}: ${value || 'not selected'}. Tap to choose.`}
+      style={[styles.fieldBox, error && styles.selectError]}
+    >
+      <Text style={[styles.input, styles.selectValue, !value && styles.selectPlaceholder]} numberOfLines={1}>
+        {value || placeholder}
+      </Text>
+      <Ionicons name="chevron-down" size={18} color={colors.ink500} />
+    </Touchable>
+    {error ? <Text style={styles.fieldError}>{error}</Text> : null}
+  </View>
+);
 
 /** A labelled on/off row. Uses a pill rather than Switch so it matches the card styling. */
 export const Toggle = ({ label, hint, value, onChange, disabled }) => {
@@ -508,6 +533,9 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
   },
   fieldError: { ...type.caption, color: colors.danger, marginTop: 7, marginLeft: 2 },
+  selectValue: { paddingVertical: 0 },
+  selectPlaceholder: { color: colors.ink400 },
+  selectError: { borderColor: colors.danger, backgroundColor: colors.dangerTint },
   fieldHint: { marginTop: 7, marginLeft: 2 },
 
   toggleRow: {

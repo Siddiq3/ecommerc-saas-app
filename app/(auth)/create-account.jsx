@@ -89,17 +89,15 @@ export default function CreateAccount() {
       subtitle={account.email}
       onBack={() => router.back()}
       footer={
-        <>
-          <Button
-            title="Continue"
-            size="lg"
-            loading={pending}
-            disabled={!canContinue}
-            onPress={() => run().catch(() => undefined)}
-          />
-          <LegalNote />
-        </>
+        <Button
+          title="Continue"
+          size="lg"
+          loading={pending}
+          disabled={!canContinue}
+          onPress={() => run().catch(() => undefined)}
+        />
       }
+      footerNote={<LegalNote />}
     >
       <Alert message={generalError} />
       {ALREADY_REGISTERED.includes(error?.code) ? (
@@ -150,7 +148,7 @@ export default function CreateAccount() {
         value={account.password}
         onChangeText={edit('password')}
         onBlur={blur('password')}
-        placeholder="Create a password (min. 8 characters)"
+        placeholder="Create a password"
         secureTextEntry={!showPassword}
         autoCapitalize="none"
         autoCorrect={false}

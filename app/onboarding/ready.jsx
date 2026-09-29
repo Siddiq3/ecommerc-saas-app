@@ -83,7 +83,7 @@ export default function Ready() {
 
         <FadeIn delay={350}>
           <Display style={styles.title}>Your store is ready! 🎉</Display>
-          <Body muted style={styles.subtitle}>Your online store has been successfully created.</Body>
+          <Body muted style={styles.subtitle}>Next, add your first product.</Body>
         </FadeIn>
 
         <FadeIn delay={550} distance={24} style={styles.card}>
@@ -106,8 +106,8 @@ export default function Ready() {
       </ScrollView>
 
       <FadeIn delay={900} style={[styles.footer, { paddingBottom: insets.bottom + space.md }]}>
-        <Button title="Go to Dashboard" size="lg" loading={leaving} onPress={goToDashboard} />
-        <Button title="View My Store" size="lg" variant="secondary" disabled={leaving} onPress={view} />
+        <Button title="Continue" size="lg" loading={leaving} onPress={goToDashboard} />
+        <Button title="View store" size="lg" variant="secondary" disabled={leaving} onPress={view} />
       </FadeIn>
     </View>
   );

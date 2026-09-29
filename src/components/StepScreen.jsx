@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -45,6 +45,17 @@ export const BackButton = ({ onPress }) => (
   </Touchable>
 );
 
+/** True while the software keyboard is on screen. */
+const useKeyboardOpen = () => {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => setOpen(true));
+    const hide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setOpen(false));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
+  return open;
+};
+
 export const StepScreen = ({
   step,
   progress,
@@ -56,9 +67,13 @@ export const StepScreen = ({
   center = false,
   headerRight,
   footer,
+  footerNote,
   children,
 }) => {
   const insets = useSafeAreaInsets();
+  // While typing, only the button stays above the keyboard: links and the legal note under
+  // it took so much of the remaining height that the field itself was cut off.
+  const keyboardOpen = useKeyboardOpen();
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -103,7 +118,12 @@ export const StepScreen = ({
         <FadeIn delay={140} distance={16}>{children}</FadeIn>
       </ScrollView>
 
-      {footer ? <View style={[styles.footer, { paddingBottom: insets.bottom + space.md }]}>{footer}</View> : null}
+      {footer ? (
+        <View style={[styles.footer, { paddingBottom: (keyboardOpen ? 0 : insets.bottom) + space.md }]}>
+          {footer}
+          {footerNote && !keyboardOpen ? footerNote : null}
+        </View>
+      ) : null}
     </KeyboardAvoidingView>
   );
 };

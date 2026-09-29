@@ -35,7 +35,7 @@ export default function Category() {
       from={0.2}
       progress={0.42}
       title="Let's set up your business"
-      subtitle="Tell us what you sell so we can personalize your store."
+      subtitle="Tell us what you sell so we can personalise your store."
       footer={
         <Button
           title="Continue"
