@@ -7,6 +7,7 @@ import { Body, Caption, Display, Touchable } from './ui.jsx';
 import { Logo } from './Brand.jsx';
 import { FadeIn } from './motion.jsx';
 import { TOTAL_STEPS } from '../lib/onboarding.js';
+import { KeyboardSpacer } from './KeyboardSpacer.jsx';
 import { colors, fonts, motion, radius, space } from '../theme.js';
 
 /**
@@ -124,6 +125,8 @@ export const StepScreen = ({
           {footerNote && !keyboardOpen ? footerNote : null}
         </View>
       ) : null}
+      {/* Android: the keyboard's own room, so the button sits just above it. */}
+      <KeyboardSpacer />
     </KeyboardAvoidingView>
   );
 };

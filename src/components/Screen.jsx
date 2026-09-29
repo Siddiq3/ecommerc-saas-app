@@ -3,6 +3,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, space } from '../theme.js';
+import { useKeyboardHeight } from '../lib/useKeyboardHeight.js';
+import { KeyboardSpacer } from './KeyboardSpacer.jsx';
 
 /**
  * Page chrome.
@@ -25,6 +27,7 @@ export const Screen = ({
   style,
 }) => {
   const insets = useSafeAreaInsets();
+  const keyboard = useKeyboardHeight();
 
   // Expo Router's stack and tabs already consume the top inset; only the bottom is ours,
   // and only when there is no footer pinned over it.
@@ -61,8 +64,10 @@ export const Screen = ({
     >
       {body}
       {footer ? (
-        <View style={[styles.footer, { paddingBottom: insets.bottom + space.md }]}>{footer}</View>
+        <View style={[styles.footer, { paddingBottom: (keyboard ? 0 : insets.bottom) + space.md }]}>{footer}</View>
       ) : null}
+      {/* Android: the keyboard's own room, below everything, so the footer sits just above it. */}
+      <KeyboardSpacer />
     </KeyboardAvoidingView>
   );
 };

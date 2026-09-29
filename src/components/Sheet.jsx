@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
 import {
-  Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View,
+  KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Heading, Touchable } from './ui.jsx';
+import { useKeyboardHeight } from '../lib/useKeyboardHeight.js';
 import { colors, radius, shadow, space } from '../theme.js';
 
 /**
@@ -23,20 +23,10 @@ import { colors, radius, shadow, space } from '../theme.js';
  *
  * The root is also given the window's size outright. In release builds some sheets (New
  * coupon) still got a root with no size, so they opened invisible over a screen that no
- * longer took taps. A fixed size does not follow the keyboard the way a flexible root did,
- * so on Android it is shortened by the keyboard's height while one is open.
+ * longer took taps. Edge to edge (Android 15+), the window is no longer resized for the
+ * keyboard, so on Android the root is padded by the keyboard's height and the panel sits
+ * just above it.
  */
-const useKeyboardHeight = () => {
-  const [keyboard, setKeyboard] = useState(0);
-  useEffect(() => {
-    if (Platform.OS !== 'android') return undefined;
-    const show = Keyboard.addListener('keyboardDidShow', (e) => setKeyboard(e.endCoordinates?.height ?? 0));
-    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboard(0));
-    return () => { show.remove(); hide.remove(); };
-  }, []);
-  return keyboard;
-};
-
 export const Sheet = ({ visible, onClose, title, children }) => {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
@@ -45,7 +35,7 @@ export const Sheet = ({ visible, onClose, title, children }) => {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <KeyboardAvoidingView
-        style={[styles.root, { width, height: height - keyboard }]}
+        style={[styles.root, { width, height, paddingBottom: keyboard }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close" />

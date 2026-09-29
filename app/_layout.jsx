@@ -158,7 +158,7 @@ export default function RootLayout() {
   if (!ready) {
     return (
       <SafeAreaProvider>
-        <StatusBar style="dark" backgroundColor={colors.canvas} />
+        <StatusBar style="dark" />
         <Boot />
       </SafeAreaProvider>
     );
@@ -166,7 +166,7 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" backgroundColor={colors.canvas} />
+      <StatusBar style="dark" />
       <AuthProvider>
         <PlanProvider>
           <ToastProvider>

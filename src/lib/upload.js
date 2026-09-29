@@ -28,7 +28,7 @@ export const pickImage = async ({ aspect = [1, 1] } = {}) => {
   }
 
   const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    mediaTypes: ['images'],
     // Square, because the storefront grid is square and cropping here beats cropping later.
     allowsEditing: true,
     ...(aspect ? { aspect } : {}),
