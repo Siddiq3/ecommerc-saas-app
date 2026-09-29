@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Linking, Share, StyleSheet, View } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -62,11 +62,26 @@ export default function Dashboard() {
 
   // One cheap call answers "has this merchant added anything yet", which decides between
   // the setup path and the running dashboard. Kept separate so it resolves independently.
-  const { data: firstProducts, reload: reloadFirstProducts } = useAsync(
+  const { data: firstProducts, error: firstProductsError, reload: reloadFirstProducts } = useAsync(
     () => (businessId ? productsApi.list(businessId, { limit: 1 }) : Promise.resolve(null)),
     [businessId],
   );
   const hasProducts = (firstProducts?.items?.length ?? 0) > 0;
+
+  // That check decides the whole layout, so a failure (a slow cold start on the server,
+  // a dropped request) is retried a few times rather than taken to mean "has products".
+  const [productRetries, setProductRetries] = useState(0);
+  // `reload` is a new function each render; the timer must not restart on every one.
+  const retryProducts = useRef(reloadFirstProducts);
+  retryProducts.current = reloadFirstProducts;
+  useEffect(() => {
+    if (!firstProductsError || productRetries >= 3) return undefined;
+    const timer = setTimeout(() => {
+      setProductRetries((n) => n + 1);
+      retryProducts.current();
+    }, 1500 * (productRetries + 1));
+    return () => clearTimeout(timer);
+  }, [firstProductsError, productRetries]);
 
   // The bell's count. Cosmetic: if it fails, the bell simply shows no number.
   const { data: unread, reload: reloadUnread } = useAsync(
@@ -110,6 +125,10 @@ export default function Dashboard() {
   const pending = data?.pending ?? {};
   const hasOrders = (data?.recentOrders?.length ?? 0) > 0;
   const isNew = firstProducts != null && !hasProducts && !hasOrders;
+  // Until the product check has answered, a store with no orders could be brand new or
+  // running: neither layout is shown, so the setup card never flips to "Today" and back.
+  // Once the retries are spent it falls back to the running layout.
+  const layoutUnknown = firstProducts == null && !hasOrders && productRetries < 3;
 
   const actions = [
     { key: 'newOrders', label: 'New orders', count: pending.newOrders, icon: 'sparkles', href: '/(tabs)/orders?status=NEW' },
@@ -258,7 +277,9 @@ export default function Dashboard() {
 
       {/* Day one: the setup card is the whole story. Three zeroes and an empty order list
           would only repeat "nothing yet" under it. */}
-      {isNew ? null : (
+      {layoutUnknown ? (
+        <View style={styles.pendingLayout}><SkeletonStats /></View>
+      ) : isNew ? null : (
         <>
           {/* Today's business. The sales figure leads; orders and visitors support it. */}
           <SectionHeader title="Today" action="Full report" onAction={() => router.push('/analytics')} />
@@ -630,6 +651,7 @@ const styles = StyleSheet.create({
   statSplit: { width: StyleSheet.hairlineWidth, backgroundColor: colors.line, alignSelf: 'stretch' },
 
   sectionHeader: { marginTop: space.xxl, marginBottom: space.md },
+  pendingLayout: { marginTop: space.xxl },
   sectionAction: { ...type.label, color: colors.accent700 },
 
   listCard: { overflow: 'hidden' },
