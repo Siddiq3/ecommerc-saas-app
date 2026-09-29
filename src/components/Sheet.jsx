@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react';
 import {
-  KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View,
+  Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,16 +20,36 @@ import { colors, radius, shadow, space } from '../theme.js';
  * architecture the Modal's root has no size on its first layout, so a percentage of it
  * resolved to zero: the sheet never appeared, yet the Modal window still swallowed every
  * touch and the screen looked frozen.
+ *
+ * The root is also given the window's size outright. In release builds some sheets (New
+ * coupon) still got a root with no size, so they opened invisible over a screen that no
+ * longer took taps. A fixed size does not follow the keyboard the way a flexible root did,
+ * so on Android it is shortened by the keyboard's height while one is open.
  */
+const useKeyboardHeight = () => {
+  const [keyboard, setKeyboard] = useState(0);
+  useEffect(() => {
+    if (Platform.OS !== 'android') return undefined;
+    const show = Keyboard.addListener('keyboardDidShow', (e) => setKeyboard(e.endCoordinates?.height ?? 0));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboard(0));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
+  return keyboard;
+};
+
 export const Sheet = ({ visible, onClose, title, children }) => {
   const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  const keyboard = useKeyboardHeight();
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView
+        style={[styles.root, { width, height: height - keyboard }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close" />
-        <View style={[styles.sheet, { maxHeight: height * 0.78, paddingBottom: insets.bottom + space.xl }]}>
+        <View style={[styles.sheet, { maxHeight: Math.min(height * 0.78, height - keyboard - insets.top - space.lg), paddingBottom: (keyboard ? 0 : insets.bottom) + space.xl }]}>
           <View style={styles.grabber} />
           <View style={styles.header}>
             <Heading style={{ flex: 1 }}>{title}</Heading>
