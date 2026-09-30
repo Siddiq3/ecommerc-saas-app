@@ -5,7 +5,8 @@ import { TRIAL_DAYS } from '@storekit/shared';
 import { Ionicons } from '@expo/vector-icons';
 import { Logo } from '../../src/components/Brand.jsx';
 import { HeroShowcase } from '../../src/components/HeroShowcase.jsx';
-import { Body, Button, Caption, Display, Row, Touchable } from '../../src/components/ui.jsx';
+import { Alert, Body, Button, Caption, Display, Row, Touchable } from '../../src/components/ui.jsx';
+import { useAuth } from '../../src/state/auth.jsx';
 import { FadeIn } from '../../src/components/motion.jsx';
 import { colors, fonts, space } from '../../src/theme.js';
 
@@ -23,9 +24,25 @@ import { colors, fonts, space } from '../../src/theme.js';
  * another.
  */
 
+/** Shown once after an account deletion; the route guard lands a signed-out merchant here. */
+const NOTICES = {
+  account_deleted: { tone: 'success', message: 'Your account has been deleted and you have been signed out on every device.' },
+  account_delete_unconfirmed: {
+    tone: 'warning',
+    message: 'You were signed out before we could confirm the deletion. If you can still sign in, your account was not deleted — sign in and try again.',
+  },
+};
+
 export default function Welcome() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { notice, clearNotice } = useAuth();
+  const shown = NOTICES[notice];
+
+  const go = (path) => {
+    if (notice) clearNotice();
+    router.push(path);
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + space.lg, paddingBottom: insets.bottom + space.lg }]}>
@@ -53,10 +70,11 @@ export default function Welcome() {
       </View>
 
       <FadeIn delay={660} style={styles.actions}>
-        <Button title="Get started" size="lg" onPress={() => router.push('/(auth)/signup')} />
+        {shown ? <Alert message={shown.message} tone={shown.tone} /> : null}
+        <Button title="Create account" size="lg" onPress={() => go('/(auth)/signup')} />
 
         <Touchable
-          onPress={() => router.push('/(auth)/login')}
+          onPress={() => go('/(auth)/login')}
           haptics="tap"
           scaleTo={1}
           style={styles.signInRow}

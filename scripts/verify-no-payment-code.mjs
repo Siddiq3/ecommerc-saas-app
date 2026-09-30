@@ -3,9 +3,10 @@
  * Fails the build if payment code has crept into the Expo app.
  *
  * The app ships on Google Play, where taking a payment inside the binary for a digital
- * subscription breaches the payments policy. Our flow is: the app reads an entitlement,
- * and checkout happens on the website in the device's own browser. That is a promise
- * about the whole source tree, so it is checked mechanically rather than by memory.
+ * subscription breaches the payments policy. The app is consumption-only: it reads an
+ * entitlement and shows it, and never sells, prices or links to a purchase — plans and
+ * checkout live only on the website. That is a promise about the whole source tree, so it
+ * is checked mechanically rather than by memory.
  *
  * Run with `npm run verify:compliance -w @storekit/mobile`.
  */
@@ -24,6 +25,19 @@ const RULES = [
   { id: 'iap', pattern: /expo-in-app-purchases|react-native-iap|InAppPurchase/i, why: 'Billing is on the website, not through in-app purchases.' },
   { id: 'card-entry', pattern: /\b(cardNumber|card_number|cvv|cvc|expiryMonth|expiry_month)\b/i, why: 'The app must never collect card details.' },
   { id: 'checkout-call', pattern: /\/billing\/(checkout|confirm|cancel)\b/, why: 'These endpoints belong to the website, not the app.' },
+  // The app is consumption-only: it shows plan status and never leads to a purchase.
+  // Account sign-up (/auth/signup) is not a purchase and is deliberately not matched here.
+  {
+    id: 'billing-handoff',
+    pattern: /\/me\/billing\/handoff|\/billing\/plans\b|\bopenBilling\b|\/pricing\b/,
+    why: 'The app must not open billing, list plans or link to pricing; it only reads status.',
+  },
+  { id: 'checkout-deep-link', pattern: /payment-success/, why: 'The app must not handle a return-from-checkout link.' },
+  {
+    id: 'purchase-cta',
+    pattern: /['"`>][^'"`<]*\b(View plans|Choose a plan|Pick a plan|Subscribe|Subscribe now|Resubscribe|Upgrade now|Upgrade plan|Upgrade to|Pay now|Buy plan|Buy a plan|Update payment)\b/i,
+    why: 'No purchase, upgrade or payment call to action in the app.',
+  },
 ];
 
 /** Comments describing the boundary necessarily name the things they forbid. */
@@ -76,5 +90,5 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log('✓ No payment, WebView or in-app-purchase code in the Expo app.');
-console.log('  Checkout is reached only through WebBrowser.openBrowserAsync in src/state/plan.jsx.');
+console.log('✓ No payment, WebView, in-app-purchase or purchase call-to-action code in the Expo app.');
+console.log('  The app only reads plan status (src/state/plan.jsx); purchases happen on the website on their own.');

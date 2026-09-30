@@ -4,12 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { COMPARISON_ROWS, TRIAL_DAYS, describeEntitlement } from '@storekit/shared';
 import { Screen } from '../../src/components/Screen.jsx';
 import {
-  Alert, Body, Button, Caption, Card, Divider, Heading, Pill, Row,
+  Body, Caption, Card, Divider, Heading, Pill, Row,
 } from '../../src/components/ui.jsx';
 import { SkeletonScreen } from '../../src/components/Skeleton.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { usePlan } from '../../src/state/plan.jsx';
-import { useAction, useAsync } from '../../src/lib/useAsync.js';
+import { useAsync } from '../../src/lib/useAsync.js';
 import { subscription as subscriptionApi } from '../../src/api/endpoints.js';
 import { formatDate } from '../../src/lib/format.js';
 import { colors, space, type } from '../../src/theme.js';
@@ -21,10 +21,8 @@ import { colors, space, type } from '../../src/theme.js';
  *  GOOGLE PLAY POLICY BOUNDARY
  *
  *  Read-only. It shows what the merchant is on and how much of it they are using — never
- *  a price. "Choose a plan" and "Manage subscription" both call `openBilling`, which hands a
- *  one-time token to the system browser. Nothing here charges, cancels or stores a
- *  payment method — cancellation included, because cancelling is a billing operation and
- *  belongs on the same web surface as paying.
+ *  a price, and no way to buy, change, renew or cancel a plan, nor a link to anywhere
+ *  that does (the app is consumption-only; see src/state/plan.jsx).
  * ────────────────────────────────────────────────────────────────────────────
  */
 /** What a merchant asks about their plan first. The rest of the table is on the website. */
@@ -33,7 +31,7 @@ const INCLUDED_ROWS = COMPARISON_ROWS.filter((row) => INCLUDED_KEYS.includes(row
 
 export default function Subscription() {
   const { businessId } = useAuth();
-  const { status, planStatus, refresh, openBilling } = usePlan();
+  const { status, planStatus, refresh } = usePlan();
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -41,9 +39,6 @@ export default function Subscription() {
     () => (businessId ? subscriptionApi.usage(businessId) : Promise.resolve(null)),
     [businessId],
   );
-
-  const { run: manage, pending, error } = useAction(() => openBilling({ manage: true }));
-  const { run: choosePlan, pending: choosing, error: chooseError } = useAction(() => openBilling());
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -70,7 +65,7 @@ export default function Subscription() {
         ? `Your ${TRIAL_DAYS}-day trial runs until ${formatDate(status.trialEndsAt, undefined, { dateStyle: 'medium' })}.`
         : 'You are on a free trial.',
     },
-    trial_expired: { tone: 'red', label: 'Trial ended', detail: 'Choose a plan to reopen your store.' },
+    trial_expired: { tone: 'red', label: 'Trial ended', detail: 'Your free trial has ended. Your account is currently inactive.' },
     subscribed: {
       tone: 'green',
       label: 'Active',
@@ -85,13 +80,11 @@ export default function Subscription() {
         ? `You keep access until ${formatDate(status.accessEndsAt, undefined, { dateStyle: 'medium' })}.`
         : 'Your subscription has been cancelled.',
     },
-    past_due: { tone: 'red', label: 'Payment failed', detail: 'Update your payment method to keep your store open.' },
+    past_due: { tone: 'red', label: 'Inactive', detail: 'Your subscription could not be renewed. Your account is currently inactive.' },
   }[planStatus] ?? { tone: 'slate', label: '—', detail: '' };
 
   return (
     <Screen refreshing={refreshing} onRefresh={onRefresh}>
-      <Alert message={(error ?? chooseError)?.message} />
-
       <Card style={styles.card}>
         <Row style={{ justifyContent: 'space-between' }}>
           <View style={{ flex: 1 }}>
@@ -111,21 +104,6 @@ export default function Subscription() {
           </>
         ) : null}
       </Card>
-
-      {planStatus === 'subscribed' || planStatus === 'past_due' || planStatus === 'cancelled' ? (
-        <Button
-          title={planStatus === 'past_due' ? 'Update payment method' : 'Manage subscription'}
-          loading={pending}
-          onPress={() => manage().catch(() => undefined)}
-        />
-      ) : (
-        <Button title="Choose a plan" loading={choosing} onPress={() => choosePlan().catch(() => undefined)} />
-      )}
-
-      <Row gap={space.xs} style={styles.browserNote}>
-        <Ionicons name="open-outline" size={13} color={colors.ink500} />
-        <Caption>Billing is handled on our website, in your browser.</Caption>
-      </Row>
 
       {entitlements ? (
         <>
@@ -237,7 +215,6 @@ const styles = StyleSheet.create({
   card: { marginBottom: space.lg },
   detail: { marginTop: space.sm },
   innerDivider: { marginVertical: space.md },
-  browserNote: { justifyContent: 'center', marginTop: space.md, marginBottom: space.xxl },
   usageTitle: { marginBottom: space.md },
   track: { height: 6, borderRadius: 3, backgroundColor: colors.ink200, marginTop: space.sm, overflow: 'hidden' },
   fill: { height: 6, borderRadius: 3 },

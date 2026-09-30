@@ -62,12 +62,12 @@ export const businesses = {
 /* ───────────── The account itself ───────────── */
 
 /**
- * Closing the account is a request, not an action: it mints the same kind of one-time
- * code billing uses and the merchant fills the form on the website, where a person reads
- * it. Nothing here deletes anything.
+ * Deleting the signed-in account, immediately and permanently. The server deletes the
+ * account the access token belongs to — nothing here names one — and `confirm` only proves
+ * the merchant meant it. Every session, on every device, ends with it.
  */
 export const account = {
-  deletionHandoff: () => api.post('/me/account/deletion-handoff', {}),
+  remove: () => api.del('/me/account', { body: { confirm: true } }),
 };
 
 /** Storefront configuration — theme, sections, payments, policies. Merged one level deep by the API. Delivery has its own endpoint. */
@@ -204,16 +204,12 @@ export const domains = {
 /**
  * Read-only, and deliberately so.
  *
- * `status` tells the app what the merchant is entitled to, and `handoff` mints the
- * one-time token the app hands to the system browser. Everything after that — plan
- * selection, checkout, the payment itself — happens on the website. There is no method
- * here that takes money, and there must never be one: see docs/PLAY_BILLING_POLICY.md.
+ * `status` tells the app what the merchant is entitled to. The app is consumption-only:
+ * it never lists plans or prices, starts a checkout, or hands the merchant to one. There
+ * is no method here that sells anything, and there must never be one.
  */
 export const subscription = {
   status: () => api.get('/me/status'),
-  handoff: () => api.post('/me/billing/handoff', {}),
-  /** The plans as the server sells them: prices, copy and what each includes. Public, no sign-in. */
-  plans: () => api.get('/billing/plans', { auth: false }),
   /** The store's own plan usage (product counts, storage), not the billing state. */
   usage: (businessId) => api.get(`${scope(businessId)}/subscription`),
 };

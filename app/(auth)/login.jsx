@@ -22,7 +22,7 @@ import { colors, fonts, space } from '../../src/theme.js';
 export default function Login() {
   const router = useRouter();
   const { signIn } = useAuth();
-  // Sign-up sends a returning merchant here with the email they just typed.
+  // Sign-up and password reset send the merchant here with the email they just typed.
   const params = useLocalSearchParams();
 
   const [form, setForm] = useState({ identifier: String(params.email ?? ''), password: '' });
@@ -51,7 +51,6 @@ export default function Login() {
 
   const fieldErrors = mergeErrors(errors, error);
   const generalError = error && Object.keys(error.fieldErrors ?? {}).length === 0 ? error.message : null;
-
 
   return (
     <Screen footer={<Button title="Sign in" size="lg" loading={pending} onPress={submit} />}>
@@ -93,6 +92,18 @@ export default function Login() {
           error={fieldErrors.password}
         />
 
+        <Touchable
+          onPress={() => router.push({
+            pathname: '/(auth)/forgot-password',
+            params: form.identifier.includes('@') ? { email: form.identifier.trim() } : {},
+          })}
+          haptics="tap"
+          scaleTo={1}
+          style={styles.forgot}
+          accessibilityLabel="Forgot password"
+        >
+          <Body style={styles.forgotText}>Forgot password?</Body>
+        </Touchable>
       </View>
 
       <Touchable
@@ -112,6 +123,8 @@ export default function Login() {
 const styles = StyleSheet.create({
   logo: { marginBottom: space.xl },
   sub: { marginTop: space.sm, marginBottom: space.xxl },
+  forgot: { alignSelf: 'flex-end', paddingVertical: space.sm, minHeight: 44, justifyContent: 'center' },
+  forgotText: { color: colors.accent700 },
   altAction: {
     flexDirection: 'row',
     alignItems: 'center',

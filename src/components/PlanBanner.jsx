@@ -1,20 +1,18 @@
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Body, Caption, Touchable } from './ui.jsx';
+import { Body, Caption } from './ui.jsx';
 import { usePlan } from '../state/plan.jsx';
-import { useAction } from '../lib/useAsync.js';
-import { colors, radius, space, type } from '../theme.js';
+import { colors, radius, space } from '../theme.js';
 
 /**
- * The trial and billing banner.
+ * The trial and plan status banner.
  *
- * It states the situation and never mentions a price. "View plans" goes straight to the
- * billing website in the system browser — plans, prices and payment live only there, never
- * in the app.
+ * Information only: it says where the account stands and does nothing when tapped. The
+ * app is consumption-only (see src/state/plan.jsx), so there is no plan, price or
+ * purchase link here, and there must not be one.
  */
 export const PlanBanner = () => {
-  const { status, planStatus, openBilling } = usePlan();
-  const { run: viewPlans, pending } = useAction(() => openBilling({ manage: planStatus === 'past_due' }));
+  const { status, planStatus } = usePlan();
 
   if (!status || planStatus === 'subscribed') return null;
 
@@ -24,15 +22,27 @@ export const PlanBanner = () => {
   const content = {
     trial_active:
       days <= 1
-        ? { tone: 'warn', icon: 'time-outline', title: 'Your trial ends today', body: 'Pick a plan to keep your store open.' }
-        : { tone: 'info', icon: 'sparkles-outline', title: `${days} days left in your trial`, body: 'Pick a plan whenever you are ready.' },
-    trial_expired: { tone: 'stop', icon: 'lock-closed-outline', title: 'Your trial has ended', body: 'Choose a plan to reopen your store.' },
-    past_due: { tone: 'stop', icon: 'alert-circle-outline', title: 'Payment failed', body: 'Update your payment to avoid losing access.' },
+        ? { tone: 'warn', icon: 'time-outline', title: 'Your free trial ends today', body: 'Your store stays open until the trial ends.' }
+        : { tone: 'info', icon: 'sparkles-outline', title: `${days} days left in your free trial`, body: 'Your store is open while your trial lasts.' },
+    trial_expired: {
+      tone: 'stop',
+      icon: 'lock-closed-outline',
+      title: 'Free trial ended',
+      body: 'Your free trial has ended. Your account is currently inactive.',
+    },
+    past_due: {
+      tone: 'stop',
+      icon: 'alert-circle-outline',
+      title: 'Subscription inactive',
+      body: 'Your subscription could not be renewed. Your account is currently inactive.',
+    },
     cancelled: {
       tone: 'warn',
       icon: 'information-circle-outline',
       title: 'Subscription cancelled',
-      body: accessDays > 0 ? `You have access for ${accessDays} more day${accessDays === 1 ? '' : 's'}.` : 'Resubscribe to continue.',
+      body: accessDays > 0
+        ? `You have access for ${accessDays} more day${accessDays === 1 ? '' : 's'}.`
+        : 'Your subscription has been cancelled.',
     },
   }[planStatus];
 
@@ -45,8 +55,9 @@ export const PlanBanner = () => {
   }[content.tone];
 
   return (
-    <Touchable
-      onPress={pending ? undefined : () => viewPlans().catch(() => undefined)}
+    <View
+      accessible
+      accessibilityRole="text"
       accessibilityLabel={`${content.title}. ${content.body}`}
       style={[styles.banner, { backgroundColor: palette.bg }]}
     >
@@ -55,12 +66,7 @@ export const PlanBanner = () => {
         <Body strong style={{ color: palette.fg }}>{content.title}</Body>
         <Caption style={{ color: palette.fg, opacity: 0.85 }}>{content.body}</Caption>
       </View>
-      {pending ? (
-        <ActivityIndicator size="small" color={palette.icon} />
-      ) : (
-        <Body style={[styles.action, { color: palette.icon }]}>View plans</Body>
-      )}
-    </Touchable>
+    </View>
   );
 };
 
@@ -73,5 +79,4 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     marginBottom: space.lg,
   },
-  action: { ...type.label },
 });

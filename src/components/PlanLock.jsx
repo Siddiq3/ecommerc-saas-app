@@ -1,46 +1,53 @@
 import { Modal, ScrollView, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
+import { usePathname, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Alert, Body, Button, Caption, Card, Row, Title } from './ui.jsx';
+import { Alert, Body, Button, Caption, Row, Title } from './ui.jsx';
 import { useAuth } from '../state/auth.jsx';
 import { usePlan } from '../state/plan.jsx';
 import { useAction } from '../lib/useAsync.js';
 import { SUPPORT_URL } from '../lib/help.js';
 import { colors, radius, space } from '../theme.js';
 
+/** The account-deletion screen stays reachable while locked: a lapsed plan never blocks leaving. */
+export const DELETE_ACCOUNT_ROUTE = '/settings/delete-account';
+
 /**
- * The lock over the whole app once the plan no longer grants access (trial ended, payment
- * failed). It cannot be dismissed — back does nothing — so the only ways on are paying or
- * signing out. It lifts by itself when the plan refresh sees an entitled status.
+ * The lock over the whole app once the plan no longer grants access (trial ended, renewal
+ * failed). It cannot be dismissed — back does nothing — and it lifts by itself when a
+ * status check sees an entitled plan.
  *
- * Same Google Play boundary as plan.jsx: no price here. "Subscribe now" opens billing in the
- * system browser.
+ * Information only, like PlanBanner: it says the account is inactive and offers support,
+ * a fresh status check, deleting the account and signing out. No plan, price, purchase
+ * button or link to one (see src/state/plan.jsx).
  */
 const COPY = {
   trial_expired: {
-    title: 'Trial expired',
-    subtitle: 'Your free trial has ended',
-    message: 'Your store is closed to customers. Subscribe to reopen it and keep your site live.',
-    action: 'Subscribe now',
+    title: 'Free trial ended',
+    message: 'Your free trial has ended. Your account is currently inactive.',
   },
   past_due: {
-    title: 'Payment failed',
-    subtitle: 'We could not renew your subscription',
-    message: 'Your store is closed to customers. Update your payment to reopen it.',
-    action: 'Update payment',
+    title: 'Subscription inactive',
+    message: 'Your subscription could not be renewed. Your account is currently inactive.',
   },
 };
 
 export const PlanLock = () => {
+  const router = useRouter();
+  const pathname = usePathname();
   const { status: authStatus, user, signOut } = useAuth();
-  const { entitled, planStatus, needsOnboarding, openBilling } = usePlan();
+  const { entitled, planStatus, needsOnboarding, refresh } = usePlan();
   const insets = useSafeAreaInsets();
-  const { run: subscribe, pending, error } = useAction(() => openBilling({ manage: planStatus === 'past_due' }));
+  const { run: check, pending: checking, error } = useAction(() => refresh({ silent: true }));
   const { run: logout, pending: leaving } = useAction(signOut);
 
   // `entitled` is null until the first status load, so a slow network never flashes the lock.
-  const locked = authStatus === 'authenticated' && Boolean(user?.businesses?.length) && !needsOnboarding && entitled === false;
+  const locked = authStatus === 'authenticated'
+    && Boolean(user?.businesses?.length)
+    && !needsOnboarding
+    && entitled === false
+    && pathname !== DELETE_ACCOUNT_ROUTE;
   const copy = COPY[planStatus] ?? COPY.trial_expired;
 
   return (
@@ -51,21 +58,15 @@ export const PlanLock = () => {
           <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
             <View style={styles.lockIcon}><Ionicons name="lock-closed" size={40} color="#ffffff" /></View>
             <Title style={styles.center}>{copy.title}</Title>
-            <Body muted style={styles.center}>{copy.subtitle}</Body>
             {user?.email ? <Caption style={styles.center}>{user.email}</Caption> : null}
 
             <View style={styles.warning}><Body style={styles.warningText}>{copy.message}</Body></View>
 
-            <Card style={styles.steps}>
-              <Body strong>To get access:</Body>
-              {['Choose a plan on our website', 'Complete the payment', 'Your store is live again right away'].map((step) => (
-                <Body key={step} muted>• {step}</Body>
-              ))}
-            </Card>
-
             <Row gap={space.sm} align="flex-start" style={styles.info}>
               <Ionicons name="information-circle" size={20} color={colors.accent700} />
-              <Body style={{ flex: 1, color: colors.accent900 }}>All your data is safe. Subscribe to unlock your store and keep everything you’ve built.</Body>
+              <Body style={{ flex: 1, color: colors.accent900 }}>
+                Your store is closed to customers. Your products, orders and settings are kept.
+              </Body>
             </Row>
 
             <Button
@@ -78,12 +79,12 @@ export const PlanLock = () => {
 
           <View style={styles.footer}>
             <Alert message={error?.message} />
-            <Caption style={styles.center}>Billing is handled on our website, in your browser.</Caption>
             <Button
-              title={copy.action}
-              loading={pending}
-              icon={<Ionicons name="arrow-forward" size={18} color="#ffffff" />}
-              onPress={() => subscribe().catch(() => undefined)}
+              title="Check status again"
+              variant="secondary"
+              loading={checking}
+              icon={<Ionicons name="refresh" size={18} color={colors.ink700} />}
+              onPress={() => check().catch(() => undefined)}
             />
             <Button
               title="Log out"
@@ -91,6 +92,11 @@ export const PlanLock = () => {
               loading={leaving}
               icon={<Ionicons name="log-out-outline" size={18} color={colors.ink700} />}
               onPress={() => logout().catch(() => undefined)}
+            />
+            <Button
+              title="Delete account"
+              variant="ghost"
+              onPress={() => router.push(DELETE_ACCOUNT_ROUTE)}
             />
           </View>
         </View>
@@ -124,7 +130,6 @@ const styles = StyleSheet.create({
     marginTop: space.md,
   },
   warningText: { color: colors.danger },
-  steps: { padding: space.lg, gap: space.sm },
   info: { backgroundColor: colors.accent50, borderRadius: radius.sm, padding: space.lg },
   footer: {
     gap: space.sm,

@@ -10,7 +10,7 @@
  * `action.url` opens outside the app instead.
  */
 
-/** The StoreKit website (terms, privacy, billing) — not a store. No trailing slash. */
+/** The StoreKit website (terms, privacy, account deletion) — not a store. No trailing slash. */
 export const WEB_URL = String(process.env.EXPO_PUBLIC_WEB_URL ?? 'https://ecommerc-saas-web-1yfy.vercel.app').replace(/\/$/, '');
 /** The website has no help page yet; support is by email, the same address its footer shows. */
 export const SUPPORT_URL = 'mailto:help@storekit.app';
@@ -446,11 +446,10 @@ export const HELP_CATEGORIES = [
       },
       {
         id: 'subscription',
-        question: 'How do I manage my subscription?',
+        question: 'Where can I see my plan?',
         steps: [
           'Tap **Open subscription** below.',
-          'Tap **Choose a plan** or **Manage subscription**.',
-          'Billing opens on our website in your browser.',
+          'See your plan status, what it includes and what you are using.',
         ],
         action: { label: 'Open subscription', href: '/settings/subscription' },
       },
