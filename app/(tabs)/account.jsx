@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Alert as RNAlert, Linking, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '../../src/components/Screen.jsx';
@@ -12,7 +11,7 @@ import { Thumb } from '../../src/components/domain.jsx';
 import { PlanBanner } from '../../src/components/PlanBanner.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { usePlan } from '../../src/state/plan.jsx';
-import { account as accountApi, businesses as businessApi } from '../../src/api/endpoints.js';
+import { businesses as businessApi } from '../../src/api/endpoints.js';
 import { storeUrl as storeAddress, storeHostname } from '../../src/lib/storefront.js';
 import { WEB_URL } from '../../src/lib/help.js';
 import { colors, radius, space, type } from '../../src/theme.js';
@@ -20,14 +19,13 @@ import { colors, radius, space, type } from '../../src/theme.js';
 /**
  * Account: the store, the plan, and everything that is neither an order nor a product.
  *
- * "Manage subscription" leaves for the browser — plans, prices and payment exist only on
- * the website, and no screen here could be mistaken for one.
+ * The app is consumption-only: the plan shows as a status, and nothing here sells, prices
+ * or links to a purchase (see src/state/plan.jsx).
  *
  * The two deletions at the bottom are deliberately different things. Deleting the store
- * is the merchant's own call and happens here, immediately and for good. Deleting the
- * *account* opens the website, where they say why and a person reviews it — it ends a
- * paid relationship and erases records we may be asked about later, which is not a
- * decision that should turn on one mis-tap.
+ * removes the store and keeps the account, so they can start again. Deleting the account
+ * removes the account and every store it owns, and signs out every device. Both happen
+ * immediately and for good, behind a warning and a confirmation.
  */
 
 
@@ -87,28 +85,6 @@ export default function Account() {
         },
       ],
     );
-  };
-
-  /**
-   * Opens the deletion form in the device's real browser with a one-time code, the same
-   * handoff billing uses. The code is opaque, lives two minutes and is spent on first use.
-   */
-  const openAccountDeletion = async () => {
-    setBusy(true);
-    try {
-      const { url } = await accountApi.deletionHandoff();
-      await WebBrowser.openBrowserAsync(url, {
-        toolbarColor: '#ffffff',
-        controlsColor: colors.accent600,
-        dismissButtonStyle: 'close',
-        enableBarCollapsing: true,
-        showTitle: true,
-      });
-    } catch (error) {
-      RNAlert.alert('Could not open the form', error?.message ?? 'Check your connection and try again.');
-    } finally {
-      setBusy(false);
-    }
   };
 
   /* Used by the hidden Subscription row below.
@@ -206,8 +182,13 @@ export default function Account() {
         />
         <Item
           icon="document-text-outline"
-          label="Terms and privacy"
+          label="Terms of service"
           onPress={() => Linking.openURL(`${WEB_URL}/legal/terms`).catch(() => undefined)}
+        />
+        <Item
+          icon="shield-outline"
+          label="Privacy policy"
+          onPress={() => Linking.openURL(`${WEB_URL}/legal/privacy`).catch(() => undefined)}
           last
         />
       </Group>
@@ -227,7 +208,7 @@ export default function Account() {
           label="Delete account"
           tone="danger"
           disabled={busy}
-          onPress={openAccountDeletion}
+          onPress={() => router.push('/settings/delete-account')}
           last
         />
       </Group>

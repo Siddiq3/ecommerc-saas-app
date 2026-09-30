@@ -335,16 +335,16 @@ const Choice = ({ icon, label, onPress, disabled }) => (
 );
 
 /**
- * Why the dialog cannot go further, in the words of the situation the merchant is in. Only
- * `upgrade` has somewhere to go: a plan that lacks custom domains is fixed on the website.
+ * Why the dialog cannot go further, in the words of the situation the merchant is in.
+ * Information only: the app never offers a plan change (see src/state/plan.jsx).
  */
 const BLOCKED = {
-  upgrade: 'Activate this site on a plan that includes a custom domain to connect yours.',
+  upgrade: 'Your current plan does not include a custom domain.',
   soon: 'Custom domains are coming soon. We will let you know when you can connect yours.',
   inUse: 'Your plan\'s custom domain is already in use. Remove it to connect a different one.',
 };
 
-const NewDomainDialog = ({ visible, mode, onClose, onAddExisting, onSubscribe }) => (
+const NewDomainDialog = ({ visible, mode, onClose, onAddExisting }) => (
   <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
     <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close" />
     <View style={styles.dialogWrap} pointerEvents="box-none">
@@ -366,7 +366,6 @@ const NewDomainDialog = ({ visible, mode, onClose, onAddExisting, onSubscribe })
           </>
         ) : null}
 
-        {mode === 'upgrade' ? <Button title="Subscribe" onPress={onSubscribe} style={styles.dialogPrimary} /> : null}
         <Touchable onPress={onClose} accessibilityLabel="Cancel" style={styles.dialogCancel}>
           <Body strong>Cancel</Body>
         </Touchable>
@@ -379,7 +378,7 @@ const NewDomainDialog = ({ visible, mode, onClose, onAddExisting, onSubscribe })
 
 export default function CustomDomain() {
   const { businessId, business } = useAuth();
-  const { status, openBilling } = usePlan();
+  const { status } = usePlan();
   const [dialog, setDialog] = useState(false);
   const [adding, setAdding] = useState(false);
 
@@ -409,15 +408,6 @@ export default function CustomDomain() {
     if (!planIncludes) mode = 'upgrade';
     else mode = featureOff ? 'soon' : 'inUse';
   }
-
-  const subscribe = async () => {
-    setDialog(false);
-    try {
-      await openBilling();
-    } catch (failure) {
-      RNAlert.alert('Could not open the plans', failure?.message ?? 'Check your connection and try again.');
-    }
-  };
 
   const addExisting = () => {
     setDialog(false);
@@ -491,7 +481,6 @@ export default function CustomDomain() {
         mode={mode}
         onClose={() => setDialog(false)}
         onAddExisting={addExisting}
-        onSubscribe={subscribe}
       />
     </Screen>
   );
@@ -518,7 +507,6 @@ const styles = StyleSheet.create({
   dialogTitle: { textAlign: 'center' },
   dialogSub: { textAlign: 'center', marginTop: space.xs, marginBottom: space.lg },
   dialogDivider: { marginVertical: space.lg },
-  dialogPrimary: { marginTop: space.lg },
   dialogCancel: { alignItems: 'center', paddingVertical: space.md, marginTop: space.xs },
   choice: {
     flexDirection: 'row',

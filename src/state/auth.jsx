@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import * as client from '../api/client.js';
-import { auth as authApi, businesses as businessApi } from '../api/endpoints.js';
+import { account as accountApi, auth as authApi, businesses as businessApi } from '../api/endpoints.js';
 import { saveBusinessId, loadSession, getDeviceId } from '../api/storage.js';
 
 /**
@@ -27,7 +27,8 @@ const deviceInfo = async () => ({
 });
 
 export const AuthProvider = ({ children }) => {
-  const [state, setState] = useState({ status: 'loading', user: null, businessId: null });
+  // `notice` is a one-off message for the signed-out screens, e.g. that the account was deleted.
+  const [state, setState] = useState({ status: 'loading', user: null, businessId: null, notice: null });
   const mounted = useRef(true);
 
   useEffect(() => () => { mounted.current = false; }, []);
@@ -138,8 +139,34 @@ export const AuthProvider = ({ children }) => {
     await authApi.logout().catch(() => undefined);
     await client.forgetTokens();
     await saveBusinessId(null);
-    apply({ status: 'unauthenticated', user: null, businessId: null });
+    apply({ status: 'unauthenticated', user: null, businessId: null, notice: null });
   }, [apply]);
+
+  /**
+   * Deletes the signed-in account on the server, then forgets everything this device held
+   * for it: tokens, the saved store id and the in-memory session. The server has already
+   * ended every session, so there is nothing to log out of.
+   *
+   * A 401 means the server no longer accepts this session — the account is already gone,
+   * or the session was ended elsewhere. The client has cleared the tokens by then, and the
+   * signed-out screen says honestly that we could not confirm the deletion. Any other
+   * failure (offline, server error) throws, and the account and session are untouched.
+   */
+  const deleteAccount = useCallback(async () => {
+    let notice = 'account_deleted';
+    try {
+      await accountApi.remove();
+    } catch (error) {
+      if (error?.status !== 401) throw error;
+      notice = 'account_delete_unconfirmed';
+    }
+    await client.forgetTokens();
+    await saveBusinessId(null);
+    apply({ status: 'unauthenticated', user: null, businessId: null, notice });
+    return notice;
+  }, [apply]);
+
+  const clearNotice = useCallback(() => apply({ notice: null }), [apply]);
 
   /** Called after store creation, and whenever the profile changes. */
   const refreshUser = useCallback(async () => loadUser().catch(() => undefined), [loadUser]);
@@ -153,10 +180,12 @@ export const AuthProvider = ({ children }) => {
       signIn,
       signUp,
       signOut,
+      deleteAccount,
+      clearNotice,
       verifyEmail,
       refreshUser,
     }),
-    [state, signIn, signUp, signOut, verifyEmail, refreshUser],
+    [state, signIn, signUp, signOut, deleteAccount, clearNotice, verifyEmail, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -3,9 +3,18 @@
 The Expo app a store owner runs their business from: orders, payments, catalogue,
 customers and analytics.
 
-It contains **no payment code**. Subscribing happens on the website, in the device's own
-browser. See [`docs/PLAY_BILLING_POLICY.md`](../../docs/PLAY_BILLING_POLICY.md) — that
-boundary is enforced by `npm test`, not by convention.
+It is **consumption-only**: it shows the plan status the server reports and never sells,
+prices or links to a plan — no plan picker, checkout link, billing handoff or return-from-
+checkout deep link. Plans and billing live only on the website. See
+[`docs/PLAY_BILLING_POLICY.md`](../../docs/PLAY_BILLING_POLICY.md) — that boundary is
+enforced by `npm test` (`scripts/verify-no-payment-code.mjs`), not by convention.
+
+Sign-up is in the app (and also on the website); creating the store starts the free trial,
+which the backend gives once per email address. Paying for a plan happens only on the
+website.
+
+Account deletion is in the app: **Account → Delete account** (also offered on the lock
+screen when the plan is inactive) calls `DELETE /v1/me/account`, then clears the keychain.
 
 ## Running it
 
@@ -43,8 +52,7 @@ app/                       Expo Router routes — the file tree is the navigatio
   orders/[orderId]         order detail: status, payment decision, cancel
   products/                detail, edit, new
   customers/[customerId]   one customer's history
-  paywall.jsx              plans, and the handoff to the browser
-  settings/                profile, security, subscription
+  settings/                profile, security, subscription status, delete account
 src/
   api/       client (auth, refresh, errors), endpoints, keychain storage
   state/     auth, plan/entitlement, order counts
@@ -67,5 +75,5 @@ place, `ProductForm`, on submit. Nothing else should touch a float.
 backend rotates refresh tokens and detects reuse, so a double refresh logs the user out.
 
 **Plan status is never cached as a boolean.** `entitled` is `null` until the first
-successful load, so screens hold rather than flashing a paywall at a paying customer on a
-slow connection.
+successful load, so screens hold rather than flashing the plan lock at a paying customer on
+a slow connection.

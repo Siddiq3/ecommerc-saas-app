@@ -115,8 +115,9 @@ const Navigation = () => {
         <Stack.Screen name="settings/security" options={{ title: 'Password and devices' }} />
         <Stack.Screen name="settings/subscription" options={{ title: 'Subscription' }} />
         <Stack.Screen name="settings/domain" options={{ title: 'Custom domain' }} />
+        <Stack.Screen name="settings/delete-account" options={{ title: 'Delete account' }} />
       </Stack>
-      {/* Over every screen once the plan lapses: nothing else is reachable until they pay or sign out. */}
+      {/* Over every screen once the plan lapses, except account deletion: see PlanLock. */}
       <PlanLock />
     </>
   );
