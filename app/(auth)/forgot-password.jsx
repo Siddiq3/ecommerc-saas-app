@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { forgotPasswordSchema, resetPasswordSchema } from '@storekit/validation';
@@ -25,11 +25,23 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState(String(params.email ?? ''));
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState({});
+  const [cooldown, setCooldown] = useState(0);
+  const [notice, setNotice] = useState('');
+
+  useEffect(() => {
+    if (cooldown <= 0) return undefined;
+    const timer = setInterval(() => setCooldown((value) => Math.max(0, value - 1)), 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   const { run: requestCode, pending: requesting, error: requestError } = useAction(async (data) => {
-    await authApi.forgotPassword(data.email);
+    const result = await authApi.forgotPassword(data.email);
+    setCooldown(result?.resendAfterSeconds ?? 60);
+    setNotice(result?.message ?? 'If that email is registered, a reset code is on its way.');
     setStep('reset');
+    return result;
   });
 
   const { run: reset, pending: resetting, error: resetError } = useAction(async (data) => {
@@ -44,9 +56,20 @@ export default function ForgotPassword() {
   };
 
   const submitReset = () => {
+    if (newPassword !== confirmPassword) {
+      setErrors({ confirmPassword: 'Passwords do not match' });
+      return;
+    }
     const result = check(resetPasswordSchema, { email, code, newPassword });
     setErrors(result.errors);
     if (result.ok) reset(result.data).catch(() => undefined);
+  };
+
+  const resendCode = () => {
+    if (cooldown > 0 || requesting) return;
+    const result = check(forgotPasswordSchema, { email });
+    setErrors(result.errors);
+    if (result.ok) requestCode(result.data).catch(() => undefined);
   };
 
   const error = requestError ?? resetError;
@@ -109,6 +132,7 @@ export default function ForgotPassword() {
 
       <View>
         <Alert message={generalError} />
+        <Alert message={notice} tone="success" />
 
         <Field
           label="Reset code"
@@ -136,7 +160,37 @@ export default function ForgotPassword() {
           error={fieldErrors.newPassword}
         />
 
-        <Button title="Use a different email" variant="ghost" onPress={() => setStep('request')} />
+        <PasswordField
+          label="Confirm new password"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          placeholder="Re-enter your new password"
+          autoCapitalize="none"
+          autoComplete="new-password"
+          textContentType="newPassword"
+          maxLength={128}
+          error={fieldErrors.confirmPassword}
+        />
+
+        <Button
+          title={cooldown > 0 ? `Resend code in ${cooldown}s` : 'Resend code'}
+          variant="secondary"
+          loading={requesting}
+          disabled={cooldown > 0}
+          onPress={resendCode}
+        />
+        <Button
+          title="Use a different email"
+          variant="ghost"
+          onPress={() => {
+            setStep('request');
+            setCode('');
+            setNewPassword('');
+            setConfirmPassword('');
+            setNotice('');
+            setErrors({});
+          }}
+        />
       </View>
     </Screen>
   );
