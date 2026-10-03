@@ -31,6 +31,10 @@ const NOTICES = {
     tone: 'warning',
     message: 'You were signed out before we could confirm the deletion. If you can still sign in, your account was not deleted — sign in and try again.',
   },
+  session_restore_failed: {
+    tone: 'warning',
+    message: 'We could not restore your saved sign-in on this device. Please sign in once more.',
+  },
 };
 
 export default function Welcome() {
