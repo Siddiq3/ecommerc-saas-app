@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { Platform } from 'react-native';
 import * as client from '../api/client.js';
 import { account as accountApi, auth as authApi, businesses as businessApi } from '../api/endpoints.js';
-import { saveBusinessId, loadSession, getDeviceId } from '../api/storage.js';
+import { saveBusinessId, getDeviceId } from '../api/storage.js';
 
 /**
  * Session state for the whole app.
@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }) => {
     }
     const businessId = list[0]?.businessId ?? null;
     await saveBusinessId(businessId);
-    apply({ status: 'authenticated', user: { ...user, businesses: list }, businessId });
+    apply({ status: 'authenticated', user: { ...user, businesses: list }, businessId, notice: null });
     return { user, businessId };
   }, [apply]);
 
@@ -58,11 +58,26 @@ export const AuthProvider = ({ children }) => {
     let cancelled = false;
 
     (async () => {
-      await client.hydrate();
-      const stored = await loadSession();
+      let stored;
+      try {
+        // hydrate() owns the single SecureStore read for this launch and also returns the
+        // saved business id. Reading the same keys twice creates an unnecessary second
+        // chance for a transient Android keystore error to look like a signed-out user.
+        stored = await client.hydrate();
+      } catch (error) {
+        if (cancelled) return;
+        apply({
+          status: 'unauthenticated',
+          user: null,
+          businessId: null,
+          notice: error?.code === 'SESSION_STORAGE_ERROR' ? 'session_restore_failed' : null,
+          error,
+        });
+        return;
+      }
 
       if (!client.hasSession()) {
-        if (!cancelled) apply({ status: 'unauthenticated', user: null, businessId: null });
+        if (!cancelled) apply({ status: 'unauthenticated', user: null, businessId: null, notice: null });
         return;
       }
 
@@ -76,7 +91,7 @@ export const AuthProvider = ({ children }) => {
         // A network failure on launch must not log anyone out — only a rejected session
         // does that, and the client has already cleared the tokens in that case.
         if (cancelled) return;
-        if (!client.hasSession()) apply({ status: 'unauthenticated', user: null, businessId: null });
+        if (!client.hasSession()) apply({ status: 'unauthenticated', user: null, businessId: null, notice: null });
         else apply({ status: 'authenticated', user: null, error });
       }
     })();
@@ -96,7 +111,7 @@ export const AuthProvider = ({ children }) => {
       await client.setTokens(result.tokens);
       const businessId = result.user?.businesses?.[0]?.businessId ?? null;
       await saveBusinessId(businessId);
-      apply({ status: 'authenticated', user: result.user, businessId });
+      apply({ status: 'authenticated', user: result.user, businessId, notice: null });
       return result;
     },
     [apply],
@@ -111,7 +126,7 @@ export const AuthProvider = ({ children }) => {
         await client.setTokens(result.tokens);
         const businessId = result.user?.businesses?.[0]?.businessId ?? null;
         await saveBusinessId(businessId);
-        apply({ status: 'authenticated', user: result.user, businessId });
+        apply({ status: 'authenticated', user: result.user, businessId, notice: null });
       }
       return result;
     },

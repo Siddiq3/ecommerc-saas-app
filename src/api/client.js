@@ -44,6 +44,7 @@ export class ApiError extends Error {
 /* ───────────── In-memory session, mirrored to the keychain ───────────── */
 
 let memory = { accessToken: null, accessTokenExpiresAt: null, refreshToken: null };
+let restoredBusinessId = null;
 let hydrated = false;
 let refreshInFlight = null;
 let onUnauthenticated = () => {};
@@ -54,15 +55,17 @@ export const setUnauthenticatedHandler = (fn) => {
 };
 
 export const hydrate = async () => {
-  if (hydrated) return memory;
+  if (hydrated) return { ...memory, businessId: restoredBusinessId };
+
   const stored = await loadSession();
   memory = {
     accessToken: stored.accessToken,
     accessTokenExpiresAt: stored.accessTokenExpiresAt,
     refreshToken: stored.refreshToken,
   };
+  restoredBusinessId = stored.businessId ?? null;
   hydrated = true;
-  return memory;
+  return { ...memory, businessId: restoredBusinessId };
 };
 
 export const setTokens = async (tokens) => {
@@ -77,6 +80,7 @@ export const setTokens = async (tokens) => {
 
 export const forgetTokens = async () => {
   memory = { accessToken: null, accessTokenExpiresAt: null, refreshToken: null };
+  restoredBusinessId = null;
   hydrated = true;
   await clearSession();
 };
