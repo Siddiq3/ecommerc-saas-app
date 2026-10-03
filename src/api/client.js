@@ -156,12 +156,16 @@ const refreshTokens = async () => {
     // retryable and the tokens stay.
     if (response.status >= 500 || response.status === 429) raise(response, payload);
 
-    // The route answers 200 with a null body when the token is missing, and 401 when it
-    // has been revoked or reused. Both mean the same thing here: the session is over.
-    if (!response.ok || !payload?.data?.tokens) {
+    // Only a rejected credential proves that the saved session is no longer valid.
+    if (response.status === 401) {
       await forgetTokens();
       onUnauthenticated();
       return false;
+    }
+
+    if (!response.ok) raise(response, payload);
+    if (!payload?.data?.tokens?.accessToken || !payload?.data?.tokens?.refreshToken) {
+      throw new ApiError({ status: 502, code: 'INVALID_REFRESH_RESPONSE', message: 'Unable to renew your session. Please retry.' });
     }
 
     await setTokens(payload.data.tokens);
@@ -201,6 +205,7 @@ export const request = async (method, path, options = {}) => {
     }
   }
 
+  const sentAccessToken = memory.accessToken;
   let { response, payload } = await send(method, `/${API_VERSION}${path}`, {
     ...rest,
     headers: { ...(auth ? await authorize() : {}), ...(rest.headers ?? {}) },
@@ -209,7 +214,8 @@ export const request = async (method, path, options = {}) => {
   // Reactive path: the token was rejected despite looking valid (revoked session, a
   // password change elsewhere, a clock skew we did not account for).
   if (auth && response.status === 401 && memory.refreshToken) {
-    if (!(await refreshTokens())) raise(response, payload);
+    // Another request may have renewed the token while this response was in flight.
+    if (memory.accessToken === sentAccessToken && !(await refreshTokens())) raise(response, payload);
     ({ response, payload } = await send(method, `/${API_VERSION}${path}`, {
       ...rest,
       headers: { ...(await authorize()), ...(rest.headers ?? {}) },
