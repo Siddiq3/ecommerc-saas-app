@@ -86,6 +86,8 @@ export function InstagramPanel({ businessId }) {
     const started=await instagram.connect(businessId);
     if(!started?.authorizationUrl?.startsWith('https://www.instagram.com/oauth/authorize?'))
       throw new Error('Unsafe authorization URL');
+    // OAuth requires the app callback. This is not the billing checkout flow.
+    // eslint-disable-next-line no-restricted-properties
     await WebBrowser.openAuthSessionAsync(started.authorizationUrl,'storekit://instagram-complete');
   });
   const disconnect=()=>{
