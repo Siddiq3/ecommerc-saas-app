@@ -8,5 +8,6 @@
  */
 export function redirectSystemPath({ path }) {
   if (typeof path === 'string' && path.includes('expo-development-client')) return path;
+  if (typeof path === 'string' && (/^\/?instagram-complete(?:[?/#]|$)/.test(path) || /^storekit:\/\/instagram-complete(?:[?/#]|$)/.test(path))) return '/(tabs)/social';
   return '/';
 }

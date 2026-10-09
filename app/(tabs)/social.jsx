@@ -7,6 +7,7 @@ import { Body, Button, Caption, Card, Display, Row } from '../../src/components/
 import { FadeIn } from '../../src/components/motion.jsx';
 import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
+import { InstagramPanel } from '../../src/components/InstagramPanel.jsx';
 import { storeUrl as storeAddress } from '../../src/lib/storefront.js';
 import { colors, radius, space, tones, type } from '../../src/theme.js';
 
@@ -46,7 +47,7 @@ const ILLUSTRATION = require('../../assets/instagram-auto-dm.png');
 export default function Social() {
   const insets = useSafeAreaInsets();
   const toast = useToast();
-  const { business } = useAuth();
+  const { business, businessId } = useAuth();
   const link = business?.slug ? storeAddress(business.slug) : null;
 
   const copyLink = async () => {
@@ -63,6 +64,8 @@ export default function Social() {
           <Text style={styles.soonText}>Coming soon</Text>
         </View>
       </Row>
+
+      <InstagramPanel businessId={businessId} />
 
       <FadeIn>
         <View style={styles.art}>
