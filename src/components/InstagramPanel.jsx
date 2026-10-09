@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Text, TextInput, View } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
+import { ActivityIndicator, Alert, AppState, Image, Text, TextInput, View } from 'react-native';
+import * as Linking from 'expo-linking';
 import { Ionicons } from '@expo/vector-icons';
 import { instagram, products } from '../api/endpoints.js';
 import { Body, Button, Caption, Card, Row, Touchable } from './ui.jsx';
@@ -74,6 +74,12 @@ export function InstagramPanel({ businessId }) {
     finally{setLoading(false);}
   },[businessId]);
   useEffect(()=>{void reload();},[reload]);
+  useEffect(()=>{
+    const subscription=AppState.addEventListener('change',(state)=>{
+      if(state==='active')void reload();
+    });
+    return()=>subscription.remove();
+  },[reload]);
 
   const perform=async(fn)=>{
     if(busy)return;
@@ -86,9 +92,9 @@ export function InstagramPanel({ businessId }) {
     const started=await instagram.connect(businessId);
     if(!started?.authorizationUrl?.startsWith('https://www.instagram.com/oauth/authorize?'))
       throw new Error('Unsafe authorization URL');
-    // OAuth requires the app callback. This is not the billing checkout flow.
-    // eslint-disable-next-line no-restricted-properties
-    await WebBrowser.openAuthSessionAsync(started.authorizationUrl,'storekit://instagram-complete');
+    // Instagram login opens externally and returns through the registered app link.
+    // This is not a purchase or subscription flow.
+    await Linking.openURL(started.authorizationUrl);
   });
   const disconnect=()=>{
     Alert.alert('Disconnect Instagram?','Your rules will stop running. You can reconnect later.',[
