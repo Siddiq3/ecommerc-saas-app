@@ -3,12 +3,15 @@ import { ActivityIndicator, Alert as NativeAlert, AppState, StyleSheet, Text, Vi
 import * as Linking from 'expo-linking';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { instagram, products } from '../api/endpoints.js';
+import { instagram } from '../api/endpoints.js';
 import { Alert, Body, Button, Caption, Card, Heading, Pill, Row, Touchable } from './ui.jsx';
 import { SectionHeader } from './domain.jsx';
 import { useRefreshOnFocus } from '../lib/useAsync.js';
-import { InstagramMark, RuleArt, canTurnOn, instagramError as failure, targetName } from './instagram.jsx';
-import { colors, space, type } from '../theme.js';
+import { InstagramMark, RuleArt, readinessLabel, canTurnOn, instagramError as failure, targetName } from './instagram.jsx';
+import { InstagramActivityPeriod, displayDay } from './InstagramActivityPeriod.jsx';
+import { Sheet } from './Sheet.jsx';
+import { usePlan } from '../state/plan.jsx';
+import { colors, fonts, radius, space, type } from '../theme.js';
 
 /**
  * The Social tab's Instagram overview: the connection, what it has done, and the seller's automations. Creating one
@@ -44,43 +47,115 @@ const MiniStat = ({ label, value, icon }) => (
   </View>
 );
 
+/** One figure in a breakdown row, spelled out so it reads without the column labels above. */
+const InlineStat = ({ icon, value, one, many }) => (
+  <Row gap={space.xs} style={styles.inlineStat}>
+    <Ionicons name={icon} size={14} color={colors.ink400} />
+    <Text style={styles.inlineValue}>{value}</Text>
+    <Caption>{value === 1 ? one : many}</Caption>
+  </Row>
+);
+
+const rangeLabel = r => (r.from === r.to ? displayDay(r.from) : `${displayDay(r.from)} to ${displayDay(r.to)}`);
+
+const TOP_MEDIA = 3;
+const MEDIA_SORTS = [['repliesSent', 'Replies'], ['visits', 'Visits'], ['ordersPlaced', 'Orders']];
+
+/** One Reel, post or DM source in the breakdown: what it is, then its share of the totals in words. */
+const MediaActivityRow = ({ activity, media, first }) => {
+  const post = activity.media ?? media.find(x => x.id === activity.mediaId);
+  const label = activity.mediaId === 'DM' ? 'Direct messages' : activity.mediaId === 'ALL' ? 'Older all-post links' : activity.mediaId === 'UNKNOWN' ? 'Unidentified source' : post?.caption || `Reel / post ${activity.mediaId}`;
+  return <View style={[styles.mediaRow, !first && styles.divider]}>
+    <Row gap={space.md} align="flex-start">
+      <RuleArt target={activity.mediaId} media={post ? [post] : []} size={48} />
+      <View style={{ flex: 1, gap: 2 }}>
+        <Body strong numberOfLines={2}>{label}</Body>
+        {activity.keywords.length ? <Caption numberOfLines={1}>Keywords: {activity.keywords.join(', ')}</Caption> : null}
+        {['ALL', 'UNKNOWN'].includes(activity.mediaId) ? <Caption>These older links did not record the exact Reel or post.</Caption> : null}
+      </View>
+    </Row>
+    <View style={styles.inlineStats}>
+      <InlineStat icon="paper-plane-outline" value={activity.repliesSent} one="reply" many="replies" />
+      <InlineStat icon="eye-outline" value={activity.visits} one="visit" many="visits" />
+      <InlineStat icon="receipt-outline" value={activity.ordersPlaced} one="order" many="orders" />
+    </View>
+    <Caption style={styles.mediaFoot}>
+      {activity.commentsProcessed} handled
+      {activity.repliesFailed ? <Caption style={{ color: colors.danger }}>{` · ${activity.repliesFailed} failed`}</Caption> : null}
+      {activity.repliesUncertain ? <Caption style={{ color: colors.warning }}>{` · ${activity.repliesUncertain} not confirmed`}</Caption> : null}
+    </Caption>
+  </View>;
+};
+
 export function InstagramPanel({ businessId, onEnabled, onConnected }) {
   const [status, setStatus] = useState({ status: 'disconnected', enabled: false });
   const [media, setMedia] = useState([]);
   const [rules, setRules] = useState([]);
-  const [catalog, setCatalog] = useState([]);
+  const { entitled } = usePlan();
+  const [nextCursor, setNextCursor] = useState(null);
+  const [moreLoading, setMoreLoading] = useState(false);
+  const [moreError, setMoreError] = useState('');
+  const [rulesError, setRulesError] = useState('');
+  const morePending = useRef(false);
+  const generation = useRef(0);
+  const [reportLoading, setReportLoading] = useState(true);
+  const [reportError, setReportError] = useState('');
   const [report, setReport] = useState(null);
+  const [allMedia, setAllMedia] = useState(false);
+  const [mediaSort, setMediaSort] = useState('repliesSent');
+  const [activityCount, setActivityCount] = useState(10);
+  const [activityPeriod, setActivityPeriod] = useState({ period: 'weekly' });
   const [loading, setLoading] = useState(Boolean(businessId));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   const reload = useCallback(async () => {
+    const id = ++generation.current;
     if (!businessId) { setLoading(false); return; }
+    setReportLoading(true); setReportError(''); setMoreError(''); setRulesError('');
+    let activityUpdated = false;
     try {
       const current = await instagram.status(businessId);
+      if (id !== generation.current) return;
       setStatus(current ?? { status: 'disconnected', enabled: false });
       onEnabled?.(Boolean(current?.enabled));
       onConnected?.(Boolean(current?.status && current.status !== 'disconnected'));
-      if (current?.status === 'connected' && current.enabled) {
-        const [r, p, a] = await Promise.allSettled([
-          instagram.rules(businessId), products.list(businessId, { limit: 50, active: 'true' }), instagram.report(businessId),
-        ]);
-        // A failed list request must not look like a store with no automations.
+      if (current?.enabled) {
+        const [r, a] = await Promise.allSettled([instagram.rules(businessId), instagram.report(businessId, activityPeriod)]);
+        if (id !== generation.current) return;
+        if (a.status === 'fulfilled') { setReport(a.value); setReportError(''); activityUpdated = true; }
+        else setReportError('Unable to update activity.');
         if (r.status === 'rejected') throw r.reason;
-        const list = r.status === 'fulfilled' ? r.value?.items ?? [] : [];
-        setRules(list);
-        if (p.status === 'fulfilled') setCatalog(p.value?.items ?? []);
-        if (a.status === 'fulfilled') setReport(a.value);
-        // Post pictures only matter when a rule names a post.
-        if (list.some((x) => !['ALL', 'DM'].includes(x.mediaId))) {
-          const m = await instagram.media(businessId).catch(() => null);
-          if (m) setMedia(m.items ?? []);
-        }
-      } else { setMedia([]); setRules([]); setReport(null); setCatalog([]); }
+        setRules(r.value?.items ?? []); setNextCursor(r.value?.nextCursor ?? null);
+        const list = r.value?.items ?? [];
+        const snapshots = list.map(x => x.media).filter(Boolean);
+        // Existing rules predate media snapshots; retain their thumbnails when Instagram is reachable.
+        if (current.status === 'connected' && list.some(x => !['ALL','DM'].includes(x.mediaId) && !x.media)) {
+          const posts = await instagram.media(businessId).catch(() => null);
+          if (id !== generation.current) return;
+          setMedia([...snapshots, ...(posts?.items ?? [])]);
+        } else setMedia(snapshots);
+      } else { setMedia([]); setRules([]); setNextCursor(null); setReport(null); }
       setError('');
-    } catch (e) { setError(failure(e)); }
-    finally { setLoading(false); }
-  }, [businessId, onEnabled, onConnected]);
+    } catch (e) {
+      if (id === generation.current) { setError(failure(e)); setRulesError('Unable to update automations.');
+        if (!activityUpdated) setReportError('Unable to update activity.'); }
+    } finally { if (id === generation.current) { setLoading(false); setReportLoading(false); } }
+  }, [businessId, onEnabled, onConnected, activityPeriod]);
+  useEffect(() => { const counter = generation; setReport(null); setAllMedia(false); setRules([]); setNextCursor(null); return () => { counter.current++; }; }, [businessId]);
+  const loadMoreRules = async () => {
+    if (!nextCursor || morePending.current) return;
+    const id = generation.current;
+    morePending.current = true; setMoreLoading(true); setMoreError('');
+    try {
+      const next = await instagram.rules(businessId, { cursor: nextCursor });
+      if (id !== generation.current) return;
+      setRules(prev => [...prev, ...(next.items ?? []).filter(x => !prev.some(y => y.id === x.id))]);
+      setMedia(prev => [...prev, ...(next.items ?? []).map(x => x.media).filter(Boolean)]);
+      setNextCursor(next.nextCursor ?? null);
+    } catch { if (id === generation.current) setMoreError('Could not load more automations. Please try again.'); }
+    finally { morePending.current = false; setMoreLoading(false); }
+  };
   useEffect(() => { void reload(); }, [reload]);
   // Back from a new or changed automation: show it.
   useFocusEffect(useRefreshOnFocus(reload));
@@ -141,8 +216,7 @@ export function InstagramPanel({ businessId, onEnabled, onConnected }) {
   }
 
   /* ───────────── Not connected ───────────── */
-  if (status.status === 'disconnected') {
-    return (
+  const disconnectedCard = status.status === 'disconnected' ? (
       <Card style={styles.last}>
         <Row gap={space.md}>
           <InstagramMark />
@@ -156,10 +230,11 @@ export function InstagramPanel({ businessId, onEnabled, onConnected }) {
             ? 'Reply to comments and messages with your product, price and link, automatically.'
             : 'Instagram connection is not available yet.'}
         </Body>
+        {status.managementOnly ? <Caption>Your subscription has expired. New connections are unavailable.</Caption> : null}
         <Alert message={error} />
         {status.enabled ? (
           <>
-            <Button title="Connect Instagram" style={{ marginTop: space.lg }} disabled={busy} loading={busy} onPress={connect}
+            <Button title="Connect Instagram" style={{ marginTop: space.lg }} disabled={busy || entitled !== true || status.managementOnly} loading={busy} onPress={connect}
               icon={<Ionicons name="logo-instagram" size={18} color="#ffffff" />} />
             <Caption style={styles.footnote}>You will log in on Instagram, then confirm the account here.</Caption>
           </>
@@ -167,23 +242,26 @@ export function InstagramPanel({ businessId, onEnabled, onConnected }) {
           <Button title="Refresh" variant="secondary" style={{ marginTop: space.lg }} onPress={reload} />
         )}
       </Card>
-    );
-  }
+    ) : null;
 
   const badge = STATUS[status.status] ?? STATUS.reauthorization_required;
   const connected = status.status === 'connected' && status.enabled;
   const missing = status.missingPermissions ?? [];
   const commentsOk = !missing.some((p) => COMMENT_SCOPES.includes(p)) && status.webhook === 'subscribed';
-  const messagesOk = Boolean(status.messagesReady);
+  const messagesOk = Boolean(status.connectionMessagesReady ?? status.messagesReady);
   const handledCount = report?.commentsProcessed ?? 0;
+  // The server already orders by replies; re-sorting is only needed for the other keys. Stable, so ties keep that order.
+  const sortedMedia = mediaSort === 'repliesSent' ? report?.byMedia ?? [] : [...(report?.byMedia ?? [])].sort((a, b) => b[mediaSort] - a[mediaSort]);
   const ready = canTurnOn(status, 'ALL');
+  const managementOnly = entitled === false || status.managementOnly;
 
   return (
     <View>
       <Alert message={error} />
 
+      {status.health === 'temporarily_unavailable' ? <Alert message="Instagram is temporarily unavailable. Tap Check connection to retry." /> : null}
       {/* ───────────── Connection ───────────── */}
-      <Card style={connected ? styles.block : styles.last}>
+      {disconnectedCard ?? <Card style={connected ? styles.block : styles.last}>
         <Row gap={space.md}>
           <InstagramMark />
           <View style={{ flex: 1 }}>
@@ -224,17 +302,19 @@ export function InstagramPanel({ businessId, onEnabled, onConnected }) {
           ) : null}
           <View style={{ flex: 1 }}><Button title="Disconnect" variant="danger" size="sm" disabled={busy} onPress={disconnect} /></View>
         </Row>
-      </Card>
+      </Card>}
 
-      {connected ? (
+      {status.enabled ? (
         <>
+          {managementOnly ? <Caption style={styles.footnote}>Your subscription has expired. You can pause or delete automations and disconnect Instagram.</Caption> : null}
           {/* ───────────── Automations ───────────── */}
           <SectionHeader title="Automations" />
           <Card style={styles.block} padded={false}>
-            {rules.length === 0 ? (
+            {rules.length === 0 && rulesError ? <View style={styles.empty}><Alert message={rulesError} />
+              <Button title="Retry automations" variant="secondary" onPress={reload} /></View> : rules.length === 0 ? (
               <View style={styles.empty}>
                 <Body strong>No automations yet</Body>
-                <Caption style={{ marginTop: 2 }}>Choose a word like LINK, and the product customers should get.</Caption>
+                <Caption style={{ marginTop: 2 }}>{managementOnly ? 'New automations require an active subscription.' : 'Choose a word like LINK, and the product customers should get.'}</Caption>
               </View>
             ) : rules.map((rule, index) => (
               <Touchable key={rule.id} onPress={() => router.push(`/instagram/${encodeURIComponent(rule.id)}`)}
@@ -242,43 +322,89 @@ export function InstagramPanel({ businessId, onEnabled, onConnected }) {
                 <Row gap={space.md}>
                   <RuleArt target={rule.mediaId} media={media} />
                   <View style={{ flex: 1 }}>
-                    <Body strong numberOfLines={1}>&quot;{rule.keyword}&quot; → {catalog.find((p) => p.productId === rule.productId)?.name ?? 'Product'}</Body>
+                    <Body strong numberOfLines={1}>&quot;{rule.keyword}&quot; → {rule.product?.name ?? 'Unavailable product'}</Body>
                     <Caption numberOfLines={1}>{targetName(rule.mediaId, media)}</Caption>
+                    <View style={{ alignSelf: 'flex-start', marginTop: space.xs }}><Pill label={readinessLabel(rule)} tone={rule.readiness?.state === 'ready' ? 'green' : rule.readiness?.state === 'paused' ? 'slate' : 'amber'} /></View>
+                    {rule.readiness?.state === 'action_needed' ? <Caption>{rule.readiness.reasons[0]?.message}</Caption> : null}
                   </View>
-                  <Pill label={rule.active ? 'On' : 'Off'} tone={rule.active ? 'green' : 'slate'} />
                   <Ionicons name="chevron-forward" size={18} color={colors.ink400} />
                 </Row>
               </Touchable>
             ))}
           </Card>
-          <Button title="New automation" style={styles.newButton} onPress={() => router.push('/instagram/new')}
-            icon={<Ionicons name="add" size={20} color="#ffffff" />} />
-          {!ready ? <Caption style={styles.newHint}>You can create automations now; they turn on once the checklist above is all green.</Caption> : null}
+          <Alert message={moreError} />
+          {nextCursor ? <Button title={moreError ? 'Retry automations' : 'Show more automations'} variant="secondary" loading={moreLoading} onPress={loadMoreRules} /> : null}
+          {!managementOnly ? <Button title="New automation" style={styles.newButton} onPress={() => router.push('/instagram/new')}
+            icon={<Ionicons name="add" size={20} color="#ffffff" />} /> : null}
+          {!ready && !managementOnly ? <Caption style={styles.newHint}>You can create automations now; they turn on once the checklist above is all green.</Caption> : null}
 
           {/* ───────────── Activity ───────────── */}
           <SectionHeader title="Activity" />
+          <InstagramActivityPeriod value={activityPeriod} onChange={period => {
+            setReport(null); setReportError(''); setReportLoading(true); setActivityCount(10); setAllMedia(false); setActivityPeriod(period);
+          }} />
           <Card style={styles.last}>
-            <Row style={{ alignItems: 'stretch' }}>
-              <MiniStat label="Replies sent" value={String(report?.repliesSent ?? 0)} icon="paper-plane-outline" />
-              <View style={styles.statSplit} />
-              <MiniStat label="Store visits" value={String(report?.visits ?? 0)} icon="eye-outline" />
-              <View style={styles.statSplit} />
-              <MiniStat label="Orders" value={String(report?.ordersPlaced ?? 0)} icon="receipt-outline" />
+            {reportError ? <View style={styles.activityError}><Alert message={report ? 'Unable to update activity. Showing the last successful update.' : reportError} />
+              <Button title="Retry activity" variant="secondary" size="sm" onPress={reload} /></View> : null}
+            {report || reportLoading ? <>
+            <Row style={styles.activityHead} align="flex-start">
+              <View style={{ flex: 1 }}>
+                <Body strong>All Reels, posts and messages</Body>
+                <Caption numberOfLines={1}>{report ? rangeLabel(report) : ' '}</Caption>
+              </View>
+              <Caption>{reportLoading ? 'Updating…' : report?.generatedAt ? `Updated ${new Date(report.generatedAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}` : ''}</Caption>
             </Row>
-            <View style={styles.activityFoot}>
-              <Caption>
+            <Row style={[{ alignItems: 'stretch' }, reportLoading && { opacity: 0.4 }]}>
+              <MiniStat label="Replies sent" value={report ? String(report.repliesSent ?? 0) : '-'} icon="paper-plane-outline" />
+              <View style={styles.statSplit} />
+              <MiniStat label="Tracked visits" value={report ? String(report.visits ?? 0) : '-'} icon="eye-outline" />
+              <View style={styles.statSplit} />
+              <MiniStat label="Orders placed" value={report ? String(report.ordersPlaced ?? 0) : '-'} icon="receipt-outline" />
+            </Row>
+            {report ? <View style={styles.activityFoot}>
+              <Body>
                 {handledCount} {handledCount === 1 ? 'comment or message' : 'comments and messages'} handled
-                {report?.repliesFailed ? ` · ${report.repliesFailed} failed` : ''}
-                {report?.repliesUncertain ? ` · ${report.repliesUncertain} not confirmed` : ''}
-              </Caption>
-              {report?.repliesUncertain ? (
-                <Caption style={{ marginTop: 2 }}>Not confirmed: Instagram did not answer in time, so we did not send again.</Caption>
+                {report.repliesFailed ? <Body style={{ color: colors.danger }}>{` · ${report.repliesFailed} failed`}</Body> : null}
+                {report.repliesUncertain ? <Body style={{ color: colors.warning }}>{` · ${report.repliesUncertain} not confirmed`}</Body> : null}
+              </Body>
+              {report.repliesUncertain ? (
+                <Caption style={styles.footLine}>Not confirmed: Instagram did not answer in time, so we did not send again.</Caption>
               ) : null}
-              <Caption style={{ marginTop: 2 }}>
-                {report?.partial ? 'Showing your latest 100. ' : ''}Orders are placed orders, not yet paid.
-              </Caption>
-            </View>
+              {report.historyLimited ? <Caption style={styles.footLine}>Limited history: daily summaries started {new Date(report.historyStartedAt).toLocaleDateString('en-IN')}. Earlier dates include only records still available.</Caption> : null}
+              <Caption style={styles.footLine}>India time. Orders placed are not paid sales; payments are not measured here.</Caption>
+            </View> : null}
+            </> : !reportError ? <Caption>Activity is unavailable.</Caption> : null}
           </Card>
+          {report?.byMedia ? <>
+            <SectionHeader title="By Reel or post" />
+            <Caption style={styles.breakdownIntro}>Where the totals above came from. Visits are store visits from reply links, not Reel views.</Caption>
+            <Card padded={false} style={styles.last}>
+              {report.byMedia.length === 0 ? <View style={styles.mediaRow}>
+                <Body strong>No Reel or post activity yet</Body>
+                <Caption>Activity appears here when a post has an automation or a comment is handled.</Caption>
+              </View> : null}
+              {report.byMedia.slice(0, TOP_MEDIA).map((activity, i) => <MediaActivityRow key={activity.mediaId} activity={activity} media={media} first={i === 0} />)}
+              {report.byMedia.length > TOP_MEDIA ? <Touchable accessibilityLabel={`See all ${report.byMedia.length} Reels, posts and messages`}
+                style={[styles.seeAll, styles.divider]} onPress={() => { setActivityCount(10); setAllMedia(true); }}>
+                <Body style={styles.seeAllText}>See all {report.byMedia.length}</Body>
+                <Ionicons name="chevron-forward" size={16} color={colors.accent700} />
+              </Touchable> : null}
+            </Card>
+            <Sheet visible={allMedia} onClose={() => setAllMedia(false)} title="By Reel or post">
+              <Caption style={styles.breakdownIntro}>{rangeLabel(report)} · {report.byMedia.length} Reels, posts and messages</Caption>
+              <View style={styles.segmented} accessibilityRole="radiogroup" accessibilityLabel="Sort by">
+                {MEDIA_SORTS.map(([key, title]) => <Touchable key={key} haptics="select" accessibilityRole="radio" accessibilityLabel={`Most ${title.toLowerCase()}`}
+                  accessibilityState={{ checked: mediaSort === key }} style={[styles.segment, mediaSort === key && styles.segmentActive]}
+                  onPress={() => { setMediaSort(key); setActivityCount(10); }}>
+                  <Body style={[styles.segmentText, mediaSort === key && styles.segmentTextActive]} numberOfLines={1}>Most {title.toLowerCase()}</Body>
+                </Touchable>)}
+              </View>
+              <Card padded={false}>
+                {sortedMedia.slice(0, activityCount).map((activity, i) => <MediaActivityRow key={activity.mediaId} activity={activity} media={media} first={i === 0} />)}
+              </Card>
+              {sortedMedia.length > activityCount ? <Button title="Show more" variant="secondary" style={{ marginTop: space.md }} onPress={() => setActivityCount(n => n + 10)} /> : null}
+            </Sheet>
+          </> : null}
         </>
       ) : null}
     </View>
@@ -299,8 +425,24 @@ const styles = StyleSheet.create({
   newButton: { marginTop: space.md },
   newHint: { marginTop: space.sm, textAlign: 'center' },
 
-  miniStat: { flex: 1, alignItems: 'center', gap: 3 },
-  miniValue: { ...type.figure, fontSize: 20, color: colors.ink900 },
+  miniStat: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: space.xs },
+  miniValue: { ...type.figure, fontSize: 28, lineHeight: 34, color: colors.ink900, marginTop: space.xs },
   statSplit: { width: StyleSheet.hairlineWidth, backgroundColor: colors.line },
+  activityHead: { marginBottom: space.lg },
+  activityError: { gap: space.sm, marginBottom: space.md },
   activityFoot: { marginTop: space.lg, paddingTop: space.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
+  footLine: { marginTop: space.xs },
+  breakdownIntro: { marginBottom: space.md },
+  mediaRow: { padding: space.lg },
+  inlineStats: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.md, marginLeft: 48 + space.md },
+  inlineStat: { backgroundColor: colors.sunken, borderRadius: radius.pill, paddingHorizontal: space.sm + 2, paddingVertical: space.xs },
+  inlineValue: { ...type.figure, fontSize: 14, lineHeight: 18, letterSpacing: 0, color: colors.ink900 },
+  mediaFoot: { marginTop: space.sm, marginLeft: 48 + space.md },
+  seeAll: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xs, minHeight: 52 },
+  seeAllText: { color: colors.accent700, fontFamily: fonts.semibold },
+  segmented: { flexDirection: 'row', backgroundColor: colors.sunken, borderRadius: radius.pill, padding: 4, gap: 2, marginBottom: space.md },
+  segment: { flex: 1, minHeight: 40, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xs },
+  segmentActive: { backgroundColor: colors.surface, shadowColor: colors.ink900, shadowOpacity: 0.06, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
+  segmentText: { color: colors.ink600, fontFamily: fonts.semibold, fontSize: 13 },
+  segmentTextActive: { color: colors.ink900 },
 });

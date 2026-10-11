@@ -20,6 +20,7 @@ export const Screen = ({
   children,
   scroll = true,
   onRefresh,
+  onEndReached,
   refreshing = false,
   padded = true,
   footer,
@@ -44,6 +45,10 @@ export const Screen = ({
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
       showsVerticalScrollIndicator={false}
+      scrollEventThrottle={200}
+      onScroll={onEndReached ? ({ nativeEvent: e }) => {
+        if (e.contentOffset.y + e.layoutMeasurement.height >= e.contentSize.height - 200) onEndReached();
+      } : undefined}
       refreshControl={
         onRefresh ? (
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent600} colors={[colors.accent600]} />

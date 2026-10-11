@@ -23,7 +23,7 @@ export const instagramError = (error) => {
   if (error?.code === 'INSTAGRAM_PRODUCT_UNAVAILABLE') return 'That product is hidden or deleted. Choose an active product.';
   if (error?.code === 'INSTAGRAM_CONFIRMATION_INVALID') return 'This Instagram connection request has expired. Please connect again.';
   if (error?.code === 'INSTAGRAM_CONNECT_FAILED') return 'Could not connect. This Instagram account may already be connected to another store.';
-  if (error?.code === 'INSTAGRAM_MEDIA_UNAVAILABLE') return 'Choose one of your recent posts or Reels.';
+  if (error?.code === 'INSTAGRAM_MEDIA_UNAVAILABLE') return 'Reload your posts and select the post or Reel again.';
   if (error?.code === 'INSTAGRAM_PERMISSIONS_MISSING') return 'Instagram did not allow comment access. Disconnect, connect again and allow all permissions.';
   if (error?.code === 'INSTAGRAM_WEBHOOK_NOT_READY') return 'Comment updates are not on yet. Tap "Check connection" on the Social tab, then try again.';
   if (error?.code === 'INSTAGRAM_MESSAGES_NOT_READY') return 'Instagram did not allow message access. Disconnect, connect again and allow messages.';
@@ -33,6 +33,11 @@ export const instagramError = (error) => {
 /** Comment rules need the connection ready; DM rules also need message access. */
 export const canTurnOn = (status, target) =>
   Boolean(status?.automationReady) && (target !== 'DM' || Boolean(status?.messagesReady));
+
+export const readinessLabel = (rule) => ({ ready: 'Ready', paused: 'Paused', action_needed: 'Action needed' }[rule?.readiness?.state] ?? 'Checking readiness');
+export const readinessHint = (rule) => rule?.readiness?.state === 'paused' ? 'Paused by you. No replies will be attempted.'
+  : rule?.readiness?.state === 'ready' ? 'Eligible to attempt replies. Delivery is recorded separately in Activity.'
+    : rule?.readiness?.reasons?.map(r => r.message).join('\n') || 'Readiness could not be confirmed. Refresh to check.';
 
 export const shorten = (text, max = 36) => (text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text);
 export const targetName = (id, media = []) =>
@@ -73,8 +78,8 @@ export const Option = ({ chosen, title, subtitle, onPress, uri, icon, label, dis
   </Touchable>
 );
 
-export const ProductOption = ({ product, chosen, onPress }) => (
-  <Option chosen={chosen} uri={product.thumbUrl} label={product.name} title={product.name ?? 'Product'}
+export const ProductOption = ({ product, chosen, onPress, disabled }) => (
+  <Option chosen={chosen} disabled={disabled} uri={product.thumbUrl} label={product.name} title={product.name ?? 'Product'}
     subtitle={formatMoney(product.price)} onPress={onPress} />
 );
 

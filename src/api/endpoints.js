@@ -86,11 +86,12 @@ export const instagram = {
   check: (b) => api.post(`${scope(b)}/instagram/check`, {}),
   disconnect: (b) => api.del(`${scope(b)}/instagram`),
   media: (b, after) => api.get(`${scope(b)}/instagram/media${qs(after ? {after}:{})}`),
-  rules: (b) => api.get(`${scope(b)}/instagram/rules`),
+  rules: (b, params) => api.get(`${scope(b)}/instagram/rules${qs(params)}`),
+  rule: (b, id) => api.get(`${scope(b)}/instagram/rules/${encodeURIComponent(id)}`),
   createRule: (b, input) => api.post(`${scope(b)}/instagram/rules`, input),
   updateRule: (b, id, input) => api.patch(`${scope(b)}/instagram/rules/${encodeURIComponent(id)}`,input),
   deleteRule: (b, id) => api.del(`${scope(b)}/instagram/rules/${encodeURIComponent(id)}`),
-  report: (b) => api.get(`${scope(b)}/instagram/report`),
+  report: (b, params) => api.get(`${scope(b)}/instagram/report${qs(params)}`),
 };
 
 

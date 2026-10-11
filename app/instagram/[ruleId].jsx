@@ -4,11 +4,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Screen } from '../../src/components/Screen.jsx';
 import { Alert, Body, Button, Card, Caption, Heading, Row, Toggle } from '../../src/components/ui.jsx';
 import { SectionHeader } from '../../src/components/domain.jsx';
-import { ProductOption, ReplyPreview, RuleArt, canTurnOn, instagramError, targetName } from '../../src/components/instagram.jsx';
+import { ReplyPreview, RuleArt, readinessHint, readinessLabel, instagramError, targetName } from '../../src/components/instagram.jsx';
 import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { useAsync } from '../../src/lib/useAsync.js';
-import { instagram, products } from '../../src/api/endpoints.js';
+import { InstagramProductPicker } from '../../src/components/InstagramProductPicker.jsx';
+import { useProductSearch } from '../../src/lib/useProductSearch.js';
+import { usePlan } from '../../src/state/plan.jsx';
+import { instagram } from '../../src/api/endpoints.js';
 import { productUrl } from '../../src/lib/storefront.js';
 import { colors, space } from '../../src/theme.js';
 
@@ -18,18 +21,19 @@ export default function AutomationDetails() {
   const toast = useToast();
   const { ruleId } = useLocalSearchParams();
   const { business, businessId } = useAuth();
+  const { entitled } = usePlan();
+  const search = useProductSearch(businessId, entitled === true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   const { data, loading, error: loadError, reload, setData } = useAsync(async () => {
     if (!businessId) return null;
-    const [rules, status, catalog] = await Promise.all([
-      instagram.rules(businessId), instagram.status(businessId), products.list(businessId, { limit: 50, active: 'true' }),
-    ]);
-    const rule = (rules.items ?? []).find((r) => r.id === ruleId) ?? null;
-    const media = rule && !['ALL', 'DM'].includes(rule.mediaId)
+    let rule;
+    try { rule = await instagram.rule(businessId, ruleId); }
+    catch (e) { if (e.status === 404) return { rule: null }; throw e; }
+    const media = rule.media ? [rule.media] : !['ALL','DM'].includes(rule.mediaId)
       ? (await instagram.media(businessId).catch(() => null))?.items ?? [] : [];
-    return { rule, status, media, catalog: (catalog.items ?? []).filter((p) => p.active) };
+    return { rule, media };
   }, [businessId, ruleId]);
 
   const update = async (change, message) => {
@@ -69,12 +73,12 @@ export default function AutomationDetails() {
     );
   }
 
-  const { rule, status, media, catalog } = data;
-  const product = catalog.find((p) => p.productId === rule.productId);
-  const canOn = canTurnOn(status, rule.mediaId);
+  const { rule, media } = data;
+  const product = rule.product;
+  const canOn = entitled === true && Boolean(rule.readiness?.canActivate);
 
   return (
-    <Screen>
+    <Screen onEndReached={entitled === true ? search.loadMore : undefined}>
       <Row gap={space.md} style={{ marginBottom: space.lg }}>
         <RuleArt target={rule.mediaId} media={media} size={56} />
         <View style={{ flex: 1 }}>
@@ -85,9 +89,8 @@ export default function AutomationDetails() {
       <Alert message={error} />
 
       <Card>
-        <Toggle value={rule.active} disabled={busy || (!rule.active && !canOn)} label="Automation on"
-          hint={rule.active ? 'Replying to customers now.' : canOn ? 'Off. Turn on to start replying.'
-            : 'Off. It can be turned on once the checklist on the Social tab is all green.'}
+        <Toggle value={rule.active} disabled={busy || (!rule.active && !canOn)} label={readinessLabel(rule)}
+          hint={readinessHint(rule)}
           onChange={(on) => update({ active: on }, (r) => (r.active ? 'Automation is on' : 'Automation paused'))} />
       </Card>
 
@@ -96,11 +99,9 @@ export default function AutomationDetails() {
         productLink={business?.slug && product ? productUrl(business.slug, product) : null} />
 
       <SectionHeader title="Product they get" />
-      {catalog.length === 0 ? <Body muted>No active products.</Body> : catalog.map((p) => (
-        <ProductOption key={p.productId} product={p} chosen={p.productId === rule.productId}
-          onPress={() => (p.productId === rule.productId || busy ? undefined
-            : update({ productId: p.productId }, () => `Now sending ${p.name}`))} />
-      ))}
+      {entitled === false ? <Body muted>Your subscription has expired. You can pause or delete this automation, or disconnect Instagram.</Body>
+        : <InstagramProductPicker search={search} selectedId={rule.productId} disabled={busy}
+          onSelect={p => p.productId === rule.productId || busy ? undefined : update({ productId: p.productId }, () => `Now using ${p.name}`)} />}
 
       <Button title="Delete automation" variant="danger" style={{ marginTop: space.xl }} disabled={busy} onPress={remove} />
     </Screen>

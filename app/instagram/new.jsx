@@ -5,12 +5,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { Screen } from '../../src/components/Screen.jsx';
 import { Alert, Body, Button, Caption, Field, Heading, Label, Row, Toggle, Touchable } from '../../src/components/ui.jsx';
 import {
-  Option, PostTile, ProductOption, ReplyPreview, SUGGESTED_WORDS, TARGETS, canTurnOn, instagramError, targetName,
+  Option, PostTile, ReplyPreview, SUGGESTED_WORDS, TARGETS, canTurnOn, instagramError, targetName,
 } from '../../src/components/instagram.jsx';
 import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { useAction, useAsync } from '../../src/lib/useAsync.js';
-import { instagram, products } from '../../src/api/endpoints.js';
+import { InstagramProductPicker } from '../../src/components/InstagramProductPicker.jsx';
+import { useProductSearch } from '../../src/lib/useProductSearch.js';
+import { usePlan } from '../../src/state/plan.jsx';
+import { instagram } from '../../src/api/endpoints.js';
 import { productUrl } from '../../src/lib/storefront.js';
 import { formatMoney } from '../../src/lib/format.js';
 import { colors, radius, space } from '../../src/theme.js';
@@ -27,6 +30,9 @@ export default function NewAutomation() {
   const router = useRouter();
   const toast = useToast();
   const { business, businessId } = useAuth();
+  const { entitled } = usePlan();
+  const search = useProductSearch(businessId, entitled === true);
+  const [product, setProduct] = useState(null);
   const { width } = useWindowDimensions();
   const [step, setStep] = useState(0);
   const [target, setTarget] = useState('');
@@ -38,22 +44,19 @@ export default function NewAutomation() {
 
   const { data, loading, error: loadError, reload } = useAsync(async () => {
     if (!businessId) return null;
-    const [status, media, catalog] = await Promise.all([
+    const [status, media] = await Promise.all([
       instagram.status(businessId),
       instagram.media(businessId).catch((error) => ({ items: [], nextCursor: null, error })),
-      products.list(businessId, { limit: 50, active: 'true' }),
     ]);
-    return { status, media: media.items ?? [], mediaError: media.error, nextCursor: media.nextCursor ?? null, catalog: (catalog.items ?? []).filter((p) => p.active) };
+    return { status, media: media.items ?? [], mediaError: media.error, nextCursor: media.nextCursor ?? null };
   }, [businessId]);
 
   const status = data?.status;
   const media = [...(data?.media ?? []), ...olderPosts.items];
   const cursor = olderPosts.cursor === undefined ? data?.nextCursor : olderPosts.cursor;
-  const catalog = data?.catalog ?? [];
-  const product = catalog.find((p) => p.productId === productId);
   const word = keyword.trim().toUpperCase();
   const wordOk = /^[A-Z0-9]{1,40}$/.test(word);
-  const canOn = canTurnOn(status, target);
+  const canOn = entitled === true && canTurnOn(status, target);
   const valid = [Boolean(target), Boolean(productId), wordOk, true];
   // Three tiles across the screen, with the page's own side padding and two gaps between them.
   const tile = Math.floor((width - space.lg * 2 - space.sm * (COLUMNS - 1)) / COLUMNS);
@@ -72,7 +75,8 @@ export default function NewAutomation() {
 
   const { run: save, pending: saving, error: saveError } = useAction(async () => {
       setError('');
-      await instagram.createRule(businessId, { mediaId: target, productId, keyword: word, active: turnOn && canOn });
+      await instagram.createRule(businessId, { mediaId: target, productId, keyword: word, active: turnOn && canOn,
+        ...(media.find(m => m.id === target)?.selectionToken ? { selectionToken: media.find(m => m.id === target).selectionToken } : {}) });
       toast.success(turnOn && canOn ? 'Automation is on' : 'Automation saved');
       router.back();
   });
@@ -86,12 +90,16 @@ export default function NewAutomation() {
         {step < STEPS.length - 1 ? (
           <Button title="Next" disabled={!valid[step]} onPress={() => { setError(''); setStep(step + 1); }} />
         ) : (
-          <Button title="Save automation" loading={saving} disabled={saving || !valid.every(Boolean)} onPress={() => save().catch(() => undefined)} />
+          <Button title="Save automation" loading={saving} disabled={saving || entitled !== true || !valid.every(Boolean)} onPress={() => save().catch(() => undefined)} />
         )}
       </View>
     </Row>
   );
 
+  if (entitled === false || status?.managementOnly) {
+    return <Screen><Body>Your subscription has expired. You can pause or delete existing automations and disconnect Instagram.</Body>
+      <Button title="Back to Instagram" variant="secondary" onPress={() => router.back()} /></Screen>;
+  }
   if (loading) {
     return <Screen><View style={styles.center}><ActivityIndicator color={colors.accent600} /></View></Screen>;
   }
@@ -103,7 +111,7 @@ export default function NewAutomation() {
   }
 
   return (
-    <Screen footer={footer}>
+    <Screen footer={footer} onEndReached={step === 1 ? search.loadMore : undefined}>
       <Caption>Step {step + 1} of {STEPS.length}</Caption>
       <Row gap={space.xs} style={styles.progress}>
         {STEPS.map((s, i) => <View key={s} style={[styles.progressBar, i <= step && styles.progressDone]} />)}
@@ -133,13 +141,8 @@ export default function NewAutomation() {
         </>
       ) : null}
 
-      {step === 1 ? (
-        catalog.length === 0 ? (
-          <Body muted>No active products. Add a product first, then come back.</Body>
-        ) : catalog.map((p) => (
-          <ProductOption key={p.productId} product={p} chosen={productId === p.productId} onPress={() => setProductId(p.productId)} />
-        ))
-      ) : null}
+      {step === 1 ? <InstagramProductPicker search={search} selectedId={productId}
+        onSelect={p => { setProductId(p.productId); setProduct(p); }} /> : null}
 
       {step === 2 ? (
         <>
