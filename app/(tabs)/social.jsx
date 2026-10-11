@@ -44,8 +44,8 @@ const FEATURES = [
 
 const STEPS = [
   { icon: 'logo-instagram', title: 'Connect Instagram', body: 'Use your Instagram Business or Creator account.' },
-  { icon: 'pricetag-outline', title: 'Choose a post and a product', body: 'Pick a post or Reel, the product, and a word like LINK.' },
-  { icon: 'paper-plane-outline', title: 'Customers get the link', body: 'When someone comments that word, we send them the product link in a private message.' },
+  { icon: 'pricetag-outline', title: 'Choose where and what', body: 'Pick one post, all posts, or direct messages, then a product and a word like LINK or PRICE.' },
+  { icon: 'paper-plane-outline', title: 'Customers get the details', body: 'When someone comments that word or sends it in a DM, we send them the product name, price and link.' },
 ];
 
 /** A customer asks under a post; the store answers in their DMs with the product link. */

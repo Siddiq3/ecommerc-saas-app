@@ -7,17 +7,25 @@ import { instagram, products } from '../api/endpoints.js';
 import { Body, Button, Caption, Card, Row, Touchable } from './ui.jsx';
 import { colors, space, radius, type } from '../theme.js';
 
+// Rules apply to one post or Reel, to every post (new ones included), or to direct messages.
+const TARGETS = {
+  ALL: { title: 'All posts and Reels', subtitle: 'Includes posts you add later' },
+  DM: { title: 'Direct messages', subtitle: 'When a customer sends the keyword in a DM' },
+};
+const COMMENT_SCOPES = ['instagram_business_basic', 'instagram_business_manage_comments'];
+
 const failure = (error) => {
   if (error?.code === 'INSTAGRAM_DISABLED') return 'Instagram connection is not enabled yet.';
   if (error?.code === 'INSTAGRAM_RECONNECT') return 'Instagram access expired. Disconnect and connect again.';
   if (error?.code === 'PLAN_LIMIT_EXCEEDED') return 'Your trial has ended. You can still disconnect or pause automations.';
-  if (error?.code === 'INSTAGRAM_RULE_EXISTS') return 'This post already has a rule using that keyword.';
+  if (error?.code === 'INSTAGRAM_RULE_EXISTS') return 'There is already a rule for that keyword here.';
   if (error?.code === 'INSTAGRAM_PRODUCT_UNAVAILABLE') return 'Choose an active product.';
   if (error?.code === 'INSTAGRAM_CONFIRMATION_INVALID') return 'This Instagram connection request has expired. Please connect again.';
   if (error?.code === 'INSTAGRAM_CONNECT_FAILED') return 'Could not connect. This Instagram account may already be connected to another store.';
   if (error?.code === 'INSTAGRAM_MEDIA_UNAVAILABLE') return 'Choose one of your recent posts or Reels.';
   if (error?.code === 'INSTAGRAM_PERMISSIONS_MISSING') return 'Instagram did not allow comment access. Disconnect, connect again and allow all permissions.';
   if (error?.code === 'INSTAGRAM_WEBHOOK_NOT_READY') return 'Comment updates are not on yet. Tap "Check connection", then try again.';
+  if (error?.code === 'INSTAGRAM_MESSAGES_NOT_READY') return 'Instagram did not allow message access. Disconnect, connect again and allow messages.';
   return 'Something went wrong. Please try again.';
 };
 
@@ -110,6 +118,7 @@ export function InstagramPanel({ businessId, onEnabled }) {
     return()=>subscription.remove();
   },[reload]);
 
+  const targetName=(id)=>TARGETS[id]?.title??(media.find(m=>m.id===id)?.caption?.slice(0,60)||'One post or Reel');
   const perform=async(fn)=>{
     if(busy)return;
     setBusy(true);setError('');
@@ -169,9 +178,13 @@ export function InstagramPanel({ businessId, onEnabled }) {
       <StatusLine status={status.status}/>
       {status.username?<Caption>@{status.username} · {status.accountType==='CREATOR'?'Creator':'Business'}</Caption>:null}
       {status.expiresAt?<Caption>Access expiry: {new Date(status.expiresAt).toLocaleDateString('en-IN')} (renews automatically)</Caption>:null}
-      {status.status==='connected'&&status.missingPermissions?.length?
+      {status.status==='connected'&&status.missingPermissions?.some(p=>COMMENT_SCOPES.includes(p))?
         <Caption style={{color:colors.warning}}>Comment access was not allowed. Disconnect, connect again and allow all permissions.</Caption>:null}
-      {status.status==='connected'&&!status.missingPermissions?.length&&status.webhook!=='subscribed'?
+      {status.status==='connected'&&status.missingPermissions?.includes('instagram_business_manage_messages')?
+        <Caption style={{color:colors.warning}}>Message access was not allowed, so DM replies are off. Disconnect and connect again to allow it.</Caption>:null}
+      {status.status==='connected'&&status.enabled&&status.storePublished===false?
+        <Caption style={{color:colors.warning}}>Publish your store to start sending replies. Customers only get links to a live store.</Caption>:null}
+      {status.status==='connected'&&!status.missingPermissions?.some(p=>COMMENT_SCOPES.includes(p))&&status.webhook!=='subscribed'?
         <Caption style={{color:colors.warning}}>Comment updates are not on yet. Tap Check connection.</Caption>:null}
       {!status.enabled?<Caption>Instagram connection is disabled during development.</Caption>:null}
       {error?<Text accessibilityRole="alert" style={{...type.caption,color:colors.danger,marginVertical:space.md}}>{error}</Text>:null}
@@ -188,12 +201,12 @@ export function InstagramPanel({ businessId, onEnabled }) {
       {status.status==='connected'&&status.enabled?<>
         <View style={{height:space.xl}}/>
         <Body strong>Auto-reply rules</Body>
-        <Caption style={{marginBottom:space.md}}>New rules are saved paused. Turn a rule on to start replying to comments.</Caption>
-        {rules.length===0?<Caption>No rules yet. Choose a post and product below.</Caption>:null}
+        <Caption style={{marginBottom:space.md}}>New rules are saved paused. Turn a rule on to start replying.</Caption>
+        {rules.length===0?<Caption>No rules yet. Choose where to reply and a product below.</Caption>:null}
         {rules.map(rule=><View key={rule.id}
           style={{paddingVertical:space.md,borderBottomWidth:1,borderColor:colors.line}}>
           <Body strong>{rule.keyword} · {rule.active?'Active':'Paused'}</Body>
-          <Caption>Post {rule.mediaId} · Product {rule.productId}</Caption>
+          <Caption numberOfLines={2}>{targetName(rule.mediaId)} · {catalog.find(p=>p.productId===rule.productId)?.name??'Product'}</Caption>
           <Row gap={space.sm} style={{marginTop:space.sm}}>
             <View style={{flex:1}}><Button title={rule.active?'Pause':'Activate'} size="sm"
               variant="secondary" disabled={busy} onPress={()=>toggleRule(rule)}/></View>
@@ -203,7 +216,10 @@ export function InstagramPanel({ businessId, onEnabled }) {
         </View>)}
         <View style={{height:space.xl}}/>
         <Body strong>Create an automation</Body>
-        <Caption>Select an Instagram post or Reel</Caption>
+        <Caption>Where should we reply?</Caption>
+        {Object.entries(TARGETS).map(([id,t])=><Choice key={id} chosen={id===selectedMedia}
+          onPress={()=>setSelectedMedia(id)} title={t.title} subtitle={t.subtitle}/>)}
+        <Caption>Or choose one post or Reel</Caption>
         {media.length===0?<Caption>No eligible posts found. Check your Instagram permissions and try again.</Caption>:null}
         {media.slice(0,20).map(m=><Choice key={m.id} chosen={m.id===selectedMedia} onPress={()=>setSelectedMedia(m.id)}
           image={m.thumbnailUrl} title={m.mediaProductType==='REELS'?'Reel':'Post'}
@@ -216,7 +232,7 @@ export function InstagramPanel({ businessId, onEnabled }) {
           subtitle={p.slug??p.productId}/>)}
         {catalog.length===0?<Caption>No active products found.</Caption>:null}
         <View style={{height:space.md}}/>
-        <Caption>Comment keyword (example: LINK)</Caption>
+        <Caption>Keyword customers send (example: LINK or PRICE)</Caption>
         <TextInput value={keyword} onChangeText={setKeyword} autoCapitalize="characters"
           maxLength={40} placeholder="LINK" accessibilityLabel="Keyword"
           style={{borderColor:colors.line,borderWidth:1,borderRadius:radius.md,
@@ -225,7 +241,7 @@ export function InstagramPanel({ businessId, onEnabled }) {
           loading={busy} onPress={createRule}/>
         {report?<View style={{marginTop:space.xl}}>
           <Body strong>Instagram activity</Body>
-          <Caption>Processed comments: {report.commentsProcessed??0} · Replies sent: {report.repliesSent??0}</Caption>
+          <Caption>Comments and messages handled: {report.commentsProcessed??0} · Replies sent: {report.repliesSent??0}</Caption>
           <Caption>Replies awaiting review: {report.repliesUncertain??0} · Tracked visits: {report.visits??0}</Caption>
           <Caption>Orders placed: {report.ordersPlaced??0} (not necessarily paid)</Caption>
         </View>:null}

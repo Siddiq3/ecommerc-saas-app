@@ -93,6 +93,8 @@ const deepLinks = [
   [`storekit://instagram-complete?confirmation=${code}&next=https://evil.example`, `/(tabs)/social?igConfirm=${code}`],
   ['storekit://instagram-complete?confirmation=short', '/(tabs)/social'],
   [`storekit://somewhere?confirmation=${code}`, '/'],
+  [`exp://127.0.0.1:8081/--/instagram-complete?result=confirm&confirmation=${code}`, `/(tabs)/social?igConfirm=${code}`],
+  [`exp://127.0.0.1:8081/--/somewhere?confirmation=${code}`, '/'],
 ];
 for (const [input, expected] of deepLinks) {
   const actual = redirectSystemPath({ path: input });

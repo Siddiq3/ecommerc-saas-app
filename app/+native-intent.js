@@ -8,7 +8,9 @@
  */
 export function redirectSystemPath({ path }) {
   if (typeof path === 'string' && path.includes('expo-development-client')) return path;
-  if (typeof path === 'string' && (/^\/?instagram-complete(?:[?/#]|$)/.test(path) || /^storekit:\/\/instagram-complete(?:[?/#]|$)/.test(path))) {
+  // storekit:// in a real build; Expo Go hands over exp://host:port/--/instagram-complete while developing.
+  if (typeof path === 'string' && (/^\/?instagram-complete(?:[?/#]|$)/.test(path) || /^storekit:\/\/instagram-complete(?:[?/#]|$)/.test(path) ||
+      /^exps?:\/\/[^/?#]+\/--\/instagram-complete(?:[?/#]|$)/.test(path))) {
     // Instagram login returns a one-time confirmation code. Only that, and only in its exact format, is carried over.
     const code = path.match(/[?&]confirmation=([\w-]{43})(?:[&#]|$)/)?.[1];
     return code ? `/(tabs)/social?igConfirm=${code}` : '/(tabs)/social';
