@@ -46,7 +46,7 @@ const Choice = ({ chosen, title, subtitle, onPress, image }) => (
   </Touchable>
 );
 
-export function InstagramPanel({ businessId }) {
+export function InstagramPanel({ businessId, onEnabled }) {
   const [status,setStatus]=useState({status:'disconnected',enabled:false});
   const [media,setMedia]=useState([]);
   const [rules,setRules]=useState([]);
@@ -65,6 +65,7 @@ export function InstagramPanel({ businessId }) {
     try {
       const current=await instagram.status(businessId);
       setStatus(current??{status:'disconnected',enabled:false});
+      onEnabled?.(Boolean(current?.enabled));
       if(current?.status==='connected'&&current.enabled){
         const [r,m,p,a]=await Promise.allSettled([
           instagram.rules(businessId),instagram.media(businessId),
@@ -78,7 +79,7 @@ export function InstagramPanel({ businessId }) {
       setError('');
     } catch(e){setError(failure(e));}
     finally{setLoading(false);}
-  },[businessId]);
+  },[businessId,onEnabled]);
   useEffect(()=>{void reload();},[reload]);
   // Instagram login came back with a one-time code. Nothing is connected until this owner sees the account and agrees,
   // so a login link forwarded to someone else can never attach their Instagram to this store.
@@ -187,7 +188,7 @@ export function InstagramPanel({ businessId }) {
       {status.status==='connected'&&status.enabled?<>
         <View style={{height:space.xl}}/>
         <Body strong>Auto-reply rules</Body>
-        <Caption style={{marginBottom:space.md}}>Rules are saved as paused until you turn them on. Sending stays disabled until verification.</Caption>
+        <Caption style={{marginBottom:space.md}}>New rules are saved paused. Turn a rule on to start replying to comments.</Caption>
         {rules.length===0?<Caption>No rules yet. Choose a post and product below.</Caption>:null}
         {rules.map(rule=><View key={rule.id}
           style={{paddingVertical:space.md,borderBottomWidth:1,borderColor:colors.line}}>

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,10 +13,10 @@ import { storeUrl as storeAddress } from '../../src/lib/storefront.js';
 import { colors, radius, space, tones, type } from '../../src/theme.js';
 
 /**
- * Social: Instagram Auto DM, announced before it exists.
+ * Social: Instagram Auto DM.
  *
- * Nothing here connects to Instagram. The screen says what is coming, and offers the one
- * thing that already works today — putting the store link in the Instagram bio.
+ * The API says whether Instagram automation is switched on for this stage. Off, the screen announces it as coming
+ * soon; on, it reads as a working feature: the connection panel, how it works, and the store link for the bio.
  */
 
 const INSTAGRAM = '#e1306c';
@@ -41,6 +42,12 @@ const FEATURES = [
   },
 ];
 
+const STEPS = [
+  { icon: 'logo-instagram', title: 'Connect Instagram', body: 'Use your Instagram Business or Creator account.' },
+  { icon: 'pricetag-outline', title: 'Choose a post and a product', body: 'Pick a post or Reel, the product, and a word like LINK.' },
+  { icon: 'paper-plane-outline', title: 'Customers get the link', body: 'When someone comments that word, we send them the product link in a private message.' },
+];
+
 /** A customer asks under a post; the store answers in their DMs with the product link. */
 const ILLUSTRATION = require('../../assets/instagram-auto-dm.png');
 
@@ -49,6 +56,8 @@ export default function Social() {
   const toast = useToast();
   const { business, businessId } = useAuth();
   const link = business?.slug ? storeAddress(business.slug) : null;
+  // Off until the API says otherwise, so the screen never promises a feature this stage does not run.
+  const [live, setLive] = useState(false);
 
   const copyLink = async () => {
     await Clipboard.setStringAsync(link);
@@ -59,14 +68,33 @@ export default function Social() {
     <Screen contentStyle={{ paddingTop: insets.top + space.md }}>
       <Row style={styles.header}>
         <Display style={styles.title}>Instagram Auto DM</Display>
-        <View style={styles.soon}>
-          <Ionicons name="sparkles" size={13} color={colors.accent700} />
-          <Text style={styles.soonText}>Coming soon</Text>
-        </View>
+        {live ? null : (
+          <View style={styles.soon}>
+            <Ionicons name="sparkles" size={13} color={colors.accent700} />
+            <Text style={styles.soonText}>Coming soon</Text>
+          </View>
+        )}
       </Row>
 
-      <InstagramPanel businessId={businessId} />
+      <InstagramPanel businessId={businessId} onEnabled={setLive} />
 
+      {live ? (
+        <FadeIn>
+          <Body strong style={styles.howTitle}>How it works</Body>
+          {STEPS.map((step, index) => (
+            <Row key={step.title} gap={space.lg} align="flex-start" style={styles.feature}>
+              <View style={[styles.featureIcon, { backgroundColor: colors.accent50 }]}>
+                <Ionicons name={step.icon} size={22} color={colors.accent700} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Body strong>{index + 1}. {step.title}</Body>
+                <Caption style={{ marginTop: 2 }}>{step.body}</Caption>
+              </View>
+            </Row>
+          ))}
+        </FadeIn>
+      ) : (
+      <>
       <FadeIn>
         <View style={styles.art}>
           <Image
@@ -99,7 +127,11 @@ export default function Social() {
         ))}
       </FadeIn>
 
+      </>
+      )}
+
       <FadeIn delay={160}>
+        {live ? null : (
         <Row gap={space.md} style={styles.launch}>
           <View style={styles.instagram}><Ionicons name="logo-instagram" size={28} color="#ffffff" /></View>
           <View style={{ flex: 1 }}>
@@ -110,10 +142,11 @@ export default function Social() {
             <Caption style={{ color: colors.accent700 }}>Get ready to turn more views into orders.</Caption>
           </View>
         </Row>
+        )}
 
         {link ? (
           <Card style={styles.bio}>
-            <Body strong>While you wait: add your store to your bio</Body>
+            <Body strong>{live ? 'Add your store to your Instagram bio' : 'While you wait: add your store to your bio'}</Body>
             <Caption style={{ marginTop: 2 }}>Put your store link in your Instagram bio so followers can shop any time.</Caption>
             <View style={styles.linkBox}>
               <Caption numberOfLines={1} selectable style={{ flex: 1 }}>{link}</Caption>
@@ -154,6 +187,7 @@ const styles = StyleSheet.create({
   feature: { marginBottom: space.xl },
   featureIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
 
+  howTitle: { marginTop: space.sm, marginBottom: space.lg },
   launch: { padding: space.lg, borderRadius: radius.lg, backgroundColor: colors.accent50, marginBottom: space.xl },
   instagram: {
     width: 52,
