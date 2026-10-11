@@ -62,10 +62,10 @@ const TOP_MEDIA = 3;
 const MEDIA_SORTS = [['repliesSent', 'Replies'], ['visits', 'Visits'], ['ordersPlaced', 'Orders']];
 
 /** One Reel, post or DM source in the breakdown: what it is, then its share of the totals in words. */
-const MediaActivityRow = ({ activity, media, first }) => {
+const MediaActivityRow = ({ activity, media, first, flush }) => {
   const post = activity.media ?? media.find(x => x.id === activity.mediaId);
   const label = activity.mediaId === 'DM' ? 'Direct messages' : activity.mediaId === 'ALL' ? 'Older all-post links' : activity.mediaId === 'UNKNOWN' ? 'Unidentified source' : post?.caption || `Reel / post ${activity.mediaId}`;
-  return <View style={[styles.mediaRow, !first && styles.divider]}>
+  return <View style={[styles.mediaRow, flush && styles.mediaRowFlush, !first && styles.divider]}>
     <Row gap={space.md} align="flex-start">
       <RuleArt target={activity.mediaId} media={post ? [post] : []} size={48} />
       <View style={{ flex: 1, gap: 2 }}>
@@ -249,6 +249,8 @@ export function InstagramPanel({ businessId, onEnabled, onConnected }) {
   const missing = status.missingPermissions ?? [];
   const commentsOk = !missing.some((p) => COMMENT_SCOPES.includes(p)) && status.webhook === 'subscribed';
   const messagesOk = Boolean(status.connectionMessagesReady ?? status.messagesReady);
+  // All green needs no checklist: one line says so, and the checklist returns the moment something needs a fix.
+  const allOk = commentsOk && messagesOk && status.storePublished !== false;
   const handledCount = report?.commentsProcessed ?? 0;
   // The server already orders by replies; re-sorting is only needed for the other keys. Stable, so ties keep that order.
   const sortedMedia = mediaSort === 'repliesSent' ? report?.byMedia ?? [] : [...(report?.byMedia ?? [])].sort((a, b) => b[mediaSort] - a[mediaSort]);
@@ -271,7 +273,12 @@ export function InstagramPanel({ businessId, onEnabled, onConnected }) {
           <Pill label={badge.label} tone={badge.tone} />
         </Row>
 
-        {connected ? (
+        {connected && allOk ? (
+          <Row gap={space.sm} style={styles.checks}>
+            <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+            <Body style={{ flex: 1 }}>Replying to comments and messages. Store is live.</Body>
+          </Row>
+        ) : connected ? (
           <View style={styles.checks}>
             <Check ok={commentsOk} title="Replies to comments"
               fix={missing.some((p) => COMMENT_SCOPES.includes(p))
@@ -347,13 +354,13 @@ export function InstagramPanel({ businessId, onEnabled, onConnected }) {
             {reportError ? <View style={styles.activityError}><Alert message={report ? 'Unable to update activity. Showing the last successful update.' : reportError} />
               <Button title="Retry activity" variant="secondary" size="sm" onPress={reload} /></View> : null}
             {report || reportLoading ? <>
-            <Row style={styles.activityHead} align="flex-start">
-              <View style={{ flex: 1 }}>
-                <Body strong>All Reels, posts and messages</Body>
-                <Caption numberOfLines={1}>{report ? rangeLabel(report) : ' '}</Caption>
-              </View>
-              <Caption>{reportLoading ? 'Updating…' : report?.generatedAt ? `Updated ${new Date(report.generatedAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}` : ''}</Caption>
-            </Row>
+            <View style={styles.activityHead}>
+              <Body strong>All Reels, posts and messages</Body>
+              <Caption>
+                {report ? rangeLabel(report) : ''}
+                {reportLoading ? `${report ? ' · ' : ''}Updating…` : report?.generatedAt ? ` · Updated ${new Date(report.generatedAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}` : ''}
+              </Caption>
+            </View>
             <Row style={[{ alignItems: 'stretch' }, reportLoading && { opacity: 0.4 }]}>
               <MiniStat label="Replies sent" value={report ? String(report.repliesSent ?? 0) : '-'} icon="paper-plane-outline" />
               <View style={styles.statSplit} />
@@ -361,35 +368,29 @@ export function InstagramPanel({ businessId, onEnabled, onConnected }) {
               <View style={styles.statSplit} />
               <MiniStat label="Orders placed" value={report ? String(report.ordersPlaced ?? 0) : '-'} icon="receipt-outline" />
             </Row>
-            {report ? <View style={styles.activityFoot}>
-              <Body>
+            {report ? <Body style={styles.handled}>
                 {handledCount} {handledCount === 1 ? 'comment or message' : 'comments and messages'} handled
                 {report.repliesFailed ? <Body style={{ color: colors.danger }}>{` · ${report.repliesFailed} failed`}</Body> : null}
                 {report.repliesUncertain ? <Body style={{ color: colors.warning }}>{` · ${report.repliesUncertain} not confirmed`}</Body> : null}
-              </Body>
-              {report.repliesUncertain ? (
-                <Caption style={styles.footLine}>Not confirmed: Instagram did not answer in time, so we did not send again.</Caption>
-              ) : null}
-              {report.historyLimited ? <Caption style={styles.footLine}>Limited history: daily summaries started {new Date(report.historyStartedAt).toLocaleDateString('en-IN')}. Earlier dates include only records still available.</Caption> : null}
-              <Caption style={styles.footLine}>India time. Orders placed are not paid sales; payments are not measured here.</Caption>
-            </View> : null}
-            </> : !reportError ? <Caption>Activity is unavailable.</Caption> : null}
-          </Card>
-          {report?.byMedia ? <>
-            <SectionHeader title="By Reel or post" />
-            <Caption style={styles.breakdownIntro}>Where the totals above came from. Visits are store visits from reply links, not Reel views.</Caption>
-            <Card padded={false} style={styles.last}>
-              {report.byMedia.length === 0 ? <View style={styles.mediaRow}>
-                <Body strong>No Reel or post activity yet</Body>
-                <Caption>Activity appears here when a post has an automation or a comment is handled.</Caption>
-              </View> : null}
-              {report.byMedia.slice(0, TOP_MEDIA).map((activity, i) => <MediaActivityRow key={activity.mediaId} activity={activity} media={media} first={i === 0} />)}
+              </Body> : null}
+            {report?.byMedia ? <View style={styles.breakdown}>
+              <Body strong>By Reel or post</Body>
+              {report.byMedia.length === 0 ? <Caption style={{ marginTop: 2 }}>No Reel or post activity yet. It appears here when a post has an automation or a comment is handled.</Caption> : null}
+              {report.byMedia.slice(0, TOP_MEDIA).map((activity, i) => <MediaActivityRow key={activity.mediaId} activity={activity} media={media} first={i === 0} flush />)}
               {report.byMedia.length > TOP_MEDIA ? <Touchable accessibilityLabel={`See all ${report.byMedia.length} Reels, posts and messages`}
                 style={[styles.seeAll, styles.divider]} onPress={() => { setActivityCount(10); setAllMedia(true); }}>
                 <Body style={styles.seeAllText}>See all {report.byMedia.length}</Body>
                 <Ionicons name="chevron-forward" size={16} color={colors.accent700} />
               </Touchable> : null}
-            </Card>
+            </View> : null}
+            {report ? <View style={styles.activityFoot}>
+              {report.repliesUncertain ? <Caption>Not confirmed: Instagram did not answer in time, so we did not send again.</Caption> : null}
+              {report.historyLimited ? <Caption>Limited history: daily summaries started {new Date(report.historyStartedAt).toLocaleDateString('en-IN')}. Earlier dates include only records still available.</Caption> : null}
+              <Caption>India time. Visits are store visits from reply links, not Reel views. Orders placed are not paid sales; payments are not measured here.</Caption>
+            </View> : null}
+            </> : !reportError ? <Caption>Activity is unavailable.</Caption> : null}
+          </Card>
+          {report?.byMedia ? <>
             <Sheet visible={allMedia} onClose={() => setAllMedia(false)} title="By Reel or post">
               <Caption style={styles.breakdownIntro}>{rangeLabel(report)} · {report.byMedia.length} Reels, posts and messages</Caption>
               <View style={styles.segmented} accessibilityRole="radiogroup" accessibilityLabel="Sort by">
@@ -399,9 +400,7 @@ export function InstagramPanel({ businessId, onEnabled, onConnected }) {
                   <Body style={[styles.segmentText, mediaSort === key && styles.segmentTextActive]} numberOfLines={1}>Most {title.toLowerCase()}</Body>
                 </Touchable>)}
               </View>
-              <Card padded={false}>
-                {sortedMedia.slice(0, activityCount).map((activity, i) => <MediaActivityRow key={activity.mediaId} activity={activity} media={media} first={i === 0} />)}
-              </Card>
+              {sortedMedia.slice(0, activityCount).map((activity, i) => <MediaActivityRow key={activity.mediaId} activity={activity} media={media} first={i === 0} flush />)}
               {sortedMedia.length > activityCount ? <Button title="Show more" variant="secondary" style={{ marginTop: space.md }} onPress={() => setActivityCount(n => n + 10)} /> : null}
             </Sheet>
           </> : null}
@@ -430,14 +429,16 @@ const styles = StyleSheet.create({
   statSplit: { width: StyleSheet.hairlineWidth, backgroundColor: colors.line },
   activityHead: { marginBottom: space.lg },
   activityError: { gap: space.sm, marginBottom: space.md },
-  activityFoot: { marginTop: space.lg, paddingTop: space.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
-  footLine: { marginTop: space.xs },
+  handled: { marginTop: space.lg, textAlign: 'center' },
+  breakdown: { marginTop: space.lg, paddingTop: space.lg, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
+  activityFoot: { marginTop: space.md, paddingTop: space.md, gap: space.xs, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
   breakdownIntro: { marginBottom: space.md },
   mediaRow: { padding: space.lg },
-  inlineStats: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.md, marginLeft: 48 + space.md },
+  mediaRowFlush: { paddingHorizontal: 0 },
+  inlineStats: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.md },
   inlineStat: { backgroundColor: colors.sunken, borderRadius: radius.pill, paddingHorizontal: space.sm + 2, paddingVertical: space.xs },
   inlineValue: { ...type.figure, fontSize: 14, lineHeight: 18, letterSpacing: 0, color: colors.ink900 },
-  mediaFoot: { marginTop: space.sm, marginLeft: 48 + space.md },
+  mediaFoot: { marginTop: space.sm },
   seeAll: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xs, minHeight: 52 },
   seeAllText: { color: colors.accent700, fontFamily: fonts.semibold },
   segmented: { flexDirection: 'row', backgroundColor: colors.sunken, borderRadius: radius.pill, padding: 4, gap: 2, marginBottom: space.md },

@@ -4,7 +4,7 @@ import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '../../src/components/Screen.jsx';
-import { Body, Button, Caption, Card, Display, Row } from '../../src/components/ui.jsx';
+import { Body, Button, Caption, Display, Row } from '../../src/components/ui.jsx';
 import { FadeIn } from '../../src/components/motion.jsx';
 import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
@@ -147,18 +147,21 @@ export default function Social() {
         )}
 
         {link ? (
-          <Card style={styles.bio}>
+          <View style={styles.bio}>
             <Body strong>{live ? 'Add your store to your Instagram bio' : 'While you wait: add your store to your bio'}</Body>
             <Caption style={{ marginTop: 2 }}>Put your store link in your Instagram bio so followers can shop any time.</Caption>
-            <View style={styles.linkBox}>
-              <Caption numberOfLines={1} selectable style={{ flex: 1 }}>{link}</Caption>
-            </View>
-            <Button
-              title="Copy store link"
-              icon={<Ionicons name="copy-outline" size={18} color="#ffffff" />}
-              onPress={() => copyLink().catch(() => toast.error('Could not copy the link'))}
-            />
-          </Card>
+            <Row gap={space.sm} style={styles.linkRow}>
+              <Caption numberOfLines={1} selectable style={styles.link}>{link}</Caption>
+              <Button
+                title="Copy link"
+                variant="secondary"
+                size="sm"
+                full={false}
+                icon={<Ionicons name="copy-outline" size={16} color={colors.ink800} />}
+                onPress={() => copyLink().catch(() => toast.error('Could not copy the link'))}
+              />
+            </Row>
+          </View>
         ) : null}
       </FadeIn>
     </Screen>
@@ -199,12 +202,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bio: { marginBottom: space.xl },
-  linkBox: {
-    backgroundColor: colors.sunken,
-    borderRadius: radius.sm,
-    paddingHorizontal: space.md,
-    paddingVertical: space.md,
-    marginVertical: space.md,
-  },
+  // A tip, not a task: recessed instead of raised, so it sits below the cards in weight.
+  bio: { marginBottom: space.xl, padding: space.lg, borderRadius: radius.lg, backgroundColor: colors.sunken },
+  linkRow: { marginTop: space.md },
+  link: { flex: 1, color: colors.ink600 },
 });
