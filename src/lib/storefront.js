@@ -1,4 +1,4 @@
-import { storeUrl as buildStoreUrl, storeHostname as buildStoreHostname, storefrontDomain } from '@storekit/shared';
+import { storeUrl as buildStoreUrl, productUrl as buildProductUrl, storeHostname as buildStoreHostname, storefrontDomain } from '@storekit/shared';
 
 /**
  * The app's one window onto storefront addresses.
@@ -16,6 +16,9 @@ const config = { storefrontBaseUrl: process.env.EXPO_PUBLIC_STOREFRONT_URL ?? 'h
 
 /** `https://asha-boutique.storekit.site` — for opening and sharing. */
 export const storeUrl = (slug) => buildStoreUrl(config, slug);
+
+/** Use the same product address in the Instagram preview as the backend reply. */
+export const productUrl = (slug, product) => buildProductUrl(config, slug, product.productId, product.slug);
 
 /** `asha-boutique.storekit.site` — the same address, without a scheme, for display. */
 export const storeHostname = (slug) => buildStoreHostname(config, slug);

@@ -66,7 +66,7 @@ export default function Social() {
   };
 
   return (
-    <Screen contentStyle={{ paddingTop: insets.top + space.md }}>
+    <Screen style={{ paddingTop: insets.top }} contentStyle={{ paddingTop: space.md }}>
       <Row style={styles.header}>
         <Display style={styles.title}>Instagram Auto DM</Display>
         {live ? null : (
@@ -77,7 +77,7 @@ export default function Social() {
         )}
       </Row>
 
-      <InstagramPanel businessId={businessId} onEnabled={setLive} onConnected={setConnected} storeLink={link} />
+      <InstagramPanel businessId={businessId} onEnabled={setLive} onConnected={setConnected} />
 
       {/* Once connected, the panel itself shows everything; the explainer is for sellers who have not started. */}
       {live && connected ? null : live ? (
