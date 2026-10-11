@@ -82,6 +82,7 @@ const scope = (businessId) => `/businesses/${businessId}`;
 export const instagram = {
   status: (b) => api.get(`${scope(b)}/instagram`),
   connect: (b) => api.post(`${scope(b)}/instagram/connect`, {}),
+  confirm: (b, input) => api.post(`${scope(b)}/instagram/confirm`, input),
   check: (b) => api.post(`${scope(b)}/instagram/check`, {}),
   disconnect: (b) => api.del(`${scope(b)}/instagram`),
   media: (b, after) => api.get(`${scope(b)}/instagram/media${qs(after ? {after}:{})}`),

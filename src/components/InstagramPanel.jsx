@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, Image, Text, TextInput, View } from 'react-native';
 import * as Linking from 'expo-linking';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { instagram, products } from '../api/endpoints.js';
 import { Body, Button, Caption, Card, Row, Touchable } from './ui.jsx';
@@ -12,6 +13,8 @@ const failure = (error) => {
   if (error?.code === 'PLAN_LIMIT_EXCEEDED') return 'Your trial has ended. You can still disconnect or pause automations.';
   if (error?.code === 'INSTAGRAM_RULE_EXISTS') return 'This post already has a rule using that keyword.';
   if (error?.code === 'INSTAGRAM_PRODUCT_UNAVAILABLE') return 'Choose an active product.';
+  if (error?.code === 'INSTAGRAM_CONFIRMATION_INVALID') return 'This Instagram connection request has expired. Please connect again.';
+  if (error?.code === 'INSTAGRAM_CONNECT_FAILED') return 'Could not connect. This Instagram account may already be connected to another store.';
   if (error?.code === 'INSTAGRAM_MEDIA_UNAVAILABLE') return 'Choose one of your recent posts or Reels.';
   if (error?.code === 'INSTAGRAM_PERMISSIONS_MISSING') return 'Instagram did not allow comment access. Disconnect, connect again and allow all permissions.';
   if (error?.code === 'INSTAGRAM_WEBHOOK_NOT_READY') return 'Comment updates are not on yet. Tap "Check connection", then try again.';
@@ -77,6 +80,28 @@ export function InstagramPanel({ businessId }) {
     finally{setLoading(false);}
   },[businessId]);
   useEffect(()=>{void reload();},[reload]);
+  // Instagram login came back with a one-time code. Nothing is connected until this owner sees the account and agrees,
+  // so a login link forwarded to someone else can never attach their Instagram to this store.
+  const { igConfirm } = useLocalSearchParams();
+  const handled=useRef(null);
+  useEffect(()=>{
+    if(!businessId||typeof igConfirm!=='string'||!/^[\w-]{43}$/.test(igConfirm)||handled.current===igConfirm)return;
+    handled.current=igConfirm;
+    router.setParams({igConfirm:undefined});
+    void (async()=>{
+      setBusy(true);setError('');
+      try{
+        const preview=await instagram.confirm(businessId,{confirmation:igConfirm,action:'preview'});
+        const accepted=await new Promise((resolve)=>Alert.alert('Connect this Instagram account?',
+          `@${preview?.username} (${preview?.accountType==='CREATOR'?'Creator':'Business'} account) will be connected to your store.`,
+          [{text:'Cancel',style:'cancel',onPress:()=>resolve(false)},{text:'Connect',onPress:()=>resolve(true)}],
+          {cancelable:false}));
+        await instagram.confirm(businessId,{confirmation:igConfirm,action:accepted?'accept':'decline'});
+        await reload();
+      }catch(e){setError(failure(e));}
+      finally{setBusy(false);}
+    })();
+  },[igConfirm,businessId,reload]);
   useEffect(()=>{
     const subscription=AppState.addEventListener('change',(state)=>{
       if(state==='active')void reload();
@@ -95,8 +120,8 @@ export function InstagramPanel({ businessId }) {
     const started=await instagram.connect(businessId);
     if(!started?.authorizationUrl?.startsWith('https://www.instagram.com/oauth/authorize?'))
       throw new Error('Unsafe authorization URL');
-    // Instagram login opens externally and returns through the registered app link.
-    // This is not a purchase or subscription flow.
+    // Instagram login opens externally and returns through the registered app link with a one-time code that only
+    // this signed-in owner can confirm. This is not a purchase or subscription flow.
     await Linking.openURL(started.authorizationUrl);
   });
   const disconnect=()=>{

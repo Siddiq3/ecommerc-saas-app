@@ -82,4 +82,28 @@ if (broken.length) {
   process.exit(1);
 }
 
-console.log(`✓ All ${targets.length} navigation targets resolve (${routes.length} routes).`);
+// Deep links: the Instagram return carries only a well-formed one-time code, to a real route; anything else goes home.
+const { redirectSystemPath } = await import(join(appDir, '+native-intent.js'));
+const code = 'A'.repeat(21) + '_-' + 'b'.repeat(20);
+const deepLinks = [
+  [`storekit://instagram-complete?result=confirm&confirmation=${code}`, `/(tabs)/social?igConfirm=${code}`],
+  [`/instagram-complete?result=confirm&confirmation=${code}`, `/(tabs)/social?igConfirm=${code}`],
+  ['storekit://instagram-complete?result=error', '/(tabs)/social'],
+  [`storekit://instagram-complete?confirmation=${code}x`, '/(tabs)/social'],
+  [`storekit://instagram-complete?confirmation=${code}&next=https://evil.example`, `/(tabs)/social?igConfirm=${code}`],
+  ['storekit://instagram-complete?confirmation=short', '/(tabs)/social'],
+  [`storekit://somewhere?confirmation=${code}`, '/'],
+];
+for (const [input, expected] of deepLinks) {
+  const actual = redirectSystemPath({ path: input });
+  if (actual !== expected) {
+    console.error(`\n✖ Deep link ${input} landed on ${actual}, expected ${expected}\n`);
+    process.exit(1);
+  }
+}
+if (!allPatterns.some(({ regex }) => regex.test('/(tabs)/social'))) {
+  console.error('\n✖ The Instagram return route /(tabs)/social does not exist\n');
+  process.exit(1);
+}
+
+console.log(`✓ All ${targets.length} navigation targets resolve (${routes.length} routes), and ${deepLinks.length} deep links land safely.`);
