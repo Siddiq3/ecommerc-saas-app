@@ -12,6 +12,9 @@ const failure = (error) => {
   if (error?.code === 'PLAN_LIMIT_EXCEEDED') return 'Your trial has ended. You can still disconnect or pause automations.';
   if (error?.code === 'INSTAGRAM_RULE_EXISTS') return 'This post already has a rule using that keyword.';
   if (error?.code === 'INSTAGRAM_PRODUCT_UNAVAILABLE') return 'Choose an active product.';
+  if (error?.code === 'INSTAGRAM_MEDIA_UNAVAILABLE') return 'Choose one of your recent posts or Reels.';
+  if (error?.code === 'INSTAGRAM_PERMISSIONS_MISSING') return 'Instagram did not allow comment access. Disconnect, connect again and allow all permissions.';
+  if (error?.code === 'INSTAGRAM_WEBHOOK_NOT_READY') return 'Comment updates are not on yet. Tap "Check connection", then try again.';
   return 'Something went wrong. Please try again.';
 };
 
@@ -139,7 +142,11 @@ export function InstagramPanel({ businessId }) {
     {loading?<ActivityIndicator color={colors.accent600}/>:<>
       <StatusLine status={status.status}/>
       {status.username?<Caption>@{status.username} · {status.accountType==='CREATOR'?'Creator':'Business'}</Caption>:null}
-      {status.expiresAt?<Caption>Access expiry: {new Date(status.expiresAt).toLocaleDateString('en-IN')}</Caption>:null}
+      {status.expiresAt?<Caption>Access expiry: {new Date(status.expiresAt).toLocaleDateString('en-IN')} (renews automatically)</Caption>:null}
+      {status.status==='connected'&&status.missingPermissions?.length?
+        <Caption style={{color:colors.warning}}>Comment access was not allowed. Disconnect, connect again and allow all permissions.</Caption>:null}
+      {status.status==='connected'&&!status.missingPermissions?.length&&status.webhook!=='subscribed'?
+        <Caption style={{color:colors.warning}}>Comment updates are not on yet. Tap Check connection.</Caption>:null}
       {!status.enabled?<Caption>Instagram connection is disabled during development.</Caption>:null}
       {error?<Text accessibilityRole="alert" style={{...type.caption,color:colors.danger,marginVertical:space.md}}>{error}</Text>:null}
       {status.status==='disconnected'&&status.enabled?
@@ -147,7 +154,7 @@ export function InstagramPanel({ businessId }) {
       {status.status!=='disconnected'?<>
         {status.status==='connected'&&status.enabled?
           <Button title="Check connection" variant="secondary" disabled={busy}
-            onPress={()=>perform(async()=>{setStatus(await instagram.check(businessId));})}/>:null}
+            onPress={()=>perform(async()=>{const checked=await instagram.check(businessId);setStatus((prev)=>({...prev,...checked}));})}/>:null}
         <View style={{height:space.sm}}/>
         <Button title="Disconnect Instagram" variant="danger" disabled={busy} onPress={disconnect}/>
       </>:null}
