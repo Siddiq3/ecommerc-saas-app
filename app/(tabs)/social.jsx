@@ -58,6 +58,7 @@ export default function Social() {
   const link = business?.slug ? storeAddress(business.slug) : null;
   // Off until the API says otherwise, so the screen never promises a feature this stage does not run.
   const [live, setLive] = useState(false);
+  const [connected, setConnected] = useState(false);
 
   const copyLink = async () => {
     await Clipboard.setStringAsync(link);
@@ -76,9 +77,10 @@ export default function Social() {
         )}
       </Row>
 
-      <InstagramPanel businessId={businessId} onEnabled={setLive} />
+      <InstagramPanel businessId={businessId} onEnabled={setLive} onConnected={setConnected} storeLink={link} />
 
-      {live ? (
+      {/* Once connected, the panel itself shows everything; the explainer is for sellers who have not started. */}
+      {live && connected ? null : live ? (
         <FadeIn>
           <Body strong style={styles.howTitle}>How it works</Body>
           {STEPS.map((step, index) => (
