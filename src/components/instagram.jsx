@@ -35,8 +35,9 @@ export const canTurnOn = (status, target) =>
   Boolean(status?.automationReady) && (target !== 'DM' || Boolean(status?.messagesReady));
 
 export const readinessLabel = (rule) => ({ ready: 'Ready', paused: 'Paused', action_needed: 'Action needed' }[rule?.readiness?.state] ?? 'Checking readiness');
-export const readinessHint = (rule) => rule?.readiness?.state === 'paused' ? 'Paused by you. No replies will be attempted.'
-  : rule?.readiness?.state === 'ready' ? 'Eligible to attempt replies. Delivery is recorded separately in Activity.'
+export const readinessHint = (rule) => rule?.readiness?.state === 'paused' ? 'Paused. No replies are sent.'
+  // "Try": being on does not guarantee Instagram delivers; failed replies show in Results.
+  : rule?.readiness?.state === 'ready' ? 'On. We try to reply each time a customer sends the word.'
     : rule?.readiness?.reasons?.map(r => r.message).join('\n') || 'Readiness could not be confirmed. Refresh to check.';
 
 export const shorten = (text, max = 36) => (text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text);
@@ -100,18 +101,29 @@ export const PostTile = ({ post, chosen, onPress, size }) => (
   </Touchable>
 );
 
-/** The exact message a customer gets, drawn as a chat bubble. */
+/**
+ * The exact message a customer gets, drawn as the conversation it is: their comment or DM on the left, the store's
+ * automatic reply on the right. The link is trimmed to two lines here only; customers get it in full.
+ */
 export const ReplyPreview = ({ product, word, target, productLink }) => {
   const price = Number.isSafeInteger(product?.price) && product.price > 0 ? ` – ${formatMoney(product.price)}` : '';
   return (
-    <View style={styles.previewWrap}>
-      <Caption style={{ marginBottom: space.sm }}>
-        When someone {target === 'DM' ? 'messages' : 'comments'} &quot;{word || '…'}&quot;, they get:
-      </Caption>
-      <View style={styles.bubble}>
-        <Body strong style={{ color: colors.ink900 }}>{`${product?.name ?? 'Your product'}${price}`}</Body>
-        <Body style={{ color: colors.accent700 }}>Shop here: {productLink ?? 'Your product link'}</Body>
+    <View style={styles.previewWrap} accessibilityLabel={`When someone ${target === 'DM' ? 'messages' : 'comments'} ${word || 'the word'}, they get ${product?.name ?? 'your product'}${price} and its link`}>
+      <Row gap={space.sm} align="flex-end">
+        <View style={styles.avatar}><Ionicons name="person" size={14} color={colors.ink400} /></View>
+        <View style={styles.customerBubble}>
+          <Caption>{target === 'DM' ? 'Customer messages' : 'Customer comments'}</Caption>
+          <Body strong>{word || '…'}</Body>
+        </View>
+      </Row>
+      <View style={styles.replyBubble}>
+        <Body strong style={styles.replyText}>{`${product?.name ?? 'Your product'}${price}`}</Body>
+        <Body style={styles.replyText} numberOfLines={2}>Shop here: {productLink ?? 'Your product link'}</Body>
       </View>
+      <Row gap={4} style={styles.sent}>
+        <Ionicons name="flash" size={12} color={colors.ink500} />
+        <Caption>Sent automatically{target === 'DM' ? '' : ' as a private message'}</Caption>
+      </Row>
     </View>
   );
 };
@@ -144,11 +156,19 @@ const styles = StyleSheet.create({
   },
   tileCaption: { marginTop: space.xs, color: colors.ink600 },
 
-  previewWrap: { padding: space.md, borderRadius: radius.md, backgroundColor: colors.sunken },
-  bubble: {
-    alignSelf: 'flex-start', maxWidth: '100%', paddingHorizontal: space.md, paddingVertical: space.sm,
-    borderRadius: radius.md, borderTopLeftRadius: radius.xs, backgroundColor: colors.surface,
+  previewWrap: { padding: space.lg, borderRadius: radius.lg, backgroundColor: colors.surface, gap: space.md },
+  avatar: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.sunken, alignItems: 'center', justifyContent: 'center' },
+  customerBubble: {
+    maxWidth: '75%', paddingHorizontal: space.md, paddingVertical: space.sm,
+    borderRadius: radius.md, borderBottomLeftRadius: radius.xs, backgroundColor: colors.sunken,
   },
+  // accent700, not 600: white text on it clears 4.5:1.
+  replyBubble: {
+    alignSelf: 'flex-end', maxWidth: '85%', paddingHorizontal: space.md, paddingVertical: space.sm,
+    borderRadius: radius.md, borderBottomRightRadius: radius.xs, backgroundColor: colors.accent700,
+  },
+  replyText: { color: '#ffffff' },
+  sent: { alignSelf: 'flex-end', marginTop: -space.xs },
 
   stepNumber: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.accent50, alignItems: 'center', justifyContent: 'center' },
   stepNumberText: { ...type.label, color: colors.accent700 },

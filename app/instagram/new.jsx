@@ -159,6 +159,10 @@ export default function NewAutomation() {
             maxLength={40} placeholder="LINK" accessibilityLabel="Keyword"
             error={keyword && !wordOk ? 'Use one word: letters and numbers only.' : undefined}
             hint="Capital or small letters both work. Punctuation is ignored." />
+          <View style={{ marginTop: space.xl }}>
+            <ReplyPreview product={product} word={wordOk ? word : ''} target={target}
+              productLink={business?.slug && product ? productUrl(business.slug, product) : null} />
+          </View>
         </>
       ) : null}
 
@@ -171,7 +175,7 @@ export default function NewAutomation() {
           </View>
           <ReplyPreview product={product} word={word} target={target}
             productLink={business?.slug && product ? productUrl(business.slug, product) : null} />
-          <View style={{ marginTop: space.lg }}>
+          <View style={styles.turnOn}>
             <Toggle value={turnOn && canOn} disabled={!canOn} onChange={setTurnOn} label="Turn on now"
               hint={canOn ? 'Start replying as soon as it is saved.' : 'Not ready yet (see the checklist on the Social tab). It will be saved as off.'} />
           </View>
@@ -209,4 +213,5 @@ const styles = StyleSheet.create({
   summaryRow: { paddingVertical: space.md },
   summaryDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line },
   summaryLabel: { width: 72 },
+  turnOn: { marginTop: space.lg, backgroundColor: colors.surface, borderRadius: radius.lg, padding: space.lg },
 });
