@@ -149,7 +149,6 @@ export default function Social() {
         {link ? (
           <View style={styles.bio}>
             <Body strong>{live ? 'Add your store to your Instagram bio' : 'While you wait: add your store to your bio'}</Body>
-            <Caption style={{ marginTop: 2 }}>Put your store link in your Instagram bio so followers can shop any time.</Caption>
             <Row gap={space.sm} style={styles.linkRow}>
               <Caption numberOfLines={1} selectable style={styles.link}>{link}</Caption>
               <Button

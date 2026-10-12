@@ -10,8 +10,10 @@ import { useRefreshOnFocus } from '../lib/useAsync.js';
 import { InstagramMark, RuleArt, readinessLabel, canTurnOn, instagramError as failure, targetName } from './instagram.jsx';
 import { InstagramActivityPeriod, displayDay } from './InstagramActivityPeriod.jsx';
 import { Sheet } from './Sheet.jsx';
+import { CountUp } from './motion.jsx';
+import { formatMoney, percentChange } from '../lib/format.js';
 import { usePlan } from '../state/plan.jsx';
-import { colors, fonts, radius, space, type } from '../theme.js';
+import { colors, fonts, radius, space, tones, type } from '../theme.js';
 
 /**
  * The Social tab's Instagram overview: the connection, what it has done, and the seller's automations. Creating one
@@ -39,11 +41,13 @@ const Check = ({ ok, title, fix }) => (
   </Row>
 );
 
-const MiniStat = ({ label, value, icon }) => (
-  <View style={styles.miniStat}>
-    <Ionicons name={icon} size={15} color={colors.ink400} />
-    <Text style={styles.miniValue}>{value}</Text>
-    <Caption>{label}</Caption>
+/** A tinted tile: an icon chip that names the metric by colour and shape, then the value, label and change in ink. */
+const StatTile = ({ label, value, icon, tone, change }) => (
+  <View style={[styles.tile, { backgroundColor: tone.bg }]}>
+    <View style={styles.tileIcon}><Ionicons name={icon} size={16} color={tone.fg} /></View>
+    {typeof value === 'number' ? <CountUp value={value} style={styles.tileValue} /> : <Text style={styles.tileValue}>{value}</Text>}
+    <Caption style={styles.tileLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{label}</Caption>
+    {change}
   </View>
 );
 
@@ -56,16 +60,44 @@ const InlineStat = ({ icon, value, one, many }) => (
   </Row>
 );
 
+/** "vs previous 7 days", or nothing when the earlier days are not fully recorded and a comparison would mislead. */
+const comparable = r => r?.previous && !r.previous.historyLimited;
+const previousLabel = r => (r.previous.days === 1 ? 'yesterday' : `previous ${r.previous.days} days`);
+
+/** Change against the previous period: a percentage when there is a base, the plain difference when it started at zero. */
+const Change = ({ current = 0, previous = 0, money, suffix = '', style }) => {
+  const diff = current - previous;
+  if (!diff) return <Caption style={style}>No change{suffix}</Caption>;
+  const up = diff > 0;
+  const amount = previous ? `${Math.abs(percentChange(current, previous))}%` : money ? formatMoney(Math.abs(diff)) : String(Math.abs(diff));
+  return <Caption style={[{ color: up ? colors.success : colors.danger }, style]} accessibilityLabel={`${up ? 'Up' : 'Down'} ${amount}${suffix}`}>
+    {up ? '↑' : '↓'} {amount}{suffix}
+  </Caption>;
+};
+
+/** The headline change: a tinted pill with the percentage, like "↑ 42%", then what it compares with. */
+const TrendPill = ({ current = 0, previous = 0, label }) => {
+  const diff = current - previous;
+  const tone = diff > 0 ? tones.green : diff < 0 ? tones.red : tones.slate;
+  // A percentage needs a base: up from ₹0 there is none, so the amount itself is shown.
+  const amount = !diff ? 'No change' : `${diff > 0 ? '↑' : '↓'} ${previous ? `${Math.abs(percentChange(current, previous))}%` : formatMoney(Math.abs(diff))}`;
+  return <Row gap={space.sm} style={styles.trend}>
+    <View style={styles.trendPill}><Text style={[styles.trendText, { color: tone.fg }]}>{amount}</Text></View>
+    <Caption>{label}</Caption>
+  </Row>;
+};
+
 const rangeLabel = r => (r.from === r.to ? displayDay(r.from) : `${displayDay(r.from)} to ${displayDay(r.to)}`);
 
 const TOP_MEDIA = 3;
+const TOP_RULES = 3;
 const MEDIA_SORTS = [['repliesSent', 'Replies'], ['visits', 'Visits'], ['ordersPlaced', 'Orders']];
 
 /** One Reel, post or DM source in the breakdown: what it is, then its share of the totals in words. */
-const MediaActivityRow = ({ activity, media, first, flush }) => {
+const MediaActivityRow = ({ activity, media }) => {
   const post = activity.media ?? media.find(x => x.id === activity.mediaId);
   const label = activity.mediaId === 'DM' ? 'Direct messages' : activity.mediaId === 'ALL' ? 'Older all-post links' : activity.mediaId === 'UNKNOWN' ? 'Unidentified source' : post?.caption || `Reel / post ${activity.mediaId}`;
-  return <View style={[styles.mediaRow, flush && styles.mediaRowFlush, !first && styles.divider]}>
+  return <View style={styles.mediaCard}>
     <Row gap={space.md} align="flex-start">
       <RuleArt target={activity.mediaId} media={post ? [post] : []} size={48} />
       <View style={{ flex: 1, gap: 2 }}>
@@ -79,11 +111,9 @@ const MediaActivityRow = ({ activity, media, first, flush }) => {
       <InlineStat icon="eye-outline" value={activity.visits} one="visit" many="visits" />
       <InlineStat icon="receipt-outline" value={activity.ordersPlaced} one="order" many="orders" />
     </View>
-    <Caption style={styles.mediaFoot}>
-      {activity.commentsProcessed} handled
-      {activity.repliesFailed ? <Caption style={{ color: colors.danger }}>{` · ${activity.repliesFailed} failed`}</Caption> : null}
-      {activity.repliesUncertain ? <Caption style={{ color: colors.warning }}>{` · ${activity.repliesUncertain} not confirmed`}</Caption> : null}
-    </Caption>
+    {activity.repliesFailed || activity.repliesUncertain ? <Caption style={[styles.mediaFoot, { color: colors.warning }]}>
+      {[activity.repliesFailed ? `${activity.repliesFailed} failed` : '', activity.repliesUncertain ? `${activity.repliesUncertain} not confirmed` : ''].filter(Boolean).join(' · ')}
+    </Caption> : null}
   </View>;
 };
 
@@ -102,6 +132,9 @@ export function InstagramPanel({ businessId, onEnabled, onConnected }) {
   const [reportError, setReportError] = useState('');
   const [report, setReport] = useState(null);
   const [allMedia, setAllMedia] = useState(false);
+  const [managing, setManaging] = useState(false);
+  const [about, setAbout] = useState(false);
+  const [allRules, setAllRules] = useState(false);
   const [mediaSort, setMediaSort] = useState('repliesSent');
   const [activityCount, setActivityCount] = useState(10);
   const [activityPeriod, setActivityPeriod] = useState({ period: 'weekly' });
@@ -189,7 +222,7 @@ export function InstagramPanel({ businessId, onEnabled, onConnected }) {
 
   const perform = async (fn) => {
     if (busy) return;
-    setBusy(true); setError('');
+    setBusy(true); setError(''); setManaging(false);
     try { await fn(); await reload(); }
     catch (e) { setError(failure(e)); }
     finally { setBusy(false); }
@@ -251,19 +284,17 @@ export function InstagramPanel({ businessId, onEnabled, onConnected }) {
   const messagesOk = Boolean(status.connectionMessagesReady ?? status.messagesReady);
   // All green needs no checklist: one line says so, and the checklist returns the moment something needs a fix.
   const allOk = commentsOk && messagesOk && status.storePublished !== false;
-  const handledCount = report?.commentsProcessed ?? 0;
+  // Healthy is a status line, not a card: the details wait behind Manage until something needs a fix.
+  const healthy = connected && allOk && status.health !== 'temporarily_unavailable';
   // The server already orders by replies; re-sorting is only needed for the other keys. Stable, so ties keep that order.
   const sortedMedia = mediaSort === 'repliesSent' ? report?.byMedia ?? [] : [...(report?.byMedia ?? [])].sort((a, b) => b[mediaSort] - a[mediaSort]);
   const ready = canTurnOn(status, 'ALL');
+  // Anything that needs the seller's action leads the list, so the short preview never hides a problem.
+  const orderedRules = [...rules.filter(r => r.readiness?.state === 'action_needed'), ...rules.filter(r => r.readiness?.state !== 'action_needed')];
+  const visibleRules = allRules ? orderedRules : orderedRules.slice(0, TOP_RULES);
   const managementOnly = entitled === false || status.managementOnly;
 
-  return (
-    <View>
-      <Alert message={error} />
-
-      {status.health === 'temporarily_unavailable' ? <Alert message="Instagram is temporarily unavailable. Tap Check connection to retry." /> : null}
-      {/* ───────────── Connection ───────────── */}
-      {disconnectedCard ?? <Card style={connected ? styles.block : styles.last}>
+  const connectionDetails = <>
         <Row gap={space.md}>
           <InstagramMark />
           <View style={{ flex: 1 }}>
@@ -309,21 +340,136 @@ export function InstagramPanel({ businessId, onEnabled, onConnected }) {
           ) : null}
           <View style={{ flex: 1 }}><Button title="Disconnect" variant="danger" size="sm" disabled={busy} onPress={disconnect} /></View>
         </Row>
-      </Card>}
+  </>;
+
+  return (
+    <View>
+      <Alert message={error} />
+
+      {status.health === 'temporarily_unavailable' ? <Alert message="Instagram is temporarily unavailable. Tap Check connection to retry." /> : null}
+      {/* ───────────── Connection ───────────── */}
+      {disconnectedCard ?? (healthy ? (
+        <Touchable onPress={() => setManaging(true)} accessibilityLabel={`@${status.username}, connected. Manage Instagram connection`} style={styles.accountBar}>
+          <Row gap={space.sm}>
+            <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+            <Body strong numberOfLines={1} style={{ flexShrink: 1 }}>@{status.username}</Body>
+            <Caption style={{ flex: 1 }} numberOfLines={1}>Connected</Caption>
+            <Body style={styles.manage}>Manage</Body>
+            <Ionicons name="chevron-forward" size={16} color={colors.accent700} />
+          </Row>
+        </Touchable>
+      ) : <Card style={connected ? styles.block : styles.last}>{connectionDetails}</Card>)}
+      <Sheet visible={managing && healthy} onClose={() => setManaging(false)} title="Instagram connection">
+        {connectionDetails}
+      </Sheet>
 
       {status.enabled ? (
         <>
           {managementOnly ? <Caption style={styles.footnote}>Your subscription has expired. You can pause or delete automations and disconnect Instagram.</Caption> : null}
+          {/* ───────────── Activity ───────────── */}
+          <SectionHeader title="Results" />
+          <InstagramActivityPeriod value={activityPeriod} onChange={period => {
+            setReport(null); setReportError(''); setReportLoading(true); setActivityCount(10); setAllMedia(false); setActivityPeriod(period);
+          }} />
+          <Card style={styles.last}>
+            {reportError ? <View style={styles.activityError}><Alert message={report ? 'Unable to update activity. Showing the last successful update.' : reportError} />
+              <Button title="Retry activity" variant="secondary" size="sm" onPress={reload} /></View> : null}
+            {report || reportLoading ? <>
+            <Row style={styles.activityHead}>
+              <Caption style={{ flex: 1 }} numberOfLines={1}>
+                {report ? rangeLabel(report) : ''}
+                {reportLoading ? `${report ? ' · ' : ''}Updating…` : report?.generatedAt ? ` · Updated ${new Date(report.generatedAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}` : ''}
+              </Caption>
+              {report ? <Touchable onPress={() => setAbout(true)} accessibilityLabel="About these numbers" style={styles.infoButton}>
+                <Ionicons name="information-circle-outline" size={20} color={colors.ink500} />
+              </Touchable> : null}
+            </Row>
+            {report && (report.orderValue || report.previous?.orderValue) ? <View style={styles.money}>
+              <Row gap={space.sm}>
+                <InstagramMark size={26} />
+                <Body strong style={{ color: colors.accent900 }}>Orders from Instagram</Body>
+              </Row>
+              <CountUp value={report.orderValue} format={formatMoney} step={100} style={styles.moneyValue} accessibilityLabel={`${formatMoney(report.orderValue)} in orders placed`} />
+              {comparable(report) ? <TrendPill current={report.orderValue} previous={report.previous.orderValue} label={`vs ${previousLabel(report)}`} />
+                : report.previous ? <Caption style={styles.trendWait}>No earlier data to compare yet</Caption> : null}
+              <Row gap={space.sm} style={styles.delivered}>
+                <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+                <Body strong>{formatMoney(report.deliveredValue ?? 0)} delivered</Body>
+                <Caption style={{ flex: 1, textAlign: 'right' }}>{report.deliveredOrders ?? 0} of {report.ordersPlaced ?? 0} {report.ordersPlaced === 1 ? 'order' : 'orders'}</Caption>
+              </Row>
+              {report.orderValueComplete === false ? <Caption style={{ marginTop: space.xs }}>Some older orders could not be valued.</Caption> : null}
+            </View> : null}
+            <Row gap={space.sm} align="stretch" style={reportLoading && { opacity: 0.4 }}>
+              <StatTile label="Replies sent" value={report ? report.repliesSent ?? 0 : '-'} icon="paper-plane" tone={tones.violet}
+                change={comparable(report) ? <Change current={report.repliesSent} previous={report.previous.repliesSent} /> : null} />
+              <StatTile label="Tracked visits" value={report ? report.visits ?? 0 : '-'} icon="eye" tone={tones.blue}
+                change={comparable(report) ? <Change current={report.visits} previous={report.previous.visits} /> : null} />
+              <StatTile label="Orders placed" value={report ? report.ordersPlaced ?? 0 : '-'} icon="receipt" tone={tones.green}
+                change={comparable(report) ? <Change current={report.ordersPlaced} previous={report.previous.ordersPlaced} /> : null} />
+            </Row>
+            {comparable(report) && !(report.orderValue || report.previous?.orderValue) ? <Caption style={styles.changeNote}>Changes compare with the {previousLabel(report)}.</Caption> : null}
+            {report?.repliesFailed || report?.repliesUncertain ? <Row gap={space.sm} style={styles.problems}>
+              <Ionicons name="alert-circle" size={18} color={colors.warning} />
+              <Body style={{ flex: 1, color: colors.warning }}>
+                {[report.repliesFailed ? `${report.repliesFailed} ${report.repliesFailed === 1 ? 'reply' : 'replies'} failed` : '',
+                  report.repliesUncertain ? `${report.repliesUncertain} not confirmed` : ''].filter(Boolean).join(' · ')}
+              </Body>
+            </Row> : null}
+            {report?.byMedia ? <View style={styles.breakdown}>
+              <Row style={{ marginBottom: space.md }}>
+                <Body strong style={{ flex: 1 }}>Top Reels and posts</Body>
+                {report.byMedia.length > TOP_MEDIA ? <Touchable accessibilityLabel={`See all ${report.byMedia.length} Reels, posts and messages`}
+                  style={styles.seeAllInline} onPress={() => { setActivityCount(10); setAllMedia(true); }}>
+                  <Body style={styles.seeAllText}>See all {report.byMedia.length}</Body>
+                  <Ionicons name="chevron-forward" size={16} color={colors.accent700} />
+                </Touchable> : null}
+              </Row>
+              {report.byMedia.length === 0 ? <Caption>No Reel or post activity yet.</Caption> : null}
+              <View style={{ gap: space.sm }}>
+                {report.byMedia.slice(0, TOP_MEDIA).map(activity => <MediaActivityRow key={activity.mediaId} activity={activity} media={media} />)}
+              </View>
+            </View> : null}
+            {report ? <Sheet visible={about} onClose={() => setAbout(false)} title="About these numbers">
+              <View style={{ gap: space.md }}>
+                {[
+                  ['receipt-outline', 'Order value is what orders were worth when placed, not payments received.'],
+                  ['checkmark-circle-outline', 'Delivered counts only orders now marked delivered.'],
+                  ['eye-outline', 'Visits are store visits from reply links, not Reel views.'],
+                  ['time-outline', 'Dates are in India time.'],
+                  ...(report.repliesUncertain ? [['help-circle-outline', 'Not confirmed: Instagram did not answer in time, so we did not send again.']] : []),
+                  ...(report.historyLimited ? [['hourglass-outline', `Daily summaries started ${new Date(report.historyStartedAt).toLocaleDateString('en-IN')}. Earlier dates include only records still available.`]] : []),
+                ].map(([icon, text]) => <Row key={icon} gap={space.md} align="flex-start">
+                  <Ionicons name={icon} size={18} color={colors.ink500} style={{ marginTop: 2 }} />
+                  <Body style={{ flex: 1 }}>{text}</Body>
+                </Row>)}
+              </View>
+            </Sheet> : null}
+            </> : !reportError ? <Caption>Activity is unavailable.</Caption> : null}
+          </Card>
+          {report?.byMedia ? <>
+            <Sheet visible={allMedia} onClose={() => setAllMedia(false)} title="Reels and posts">
+              <Caption style={styles.breakdownIntro}>{rangeLabel(report)} · {report.byMedia.length} Reels, posts and messages</Caption>
+              <View style={styles.segmented} accessibilityRole="radiogroup" accessibilityLabel="Sort by">
+                {MEDIA_SORTS.map(([key, title]) => <Touchable key={key} haptics="select" accessibilityRole="radio" accessibilityLabel={`Most ${title.toLowerCase()}`}
+                  accessibilityState={{ checked: mediaSort === key }} style={[styles.segment, mediaSort === key && styles.segmentActive]}
+                  onPress={() => { setMediaSort(key); setActivityCount(10); }}>
+                  <Body style={[styles.segmentText, mediaSort === key && styles.segmentTextActive]} numberOfLines={1}>Most {title.toLowerCase()}</Body>
+                </Touchable>)}
+              </View>
+              <View style={{ gap: space.sm }}>{sortedMedia.slice(0, activityCount).map(activity => <MediaActivityRow key={activity.mediaId} activity={activity} media={media} />)}</View>
+              {sortedMedia.length > activityCount ? <Button title="Show more" variant="secondary" style={{ marginTop: space.md }} onPress={() => setActivityCount(n => n + 10)} /> : null}
+            </Sheet>
+          </> : null}
           {/* ───────────── Automations ───────────── */}
-          <SectionHeader title="Automations" />
-          <Card style={styles.block} padded={false}>
+          <SectionHeader title="Automations" action={!managementOnly && rules.length ? '+ New' : null} onAction={() => router.push('/instagram/new')} />
+          <Card style={rules.length && !nextCursor ? styles.last : styles.block} padded={false}>
             {rules.length === 0 && rulesError ? <View style={styles.empty}><Alert message={rulesError} />
               <Button title="Retry automations" variant="secondary" onPress={reload} /></View> : rules.length === 0 ? (
               <View style={styles.empty}>
                 <Body strong>No automations yet</Body>
                 <Caption style={{ marginTop: 2 }}>{managementOnly ? 'New automations require an active subscription.' : 'Choose a word like LINK, and the product customers should get.'}</Caption>
               </View>
-            ) : rules.map((rule, index) => (
+            ) : visibleRules.map((rule, index) => (
               <Touchable key={rule.id} onPress={() => router.push(`/instagram/${encodeURIComponent(rule.id)}`)}
                 accessibilityLabel={`Automation for ${rule.keyword}`} style={[styles.rule, index > 0 && styles.divider]}>
                 <Row gap={space.md}>
@@ -338,72 +484,22 @@ export function InstagramPanel({ businessId, onEnabled, onConnected }) {
                 </Row>
               </Touchable>
             ))}
+            {!allRules && orderedRules.length > TOP_RULES ? <Touchable accessibilityLabel={`Show all ${orderedRules.length}${nextCursor ? ' or more' : ''} automations`}
+              style={[styles.seeAll, styles.divider]} onPress={() => setAllRules(true)}>
+              <Body style={styles.seeAllText}>Show all {orderedRules.length}{nextCursor ? '+' : ''}</Body>
+              <Ionicons name="chevron-down" size={16} color={colors.accent700} />
+            </Touchable> : null}
+            {allRules && orderedRules.length > TOP_RULES ? <Touchable accessibilityLabel="Show fewer automations"
+              style={[styles.seeAll, styles.divider]} onPress={() => setAllRules(false)}>
+              <Body style={styles.seeAllText}>Show less</Body>
+              <Ionicons name="chevron-up" size={16} color={colors.accent700} />
+            </Touchable> : null}
           </Card>
           <Alert message={moreError} />
-          {nextCursor ? <Button title={moreError ? 'Retry automations' : 'Show more automations'} variant="secondary" loading={moreLoading} onPress={loadMoreRules} /> : null}
-          {!managementOnly ? <Button title="New automation" style={styles.newButton} onPress={() => router.push('/instagram/new')}
+          {allRules && nextCursor ? <Button title={moreError ? 'Retry automations' : 'Show more automations'} variant="secondary" loading={moreLoading} onPress={loadMoreRules} /> : null}
+          {!managementOnly && !rules.length ? <Button title="New automation" style={styles.newButton} onPress={() => router.push('/instagram/new')}
             icon={<Ionicons name="add" size={20} color="#ffffff" />} /> : null}
           {!ready && !managementOnly ? <Caption style={styles.newHint}>You can create automations now; they turn on once the checklist above is all green.</Caption> : null}
-
-          {/* ───────────── Activity ───────────── */}
-          <SectionHeader title="Activity" />
-          <InstagramActivityPeriod value={activityPeriod} onChange={period => {
-            setReport(null); setReportError(''); setReportLoading(true); setActivityCount(10); setAllMedia(false); setActivityPeriod(period);
-          }} />
-          <Card style={styles.last}>
-            {reportError ? <View style={styles.activityError}><Alert message={report ? 'Unable to update activity. Showing the last successful update.' : reportError} />
-              <Button title="Retry activity" variant="secondary" size="sm" onPress={reload} /></View> : null}
-            {report || reportLoading ? <>
-            <View style={styles.activityHead}>
-              <Body strong>All Reels, posts and messages</Body>
-              <Caption>
-                {report ? rangeLabel(report) : ''}
-                {reportLoading ? `${report ? ' · ' : ''}Updating…` : report?.generatedAt ? ` · Updated ${new Date(report.generatedAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}` : ''}
-              </Caption>
-            </View>
-            <Row style={[{ alignItems: 'stretch' }, reportLoading && { opacity: 0.4 }]}>
-              <MiniStat label="Replies sent" value={report ? String(report.repliesSent ?? 0) : '-'} icon="paper-plane-outline" />
-              <View style={styles.statSplit} />
-              <MiniStat label="Tracked visits" value={report ? String(report.visits ?? 0) : '-'} icon="eye-outline" />
-              <View style={styles.statSplit} />
-              <MiniStat label="Orders placed" value={report ? String(report.ordersPlaced ?? 0) : '-'} icon="receipt-outline" />
-            </Row>
-            {report ? <Body style={styles.handled}>
-                {handledCount} {handledCount === 1 ? 'comment or message' : 'comments and messages'} handled
-                {report.repliesFailed ? <Body style={{ color: colors.danger }}>{` · ${report.repliesFailed} failed`}</Body> : null}
-                {report.repliesUncertain ? <Body style={{ color: colors.warning }}>{` · ${report.repliesUncertain} not confirmed`}</Body> : null}
-              </Body> : null}
-            {report?.byMedia ? <View style={styles.breakdown}>
-              <Body strong>By Reel or post</Body>
-              {report.byMedia.length === 0 ? <Caption style={{ marginTop: 2 }}>No Reel or post activity yet. It appears here when a post has an automation or a comment is handled.</Caption> : null}
-              {report.byMedia.slice(0, TOP_MEDIA).map((activity, i) => <MediaActivityRow key={activity.mediaId} activity={activity} media={media} first={i === 0} flush />)}
-              {report.byMedia.length > TOP_MEDIA ? <Touchable accessibilityLabel={`See all ${report.byMedia.length} Reels, posts and messages`}
-                style={[styles.seeAll, styles.divider]} onPress={() => { setActivityCount(10); setAllMedia(true); }}>
-                <Body style={styles.seeAllText}>See all {report.byMedia.length}</Body>
-                <Ionicons name="chevron-forward" size={16} color={colors.accent700} />
-              </Touchable> : null}
-            </View> : null}
-            {report ? <View style={styles.activityFoot}>
-              {report.repliesUncertain ? <Caption>Not confirmed: Instagram did not answer in time, so we did not send again.</Caption> : null}
-              {report.historyLimited ? <Caption>Limited history: daily summaries started {new Date(report.historyStartedAt).toLocaleDateString('en-IN')}. Earlier dates include only records still available.</Caption> : null}
-              <Caption>India time. Visits are store visits from reply links, not Reel views. Orders placed are not paid sales; payments are not measured here.</Caption>
-            </View> : null}
-            </> : !reportError ? <Caption>Activity is unavailable.</Caption> : null}
-          </Card>
-          {report?.byMedia ? <>
-            <Sheet visible={allMedia} onClose={() => setAllMedia(false)} title="By Reel or post">
-              <Caption style={styles.breakdownIntro}>{rangeLabel(report)} · {report.byMedia.length} Reels, posts and messages</Caption>
-              <View style={styles.segmented} accessibilityRole="radiogroup" accessibilityLabel="Sort by">
-                {MEDIA_SORTS.map(([key, title]) => <Touchable key={key} haptics="select" accessibilityRole="radio" accessibilityLabel={`Most ${title.toLowerCase()}`}
-                  accessibilityState={{ checked: mediaSort === key }} style={[styles.segment, mediaSort === key && styles.segmentActive]}
-                  onPress={() => { setMediaSort(key); setActivityCount(10); }}>
-                  <Body style={[styles.segmentText, mediaSort === key && styles.segmentTextActive]} numberOfLines={1}>Most {title.toLowerCase()}</Body>
-                </Touchable>)}
-              </View>
-              {sortedMedia.slice(0, activityCount).map((activity, i) => <MediaActivityRow key={activity.mediaId} activity={activity} media={media} first={i === 0} flush />)}
-              {sortedMedia.length > activityCount ? <Button title="Show more" variant="secondary" style={{ marginTop: space.md }} onPress={() => setActivityCount(n => n + 10)} /> : null}
-            </Sheet>
-          </> : null}
         </>
       ) : null}
     </View>
@@ -424,21 +520,35 @@ const styles = StyleSheet.create({
   newButton: { marginTop: space.md },
   newHint: { marginTop: space.sm, textAlign: 'center' },
 
-  miniStat: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: space.xs },
-  miniValue: { ...type.figure, fontSize: 28, lineHeight: 34, color: colors.ink900, marginTop: space.xs },
-  statSplit: { width: StyleSheet.hairlineWidth, backgroundColor: colors.line },
+  tile: { flex: 1, borderRadius: radius.md, padding: space.md, gap: 2 },
+  tileIcon: { width: 30, height: 30, borderRadius: radius.pill, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginBottom: space.sm },
+  // Standalone figures read better with proportional digits; tabular is for columns.
+  tileValue: { ...type.figure, fontSize: 26, lineHeight: 32, fontVariant: [], color: colors.ink900 },
+  tileLabel: { color: colors.ink600 },
   activityHead: { marginBottom: space.lg },
   activityError: { gap: space.sm, marginBottom: space.md },
-  handled: { marginTop: space.lg, textAlign: 'center' },
+  problems: { marginTop: space.md },
+  infoButton: { padding: space.xs, margin: -space.xs },
+  seeAllInline: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 32 },
+  money: { backgroundColor: colors.accent50, borderRadius: radius.md, padding: space.lg, marginBottom: space.sm },
+  moneyValue: { ...type.figure, fontSize: 48, lineHeight: 56, letterSpacing: -1.6, fontVariant: [], color: colors.ink900, marginTop: space.sm },
+  delivered: { marginTop: space.lg, paddingTop: space.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.accent200 },
+  trend: { marginTop: space.xs },
+  // White on the tinted hero panel, so the change reads as its own object; the colour is in the text.
+  trendPill: { borderRadius: radius.pill, paddingHorizontal: space.sm + 2, paddingVertical: 3, backgroundColor: colors.surface },
+  trendText: { fontFamily: fonts.semibold, fontSize: 13.5, fontVariant: ['tabular-nums'] },
+  trendWait: { marginTop: space.xs },
+  changeNote: { marginTop: space.md, textAlign: 'center' },
   breakdown: { marginTop: space.lg, paddingTop: space.lg, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
-  activityFoot: { marginTop: space.md, paddingTop: space.md, gap: space.xs, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
   breakdownIntro: { marginBottom: space.md },
   mediaRow: { padding: space.lg },
-  mediaRowFlush: { paddingHorizontal: 0 },
+  mediaCard: { backgroundColor: colors.canvas, borderRadius: radius.md, padding: space.md },
   inlineStats: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.md },
-  inlineStat: { backgroundColor: colors.sunken, borderRadius: radius.pill, paddingHorizontal: space.sm + 2, paddingVertical: space.xs },
+  inlineStat: { backgroundColor: colors.surface, borderRadius: radius.pill, paddingHorizontal: space.sm + 2, paddingVertical: space.xs },
   inlineValue: { ...type.figure, fontSize: 14, lineHeight: 18, letterSpacing: 0, color: colors.ink900 },
   mediaFoot: { marginTop: space.sm },
+  accountBar: { paddingVertical: space.sm, minHeight: 44, justifyContent: 'center' },
+  manage: { ...type.label, color: colors.accent700 },
   seeAll: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xs, minHeight: 52 },
   seeAllText: { color: colors.accent700, fontFamily: fonts.semibold },
   segmented: { flexDirection: 'row', backgroundColor: colors.sunken, borderRadius: radius.pill, padding: 4, gap: 2, marginBottom: space.md },
