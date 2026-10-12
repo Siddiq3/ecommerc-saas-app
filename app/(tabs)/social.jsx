@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '../../src/components/Screen.jsx';
 import { Body, Button, Caption, Display, Row } from '../../src/components/ui.jsx';
-import { FadeIn } from '../../src/components/motion.jsx';
+import { FadeIn, Stagger } from '../../src/components/motion.jsx';
 import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { InstagramPanel } from '../../src/components/InstagramPanel.jsx';
@@ -51,6 +51,43 @@ const STEPS = [
 /** A customer asks under a post; the store answers in their DMs with the product link. */
 const ILLUSTRATION = require('../../assets/instagram-auto-dm.png');
 
+/** The pitch from before launch: the picture of what happens, the promise, and three reasons. */
+const Pitch = () => (
+  <>
+    <FadeIn>
+      <View style={styles.art}>
+        <Image
+          source={ILLUSTRATION}
+          style={styles.artImage}
+          resizeMode="contain"
+          accessibilityLabel="A customer asks the price under your post, and gets the product link in a DM"
+        />
+      </View>
+    </FadeIn>
+    <FadeIn delay={80}>
+      <Text style={styles.headline}>
+        Turn Instagram questions into <Text style={{ color: colors.accent600 }}>real orders</Text>
+      </Text>
+      <Body muted style={styles.lead}>
+        When customers ask about your products in DMs, we’ll help you share the right product link and bring them to your store.
+      </Body>
+    </FadeIn>
+    <Stagger initialDelay={160}>
+      {FEATURES.map((feature) => (
+        <Row key={feature.title} gap={space.lg} align="flex-start" style={styles.feature}>
+          <View style={[styles.featureIcon, { backgroundColor: feature.tint.bg }]}>
+            <Ionicons name={feature.icon} size={22} color={feature.tint.fg} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Body strong>{feature.title}</Body>
+            <Caption style={{ marginTop: 2 }}>{feature.body}</Caption>
+          </View>
+        </Row>
+      ))}
+    </Stagger>
+  </>
+);
+
 export default function Social() {
   const insets = useSafeAreaInsets();
   const toast = useToast();
@@ -59,6 +96,7 @@ export default function Social() {
   // Off until the API says otherwise, so the screen never promises a feature this stage does not run.
   const [live, setLive] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [firstVisit, setFirstVisit] = useState(false);
 
   const copyLink = async () => {
     await Clipboard.setStringAsync(link);
@@ -69,67 +107,42 @@ export default function Social() {
     <Screen style={{ paddingTop: insets.top }} contentStyle={{ paddingTop: space.md }}>
       <Row style={styles.header}>
         <Display style={styles.title}>Instagram Auto DM</Display>
-        {live ? null : (
+        {!live || firstVisit ? (
           <View style={styles.soon}>
             <Ionicons name="sparkles" size={13} color={colors.accent700} />
-            <Text style={styles.soonText}>Coming soon</Text>
+            <Text style={styles.soonText}>{live ? 'Available now' : 'Coming soon'}</Text>
           </View>
-        )}
+        ) : null}
       </Row>
 
-      <InstagramPanel businessId={businessId} onEnabled={setLive} onConnected={setConnected} />
+      {live && firstVisit ? <Pitch /> : null}
+      <InstagramPanel businessId={businessId} onEnabled={setLive} onConnected={setConnected} onFirstVisit={setFirstVisit} />
 
       {/* Once connected, the panel itself shows everything; the explainer is for sellers who have not started. */}
-      {live && connected ? null : live ? (
+      {live && (connected || firstVisit) ? null : live ? (
         <FadeIn>
-          <Body strong style={styles.howTitle}>How it works</Body>
-          {STEPS.map((step, index) => (
-            <Row key={step.title} gap={space.lg} align="flex-start" style={styles.feature}>
-              <View style={[styles.featureIcon, { backgroundColor: colors.accent50 }]}>
-                <Ionicons name={step.icon} size={22} color={colors.accent700} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Body strong>{index + 1}. {step.title}</Body>
-                <Caption style={{ marginTop: 2 }}>{step.body}</Caption>
-              </View>
-            </Row>
-          ))}
+          {/* The order matters here, so the steps are numbered and joined into one timeline. */}
+          <View style={styles.howCard}>
+            <Body strong style={styles.howTitle}>How it works</Body>
+            {STEPS.map((step, index) => (
+              <Row key={step.title} gap={space.md} align="stretch">
+                <View style={styles.rail}>
+                  <View style={styles.stepDot}><Text style={styles.stepNumber}>{index + 1}</Text></View>
+                  {index < STEPS.length - 1 ? <View style={styles.railLine} /> : null}
+                </View>
+                <View style={[styles.stepBody, index === STEPS.length - 1 && { paddingBottom: 0 }]}>
+                  <Row gap={space.sm}>
+                    <Ionicons name={step.icon} size={16} color={colors.accent700} />
+                    <Body strong style={{ flex: 1 }}>{step.title}</Body>
+                  </Row>
+                  <Caption style={{ marginTop: 2 }}>{step.body}</Caption>
+                </View>
+              </Row>
+            ))}
+          </View>
         </FadeIn>
       ) : (
-      <>
-      <FadeIn>
-        <View style={styles.art}>
-          <Image
-            source={ILLUSTRATION}
-            style={styles.artImage}
-            resizeMode="contain"
-            accessibilityLabel="A customer asks the price under your post, and gets the product link in a DM"
-          />
-        </View>
-      </FadeIn>
-
-      <FadeIn delay={80}>
-        <Text style={styles.headline}>
-          Turn Instagram questions into <Text style={{ color: colors.accent600 }}>real orders</Text>
-        </Text>
-        <Body muted style={styles.lead}>
-          When customers ask about your products in DMs, we’ll help you share the right product link and bring them to your store.
-        </Body>
-
-        {FEATURES.map((feature) => (
-          <Row key={feature.title} gap={space.lg} align="flex-start" style={styles.feature}>
-            <View style={[styles.featureIcon, { backgroundColor: feature.tint.bg }]}>
-              <Ionicons name={feature.icon} size={22} color={feature.tint.fg} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Body strong>{feature.title}</Body>
-              <Caption style={{ marginTop: 2 }}>{feature.body}</Caption>
-            </View>
-          </Row>
-        ))}
-      </FadeIn>
-
-      </>
+      <Pitch />
       )}
 
       <FadeIn delay={160}>
@@ -191,7 +204,13 @@ const styles = StyleSheet.create({
   feature: { marginBottom: space.xl },
   featureIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
 
-  howTitle: { marginTop: space.sm, marginBottom: space.lg },
+  howTitle: { marginBottom: space.lg },
+  howCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: space.lg, marginBottom: space.xl },
+  rail: { width: 28, alignItems: 'center' },
+  stepDot: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.accent700, alignItems: 'center', justifyContent: 'center' },
+  stepNumber: { ...type.label, color: '#ffffff' },
+  railLine: { flex: 1, width: 2, marginVertical: space.xs, backgroundColor: colors.accent100 },
+  stepBody: { flex: 1, paddingBottom: space.lg, paddingTop: 3 },
   launch: { padding: space.lg, borderRadius: radius.lg, backgroundColor: colors.accent50, marginBottom: space.xl },
   instagram: {
     width: 52,

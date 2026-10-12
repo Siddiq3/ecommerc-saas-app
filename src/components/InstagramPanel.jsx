@@ -10,7 +10,7 @@ import { useRefreshOnFocus } from '../lib/useAsync.js';
 import { InstagramMark, RuleArt, readinessLabel, canTurnOn, instagramError as failure, targetName } from './instagram.jsx';
 import { InstagramActivityPeriod, displayDay } from './InstagramActivityPeriod.jsx';
 import { Sheet } from './Sheet.jsx';
-import { CountUp } from './motion.jsx';
+import { CountUp, PopIn } from './motion.jsx';
 import { formatMoney, percentChange } from '../lib/format.js';
 import { usePlan } from '../state/plan.jsx';
 import { colors, fonts, radius, space, tones, type } from '../theme.js';
@@ -117,7 +117,7 @@ const MediaActivityRow = ({ activity, media }) => {
   </View>;
 };
 
-export function InstagramPanel({ businessId, onEnabled, onConnected }) {
+export function InstagramPanel({ businessId, onEnabled, onConnected, onFirstVisit }) {
   const [status, setStatus] = useState({ status: 'disconnected', enabled: false });
   const [media, setMedia] = useState([]);
   const [rules, setRules] = useState([]);
@@ -154,12 +154,16 @@ export function InstagramPanel({ businessId, onEnabled, onConnected }) {
       onEnabled?.(Boolean(current?.enabled));
       onConnected?.(Boolean(current?.status && current.status !== 'disconnected'));
       if (current?.enabled) {
-        const [r, a] = await Promise.allSettled([instagram.rules(businessId), instagram.report(businessId, activityPeriod)]);
+        // Disconnected: rules are still read (to say how many are paused), but results are not shown, so not fetched.
+        const linked = current.status !== 'disconnected';
+        const [r, a] = await Promise.allSettled([instagram.rules(businessId), linked ? instagram.report(businessId, activityPeriod) : Promise.resolve(null)]);
         if (id !== generation.current) return;
         if (a.status === 'fulfilled') { setReport(a.value); setReportError(''); activityUpdated = true; }
         else setReportError('Unable to update activity.');
         if (r.status === 'rejected') throw r.reason;
         setRules(r.value?.items ?? []); setNextCursor(r.value?.nextCursor ?? null);
+        // First visit: no connection and nothing set up yet, so the screen leads with the pitch.
+        onFirstVisit?.(current.status === 'disconnected' && !(r.value?.items ?? []).length);
         const list = r.value?.items ?? [];
         const snapshots = list.map(x => x.media).filter(Boolean);
         // Existing rules predate media snapshots; retain their thumbnails when Instagram is reachable.
@@ -168,13 +172,13 @@ export function InstagramPanel({ businessId, onEnabled, onConnected }) {
           if (id !== generation.current) return;
           setMedia([...snapshots, ...(posts?.items ?? [])]);
         } else setMedia(snapshots);
-      } else { setMedia([]); setRules([]); setNextCursor(null); setReport(null); }
+      } else { setMedia([]); setRules([]); setNextCursor(null); setReport(null); onFirstVisit?.(false); }
       setError('');
     } catch (e) {
       if (id === generation.current) { setError(failure(e)); setRulesError('Unable to update automations.');
         if (!activityUpdated) setReportError('Unable to update activity.'); }
     } finally { if (id === generation.current) { setLoading(false); setReportLoading(false); } }
-  }, [businessId, onEnabled, onConnected, activityPeriod]);
+  }, [businessId, onEnabled, onConnected, onFirstVisit, activityPeriod]);
   useEffect(() => { const counter = generation; setReport(null); setAllMedia(false); setRules([]); setNextCursor(null); return () => { counter.current++; }; }, [businessId]);
   const loadMoreRules = async () => {
     if (!nextCursor || morePending.current) return;
@@ -249,25 +253,50 @@ export function InstagramPanel({ businessId, onEnabled, onConnected }) {
   }
 
   /* ───────────── Not connected ───────────── */
-  const disconnectedCard = status.status === 'disconnected' ? (
+  // A store that used Instagram before keeps its (paused) automations and history; it is asked to reconnect, not to start.
+  const returning = status.status === 'disconnected' && rules.length > 0;
+  const disconnectedCard = status.status === 'disconnected' && status.enabled && !returning ? (
+      // First visit: the pitch above explains it; this is the one action, and it arrives last.
+      <PopIn delay={320} style={styles.last}>
+        <View style={styles.connectBanner}>
+          <Row gap={space.md}>
+            <InstagramMark size={52} />
+            <View style={{ flex: 1 }}>
+              <Row gap={space.xs}>
+                <Ionicons name="sparkles" size={13} color={colors.accent900} />
+                <Body strong style={{ color: colors.accent900 }}>Connect now</Body>
+              </Row>
+              <Caption style={{ color: colors.accent700 }}>Start turning comments and DMs into orders.</Caption>
+            </View>
+          </Row>
+          {status.managementOnly ? <Caption style={{ marginTop: space.sm }}>Your subscription has expired. New connections are unavailable.</Caption> : null}
+          <Alert message={error} />
+          <Button title="Connect Instagram" style={{ marginTop: space.lg }} disabled={busy || entitled !== true || status.managementOnly} loading={busy} onPress={connect}
+            icon={<Ionicons name="logo-instagram" size={18} color="#ffffff" />} />
+          <Row gap={space.sm} align="flex-start" style={styles.connectTrust}>
+            <Ionicons name="lock-closed-outline" size={14} color={colors.accent700} style={{ marginTop: 2 }} />
+            <Caption style={{ flex: 1, color: colors.accent700 }}>Business or Creator account. You log in on Instagram, then confirm the account here.</Caption>
+          </Row>
+        </View>
+      </PopIn>
+    ) : status.status === 'disconnected' ? (
       <Card style={styles.last}>
         <Row gap={space.md}>
           <InstagramMark />
           <View style={{ flex: 1 }}>
-            <Heading>Connect Instagram</Heading>
+            <Heading>{returning ? 'Reconnect Instagram' : 'Connect Instagram'}</Heading>
             <Caption>Business and Creator accounts</Caption>
           </View>
         </Row>
-        <Body muted style={{ marginTop: space.md }}>
-          {status.enabled
-            ? 'Reply to comments and messages with your product, price and link, automatically.'
-            : 'Instagram connection is not available yet.'}
-        </Body>
+        {returning && status.enabled ? <Row gap={space.sm} style={styles.paused}>
+          <Ionicons name="pause-circle" size={18} color={colors.ink500} />
+          <Body style={{ flex: 1 }}>{`${rules.length}${nextCursor ? '+' : ''} ${rules.length === 1 && !nextCursor ? 'automation is' : 'automations are'} paused. Reconnect to start replying again.`}</Body>
+        </Row> : <Body muted style={{ marginTop: space.md }}>Instagram connection is not available yet.</Body>}
         {status.managementOnly ? <Caption>Your subscription has expired. New connections are unavailable.</Caption> : null}
         <Alert message={error} />
         {status.enabled ? (
           <>
-            <Button title="Connect Instagram" style={{ marginTop: space.lg }} disabled={busy || entitled !== true || status.managementOnly} loading={busy} onPress={connect}
+            <Button title="Reconnect Instagram" style={{ marginTop: space.lg }} disabled={busy || entitled !== true || status.managementOnly} loading={busy} onPress={connect}
               icon={<Ionicons name="logo-instagram" size={18} color="#ffffff" />} />
             <Caption style={styles.footnote}>You will log in on Instagram, then confirm the account here.</Caption>
           </>
@@ -363,7 +392,7 @@ export function InstagramPanel({ businessId, onEnabled, onConnected }) {
         {connectionDetails}
       </Sheet>
 
-      {status.enabled ? (
+      {status.enabled && status.status !== 'disconnected' ? (
         <>
           {managementOnly ? <Caption style={styles.footnote}>Your subscription has expired. You can pause or delete automations and disconnect Instagram.</Caption> : null}
           {/* ───────────── Activity ───────────── */}
@@ -547,6 +576,9 @@ const styles = StyleSheet.create({
   inlineStat: { backgroundColor: colors.surface, borderRadius: radius.pill, paddingHorizontal: space.sm + 2, paddingVertical: space.xs },
   inlineValue: { ...type.figure, fontSize: 14, lineHeight: 18, letterSpacing: 0, color: colors.ink900 },
   mediaFoot: { marginTop: space.sm },
+  connectBanner: { padding: space.lg, borderRadius: radius.lg, backgroundColor: colors.accent50 },
+  connectTrust: { marginTop: space.md },
+  paused: { marginTop: space.md },
   accountBar: { paddingVertical: space.sm, minHeight: 44, justifyContent: 'center' },
   manage: { ...type.label, color: colors.accent700 },
   seeAll: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xs, minHeight: 52 },

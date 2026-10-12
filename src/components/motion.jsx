@@ -135,6 +135,22 @@ export const FadeIn = ({
 };
 
 /**
+ * Springs a subtree in: fades up from slightly smaller. For the one element a screen wants the eye to finish on,
+ * such as a call to action that arrives after the content explaining it.
+ */
+export const PopIn = ({ children, delay = 0, style }) => {
+  const progress = useSharedValue(0);
+  useEffect(() => {
+    progress.value = withDelay(delay, withSpring(1, motion.spring.enter));
+  }, [delay, progress]);
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [0, 1], [0, 1], Extrapolation.CLAMP),
+    transform: [{ scale: interpolate(progress.value, [0, 1], [0.94, 1]) }],
+  }));
+  return <Animated.View style={[style, animatedStyle]}>{children}</Animated.View>;
+};
+
+/**
  * Staggers a list of children in.
  *
  * Capped at `motion.maxStaggered`: past roughly eight items the last one arrives long
