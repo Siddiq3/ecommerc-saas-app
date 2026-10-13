@@ -16,7 +16,7 @@ import { usePlan } from '../../src/state/plan.jsx';
 import { instagram } from '../../src/api/endpoints.js';
 import { productUrl } from '../../src/lib/storefront.js';
 import { formatMoney } from '../../src/lib/format.js';
-import { colors, radius, space } from '../../src/theme.js';
+import { colors, contentMaxWidth, radius, space } from '../../src/theme.js';
 
 /**
  * New automation, one question per step: where to reply, which product, which word, then a review showing the exact
@@ -59,7 +59,8 @@ export default function NewAutomation() {
   const canOn = entitled === true && canTurnOn(status, target);
   const valid = [Boolean(target), Boolean(productId), wordOk, true];
   // Three tiles across the screen, with the page's own side padding and two gaps between them.
-  const tile = Math.floor((width - space.lg * 2 - space.sm * (COLUMNS - 1)) / COLUMNS);
+  // On a tablet the column stops at contentMaxWidth, so the grid is measured from that, not the window.
+  const tile = Math.floor((Math.min(width - space.lg * 2, contentMaxWidth) - space.sm * (COLUMNS - 1)) / COLUMNS);
 
   const loadOlder = async () => {
     if (!cursor || olderPosts.loading) return;
@@ -111,7 +112,7 @@ export default function NewAutomation() {
   }
 
   return (
-    <Screen footer={footer} onEndReached={step === 1 ? search.loadMore : undefined}>
+    <Screen footer={footer} onEndReached={step === 1 ? search.loadMore : undefined} maxWidth={contentMaxWidth}>
       <Caption>Step {step + 1} of {STEPS.length}</Caption>
       <Row gap={space.xs} style={styles.progress}>
         {STEPS.map((s, i) => <View key={s} style={[styles.progressBar, i <= step && styles.progressDone]} />)}
@@ -185,10 +186,13 @@ export default function NewAutomation() {
   );
 }
 
+// Label above value, so the value keeps the row's width on a narrow phone with large text.
 const SummaryRow = ({ label, value, onChange, last }) => (
-  <Row style={[styles.summaryRow, !last && styles.summaryDivider]}>
-    <Caption style={styles.summaryLabel}>{label}</Caption>
-    <Body strong numberOfLines={1} style={{ flex: 1 }}>{value}</Body>
+  <Row gap={space.md} style={[styles.summaryRow, !last && styles.summaryDivider]}>
+    <View style={{ flex: 1 }}>
+      <Caption>{label}</Caption>
+      <Body strong numberOfLines={2}>{value}</Body>
+    </View>
     <Touchable onPress={onChange} accessibilityLabel={`Change ${label.toLowerCase()}`}>
       <Row gap={2}><Label style={{ color: colors.accent700 }}>Change</Label><Ionicons name="chevron-forward" size={14} color={colors.accent700} /></Row>
     </Touchable>
@@ -212,6 +216,5 @@ const styles = StyleSheet.create({
   summary: { backgroundColor: colors.surface, borderRadius: radius.lg, paddingHorizontal: space.lg, marginBottom: space.lg },
   summaryRow: { paddingVertical: space.md },
   summaryDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line },
-  summaryLabel: { width: 72 },
   turnOn: { marginTop: space.lg, backgroundColor: colors.surface, borderRadius: radius.lg, padding: space.lg },
 });

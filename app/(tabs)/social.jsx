@@ -10,7 +10,7 @@ import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { InstagramPanel } from '../../src/components/InstagramPanel.jsx';
 import { storeUrl as storeAddress } from '../../src/lib/storefront.js';
-import { colors, radius, space, tones, type } from '../../src/theme.js';
+import { colors, contentMaxWidth, radius, space, tones, type } from '../../src/theme.js';
 
 /**
  * Social: Instagram Auto DM.
@@ -104,7 +104,7 @@ export default function Social() {
   };
 
   return (
-    <Screen style={{ paddingTop: insets.top }} contentStyle={{ paddingTop: space.md }}>
+    <Screen style={{ paddingTop: insets.top }} contentStyle={{ paddingTop: space.md }} maxWidth={contentMaxWidth}>
       <Row style={styles.header}>
         <Display style={styles.title}>Instagram Auto DM</Display>
         {!live || firstVisit ? (
@@ -162,8 +162,9 @@ export default function Social() {
         {link ? (
           <View style={styles.bio}>
             <Body strong>{live ? 'Add your store to your Instagram bio' : 'While you wait: add your store to your bio'}</Body>
-            <Row gap={space.sm} style={styles.linkRow}>
-              <Caption numberOfLines={1} selectable style={styles.link}>{link}</Caption>
+            <View style={styles.linkRow}>
+              {/* Not selectable: on Android that disables truncation. Copy link below copies it. */}
+              <Caption numberOfLines={1} ellipsizeMode="middle" style={styles.link}>{link}</Caption>
               <Button
                 title="Copy link"
                 variant="secondary"
@@ -171,8 +172,9 @@ export default function Social() {
                 full={false}
                 icon={<Ionicons name="copy-outline" size={16} color={colors.ink800} />}
                 onPress={() => copyLink().catch(() => toast.error('Could not copy the link'))}
+                style={styles.copy}
               />
-            </Row>
+            </View>
           </View>
         ) : null}
       </FadeIn>
@@ -222,6 +224,7 @@ const styles = StyleSheet.create({
   },
   // A tip, not a task: recessed instead of raised, so it sits below the cards in weight.
   bio: { marginBottom: space.xl, padding: space.lg, borderRadius: radius.lg, backgroundColor: colors.sunken },
-  linkRow: { marginTop: space.md },
-  link: { flex: 1, color: colors.ink600 },
+  linkRow: { marginTop: space.sm, gap: space.md },
+  link: { color: colors.ink600 },
+  copy: { alignSelf: 'flex-start' },
 });

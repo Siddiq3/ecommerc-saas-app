@@ -16,7 +16,7 @@ import { usePlan } from '../../src/state/plan.jsx';
 import { instagram } from '../../src/api/endpoints.js';
 import { productUrl } from '../../src/lib/storefront.js';
 import { formatMoney } from '../../src/lib/format.js';
-import { colors, radius, space, type } from '../../src/theme.js';
+import { colors, contentMaxWidth, radius, space, type } from '../../src/theme.js';
 
 /** One automation: what it sends, on or off, which product, or delete it. */
 export default function AutomationDetails() {
@@ -82,7 +82,7 @@ export default function AutomationDetails() {
   const canOn = entitled === true && Boolean(rule.readiness?.canActivate);
 
   return (
-    <Screen>
+    <Screen maxWidth={contentMaxWidth}>
       <Alert message={error} />
 
       {/* The automation as one sentence: where, the word, the product, and whether it is on. */}
@@ -95,21 +95,24 @@ export default function AutomationDetails() {
           </View>
         </Row>
         <View style={styles.flow}>
+          {/* Label above value in each step, so the keyword and product keep the full width on narrow phones. */}
           <Row gap={space.md}>
             <View style={styles.flowIcon}><Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.accent700} /></View>
-            <Caption style={{ flex: 1 }}>When customers send</Caption>
-            <View style={styles.keyword}><Text style={styles.keywordText}>{rule.keyword}</Text></View>
+            <View style={{ flex: 1 }}>
+              <Caption>When customers send</Caption>
+              <View style={styles.keyword}><Text style={styles.keywordText} numberOfLines={1}>{rule.keyword}</Text></View>
+            </View>
           </Row>
           <View style={styles.flowLine} />
           <Row gap={space.md}>
             <View style={styles.flowIcon}><Ionicons name="bag-handle-outline" size={18} color={colors.accent700} /></View>
             <View style={{ flex: 1 }}>
               <Caption>They get</Caption>
-              <Body strong numberOfLines={1}>{product?.name ?? 'Unavailable product'}{Number.isSafeInteger(product?.price) ? ` · ${formatMoney(product.price)}` : ''}</Body>
+              <Body strong numberOfLines={2}>{product?.name ?? 'Unavailable product'}{Number.isSafeInteger(product?.price) ? ` · ${formatMoney(product.price)}` : ''}</Body>
+              {entitled === true ? <Touchable onPress={() => setPicking(true)} accessibilityLabel="Change product" disabled={busy} style={styles.changeLink}>
+                <Row gap={2}><Body style={styles.change}>Change product</Body><Ionicons name="chevron-forward" size={14} color={colors.accent700} /></Row>
+              </Touchable> : null}
             </View>
-            {entitled === true ? <Touchable onPress={() => setPicking(true)} accessibilityLabel="Change product" disabled={busy}>
-              <Row gap={2}><Body style={styles.change}>Change</Body><Ionicons name="chevron-forward" size={14} color={colors.accent700} /></Row>
-            </Touchable> : null}
           </Row>
         </View>
         <View style={styles.heroToggle}>
@@ -131,7 +134,7 @@ export default function AutomationDetails() {
         </Row>
       </Touchable>
 
-      <Sheet visible={picking} onClose={() => setPicking(false)} title="Product they get">
+      <Sheet visible={picking} onClose={() => setPicking(false)} title="Product they get" maxWidth={contentMaxWidth}>
         <InstagramProductPicker search={search} selectedId={rule.productId} disabled={busy}
           onSelect={p => {
             setPicking(false);
@@ -150,9 +153,10 @@ const styles = StyleSheet.create({
   flowIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   // Joins the two steps so they read as cause and effect.
   flowLine: { width: 2, height: space.md, marginLeft: 17, marginVertical: space.xs, backgroundColor: colors.accent200 },
-  keyword: { paddingHorizontal: space.md, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: colors.surface },
+  keyword: { alignSelf: 'flex-start', marginTop: space.xs, paddingHorizontal: space.md, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: colors.surface },
   keywordText: { ...type.label, fontSize: 15, color: colors.accent700, letterSpacing: 0.4 },
   change: { ...type.label, color: colors.accent700 },
+  changeLink: { alignSelf: 'flex-start', marginTop: space.xs, paddingVertical: space.xs },
   heroToggle: { padding: space.lg, marginTop: space.lg, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
   note: { marginTop: space.sm },
   delete: { alignSelf: 'center', marginTop: space.xxl, paddingVertical: space.md, paddingHorizontal: space.lg },

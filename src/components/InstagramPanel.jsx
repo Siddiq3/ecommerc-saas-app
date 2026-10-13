@@ -13,7 +13,7 @@ import { Sheet } from './Sheet.jsx';
 import { CountUp, PopIn } from './motion.jsx';
 import { formatMoney, percentChange } from '../lib/format.js';
 import { usePlan } from '../state/plan.jsx';
-import { colors, fonts, radius, space, tones, type } from '../theme.js';
+import { colors, contentMaxWidth, fonts, radius, space, tones, type } from '../theme.js';
 
 /**
  * The Social tab's Instagram overview: the connection, what it has done, and the seller's automations. Creating one
@@ -41,12 +41,16 @@ const Check = ({ ok, title, fix }) => (
   </Row>
 );
 
-/** A tinted tile: an icon chip that names the metric by colour and shape, then the value, label and change in ink. */
-const StatTile = ({ label, value, icon, tone, change }) => (
+/**
+ * A tinted tile: an icon chip that names the metric by colour and shape, then the value, label and change in ink.
+ * Labels are one word so they fit a third of a 320dp phone at large text; `a11y` is the full name a screen reader says.
+ */
+const StatTile = ({ label, a11y, value, icon, tone, change }) => (
   <View style={[styles.tile, { backgroundColor: tone.bg }]}>
     <View style={styles.tileIcon}><Ionicons name={icon} size={16} color={tone.fg} /></View>
-    {typeof value === 'number' ? <CountUp value={value} style={styles.tileValue} /> : <Text style={styles.tileValue}>{value}</Text>}
-    <Caption style={styles.tileLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{label}</Caption>
+    {typeof value === 'number' ? <CountUp value={value} style={styles.tileValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} />
+      : <Text style={styles.tileValue}>{value}</Text>}
+    <Caption style={styles.tileLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} accessibilityLabel={a11y}>{label}</Caption>
     {change}
   </View>
 );
@@ -388,7 +392,7 @@ export function InstagramPanel({ businessId, onEnabled, onConnected, onFirstVisi
           </Row>
         </Touchable>
       ) : <Card style={connected ? styles.block : styles.last}>{connectionDetails}</Card>)}
-      <Sheet visible={managing && healthy} onClose={() => setManaging(false)} title="Instagram connection">
+      <Sheet visible={managing && healthy} onClose={() => setManaging(false)} title="Instagram connection" maxWidth={contentMaxWidth}>
         {connectionDetails}
       </Sheet>
 
@@ -418,22 +422,25 @@ export function InstagramPanel({ businessId, onEnabled, onConnected, onFirstVisi
                 <InstagramMark size={26} />
                 <Body strong style={{ color: colors.accent900 }}>Orders from Instagram</Body>
               </Row>
-              <CountUp value={report.orderValue} format={formatMoney} step={100} style={styles.moneyValue} accessibilityLabel={`${formatMoney(report.orderValue)} in orders placed`} />
+              <CountUp value={report.orderValue} format={formatMoney} step={100} style={styles.moneyValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5} accessibilityLabel={`${formatMoney(report.orderValue)} in orders placed`} />
               {comparable(report) ? <TrendPill current={report.orderValue} previous={report.previous.orderValue} label={`vs ${previousLabel(report)}`} />
                 : report.previous ? <Caption style={styles.trendWait}>No earlier data to compare yet</Caption> : null}
-              <Row gap={space.sm} style={styles.delivered}>
-                <Ionicons name="checkmark-circle" size={18} color={colors.success} />
-                <Body strong>{formatMoney(report.deliveredValue ?? 0)} delivered</Body>
-                <Caption style={{ flex: 1, textAlign: 'right' }}>{report.deliveredOrders ?? 0} of {report.ordersPlaced ?? 0} {report.ordersPlaced === 1 ? 'order' : 'orders'}</Caption>
-              </Row>
+              {/* Stacked, not side by side: on a narrow phone with large text the count has no room beside the amount. */}
+              <View style={styles.delivered}>
+                <Row gap={space.sm}>
+                  <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+                  <Body strong style={{ flexShrink: 1 }}>{formatMoney(report.deliveredValue ?? 0)} delivered</Body>
+                </Row>
+                <Caption style={styles.deliveredCount}>{report.deliveredOrders ?? 0} of {report.ordersPlaced ?? 0} {report.ordersPlaced === 1 ? 'order' : 'orders'}</Caption>
+              </View>
               {report.orderValueComplete === false ? <Caption style={{ marginTop: space.xs }}>Some older orders could not be valued.</Caption> : null}
             </View> : null}
             <Row gap={space.sm} align="stretch" style={reportLoading && { opacity: 0.4 }}>
-              <StatTile label="Replies sent" value={report ? report.repliesSent ?? 0 : '-'} icon="paper-plane" tone={tones.violet}
+              <StatTile label="Replies" a11y="Replies sent" value={report ? report.repliesSent ?? 0 : '-'} icon="paper-plane" tone={tones.violet}
                 change={comparable(report) ? <Change current={report.repliesSent} previous={report.previous.repliesSent} /> : null} />
-              <StatTile label="Tracked visits" value={report ? report.visits ?? 0 : '-'} icon="eye" tone={tones.blue}
+              <StatTile label="Visits" a11y="Tracked store visits" value={report ? report.visits ?? 0 : '-'} icon="eye" tone={tones.blue}
                 change={comparable(report) ? <Change current={report.visits} previous={report.previous.visits} /> : null} />
-              <StatTile label="Orders placed" value={report ? report.ordersPlaced ?? 0 : '-'} icon="receipt" tone={tones.green}
+              <StatTile label="Orders" a11y="Orders placed" value={report ? report.ordersPlaced ?? 0 : '-'} icon="receipt" tone={tones.green}
                 change={comparable(report) ? <Change current={report.ordersPlaced} previous={report.previous.ordersPlaced} /> : null} />
             </Row>
             {comparable(report) && !(report.orderValue || report.previous?.orderValue) ? <Caption style={styles.changeNote}>Changes compare with the {previousLabel(report)}.</Caption> : null}
@@ -458,7 +465,7 @@ export function InstagramPanel({ businessId, onEnabled, onConnected, onFirstVisi
                 {report.byMedia.slice(0, TOP_MEDIA).map(activity => <MediaActivityRow key={activity.mediaId} activity={activity} media={media} />)}
               </View>
             </View> : null}
-            {report ? <Sheet visible={about} onClose={() => setAbout(false)} title="About these numbers">
+            {report ? <Sheet visible={about} onClose={() => setAbout(false)} title="About these numbers" maxWidth={contentMaxWidth}>
               <View style={{ gap: space.md }}>
                 {[
                   ['receipt-outline', 'Order value is what orders were worth when placed, not payments received.'],
@@ -476,13 +483,13 @@ export function InstagramPanel({ businessId, onEnabled, onConnected, onFirstVisi
             </> : !reportError ? <Caption>Activity is unavailable.</Caption> : null}
           </Card>
           {report?.byMedia ? <>
-            <Sheet visible={allMedia} onClose={() => setAllMedia(false)} title="Reels and posts">
+            <Sheet visible={allMedia} onClose={() => setAllMedia(false)} title="Reels and posts" maxWidth={contentMaxWidth}>
               <Caption style={styles.breakdownIntro}>{rangeLabel(report)} · {report.byMedia.length} Reels, posts and messages</Caption>
               <View style={styles.segmented} accessibilityRole="radiogroup" accessibilityLabel="Sort by">
                 {MEDIA_SORTS.map(([key, title]) => <Touchable key={key} haptics="select" accessibilityRole="radio" accessibilityLabel={`Most ${title.toLowerCase()}`}
                   accessibilityState={{ checked: mediaSort === key }} style={[styles.segment, mediaSort === key && styles.segmentActive]}
                   onPress={() => { setMediaSort(key); setActivityCount(10); }}>
-                  <Body style={[styles.segmentText, mediaSort === key && styles.segmentTextActive]} numberOfLines={1}>Most {title.toLowerCase()}</Body>
+                  <Body style={[styles.segmentText, mediaSort === key && styles.segmentTextActive]} numberOfLines={1}>{title}</Body>
                 </Touchable>)}
               </View>
               <View style={{ gap: space.sm }}>{sortedMedia.slice(0, activityCount).map(activity => <MediaActivityRow key={activity.mediaId} activity={activity} media={media} />)}</View>
@@ -549,7 +556,7 @@ const styles = StyleSheet.create({
   newButton: { marginTop: space.md },
   newHint: { marginTop: space.sm, textAlign: 'center' },
 
-  tile: { flex: 1, borderRadius: radius.md, padding: space.md, gap: 2 },
+  tile: { flex: 1, borderRadius: radius.md, paddingVertical: space.md, paddingHorizontal: space.sm + 2, gap: 2 },
   tileIcon: { width: 30, height: 30, borderRadius: radius.pill, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginBottom: space.sm },
   // Standalone figures read better with proportional digits; tabular is for columns.
   tileValue: { ...type.figure, fontSize: 26, lineHeight: 32, fontVariant: [], color: colors.ink900 },
@@ -562,6 +569,7 @@ const styles = StyleSheet.create({
   money: { backgroundColor: colors.accent50, borderRadius: radius.md, padding: space.lg, marginBottom: space.sm },
   moneyValue: { ...type.figure, fontSize: 48, lineHeight: 56, letterSpacing: -1.6, fontVariant: [], color: colors.ink900, marginTop: space.sm },
   delivered: { marginTop: space.lg, paddingTop: space.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.accent200 },
+  deliveredCount: { marginLeft: 18 + space.sm, marginTop: 2 },
   trend: { marginTop: space.xs },
   // White on the tinted hero panel, so the change reads as its own object; the colour is in the text.
   trendPill: { borderRadius: radius.pill, paddingHorizontal: space.sm + 2, paddingVertical: 3, backgroundColor: colors.surface },

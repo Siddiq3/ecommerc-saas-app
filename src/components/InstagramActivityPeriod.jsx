@@ -36,7 +36,7 @@ export function InstagramActivityPeriod({ value, onChange }) {
         const active = value.period === period;
         return <Touchable key={period} haptics="select" accessibilityRole="radio" accessibilityLabel={title} accessibilityState={{ checked: active }}
           style={[styles.segment, active && styles.segmentActive]} onPress={() => choose(period)}>
-          <Body style={[styles.segmentText, active && styles.segmentTextActive]} numberOfLines={1}>{title}</Body>
+          <Body style={[styles.segmentText, active && styles.segmentTextActive]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{title}</Body>
         </Touchable>;
       })}
       <Touchable haptics="select" accessibilityRole="radio" accessibilityLabel="Custom dates" accessibilityState={{ checked: custom }}

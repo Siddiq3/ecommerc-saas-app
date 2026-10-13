@@ -70,8 +70,8 @@ export const Option = ({ chosen, title, subtitle, onPress, uri, icon, label, dis
         <Thumb uri={uri} label={label} size={44} icon="image-outline" />
       )}
       <View style={{ flex: 1 }}>
-        <Body strong numberOfLines={1}>{title}</Body>
-        {subtitle ? <Caption numberOfLines={2}>{subtitle}</Caption> : null}
+        <Body strong numberOfLines={2}>{title}</Body>
+        {subtitle ? <Caption numberOfLines={3}>{subtitle}</Caption> : null}
       </View>
       <Ionicons name={chosen ? 'checkmark-circle' : 'ellipse-outline'} size={22}
         color={chosen ? colors.accent600 : colors.ink200} />

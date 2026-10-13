@@ -124,6 +124,9 @@ export const type = {
 
 /* ───────────── Space and shape ───────────── */
 
+/** The widest a phone-shaped content column grows on a tablet (opt-in via Screen's maxWidth). */
+export const contentMaxWidth = 640;
+
 /** 4pt grid. Every margin in the app is one of these. */
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48 };
 
