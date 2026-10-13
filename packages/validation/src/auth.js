@@ -114,6 +114,9 @@ export const createBusinessSchema = z
   })
   .strict();
 
+/** The sign-up email step's pre-flight check. */
+export const emailAvailabilitySchema = z.object({ email }).strict();
+
 export const slugAvailabilitySchema = z.object({ slug: storeSlug }).strict();
 
 export const inviteMemberSchema = z
