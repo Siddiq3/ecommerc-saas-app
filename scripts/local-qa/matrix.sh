@@ -15,5 +15,8 @@ case $1 in
 esac
 adb shell wm size $size; adb shell wm density $dpi; adb shell settings put system font_scale $font
 sleep 6; for p in 8081 8795 3004; do adb reverse tcp:$p tcp:$p >/dev/null; done
+# A full relaunch, not a resume: a resumed app kept its old window size (content at 70% width, tab bar mid-screen).
+adb shell am force-stop host.exp.exponent; sleep 1
 adb shell am start -a android.intent.action.VIEW -d "exp://localhost:8081" host.exp.exponent >/dev/null
+sleep 40  # wait for the bundle; captures taken earlier show the splash screen
 adb shell wm size | tail -1; adb shell wm density | tail -1; echo "font_scale $font"

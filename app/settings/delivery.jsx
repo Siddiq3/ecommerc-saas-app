@@ -168,8 +168,9 @@ export default function DeliverySettings() {
             <Ionicons name={method.kind === 'pickup' ? 'storefront-outline' : 'bicycle-outline'} size={20} color={colors.accent700} />
           </View>
           <View style={{ flex: 1, gap: 2 }}>
-            <Row gap={space.sm}>
-              <Body strong numberOfLines={1} style={{ flexShrink: 1 }}>{method.name}</Body>
+            {/* Wraps, rather than cutting the name to "Standard…" beside its pills at large text. */}
+            <Row gap={space.sm} align="flex-start" style={{ flexWrap: 'wrap', rowGap: space.xs }}>
+              <Body strong numberOfLines={2} style={{ flexShrink: 1 }}>{method.name}</Body>
               {method.primary ? <Pill label="Main" tone="accent" /> : null}
               {!method.active ? <Pill label="Off" tone="slate" /> : null}
             </Row>

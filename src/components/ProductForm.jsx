@@ -313,7 +313,7 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
           label="Product name"
           value={name}
           onChangeText={edit(setName, 'name')}
-          placeholder="Enter product name"
+          placeholder="Product name"
           autoCapitalize="sentences"
           maxLength={140}
           error={fieldErrors.name}
@@ -452,7 +452,7 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
           value={sku}
           onChangeText={edit(setSku, 'sku')}
           maxLength={64}
-          placeholder="Enter SKU (optional)"
+          placeholder="Optional"
           autoCapitalize="characters"
           autoCorrect={false}
           containerStyle={{ marginTop: space.lg, marginBottom: 0 }}

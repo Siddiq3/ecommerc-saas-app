@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Image, Alert as RNAlert, StyleSheet, View } from 'react-native';
+import { Image, Alert as RNAlert, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
 import { paymentSettingsSchema, updateBusinessSchema, upiId as upiIdSchema } from '@storekit/validation';
@@ -65,6 +65,7 @@ const OFFLINE_SAVE = 'Unable to save changes. Please check your internet connect
 const messageFor = (error, offline) => (error?.status === 0 ? offline : error?.message);
 
 export default function StoreSettings() {
+  const { fontScale } = useWindowDimensions();
   const navigation = useNavigation();
   const toast = useToast();
   const { businessId, refreshUser } = useAuth();
@@ -335,7 +336,7 @@ export default function StoreSettings() {
       </Card>
       <Field
         label="Store name"
-        placeholder="Enter your store name"
+        placeholder="Store name"
         value={form.name}
         onChangeText={set('name')}
         autoCapitalize="words"
@@ -346,7 +347,7 @@ export default function StoreSettings() {
         label="Description (optional)"
         value={form.description}
         onChangeText={set('description')}
-        placeholder="Enter a short description of what you sell"
+        placeholder="What you sell"
         multiline
         maxLength={500}
         error={fieldErrors.description}
@@ -355,7 +356,7 @@ export default function StoreSettings() {
       <Heading style={styles.section}>Contact</Heading>
       <Field
         label="Mobile number"
-        placeholder="Enter your mobile number"
+        placeholder="10-digit mobile"
         value={form.phone}
         onChangeText={set('phone')}
         keyboardType="phone-pad"
@@ -368,7 +369,7 @@ export default function StoreSettings() {
       />
       <Field
         label="WhatsApp number (optional)"
-        placeholder="Enter your WhatsApp number"
+        placeholder="WhatsApp number"
         value={form.whatsapp}
         onChangeText={set('whatsapp')}
         keyboardType="phone-pad"
@@ -378,7 +379,7 @@ export default function StoreSettings() {
       />
       <Field
         label="Email (optional)"
-        placeholder="Enter your email address"
+        placeholder="Email address"
         value={form.email}
         onChangeText={set('email')}
         keyboardType="email-address"
@@ -393,7 +394,7 @@ export default function StoreSettings() {
       <Heading style={styles.section}>Address</Heading>
       <Field
         label="Shop address (optional)"
-        placeholder="Enter your shop address"
+        placeholder="Shop address"
         value={form.addressLine}
         onChangeText={set('addressLine')}
         autoComplete="street-address"
@@ -401,22 +402,23 @@ export default function StoreSettings() {
         maxLength={200}
         error={fieldErrors['contact.addressLine']}
       />
-      <Row gap={space.md} align="flex-start">
+      {/* Wraps to two rows when side by side would cut the state to "Selec…" (a narrow phone with large text). */}
+      <Row gap={space.md} align="flex-start" style={{ flexWrap: 'wrap' }}>
         <Field
           label="City"
-        placeholder="Enter city"
+          placeholder="City"
           value={form.city}
           onChangeText={set('city')}
           autoCapitalize="words"
           textContentType="addressCity"
           maxLength={60}
-          containerStyle={styles.half}
+          containerStyle={[styles.half, { flexBasis: 130 * fontScale }]}
           error={fieldErrors['contact.city']}
         />
         <StateField
           value={form.state}
           onChange={set('state')}
-          containerStyle={styles.half}
+          containerStyle={[styles.half, { flexBasis: 150 * fontScale }]}
           error={fieldErrors['contact.state']}
         />
       </Row>

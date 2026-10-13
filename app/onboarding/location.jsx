@@ -58,7 +58,7 @@ export default function Location() {
         value={business.address}
         onChangeText={set('address')}
         onBlur={blur('address')}
-        placeholder="Enter your shop address"
+        placeholder="Shop address"
         autoCapitalize="words"
         autoComplete="street-address"
         textContentType="streetAddressLine1"

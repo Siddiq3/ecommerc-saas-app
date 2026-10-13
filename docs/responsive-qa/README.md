@@ -26,42 +26,55 @@ simulator, before calling any of it iOS-ready.
 | Onboarding location, product price | State/pincode and price/MRP side by side were too narrow ("6", "Enter M") | Each pair wraps onto two rows when it does not fit |
 | Multiline fields | Store description placeholder lost its last line | Multiline inputs get room for three lines |
 | Tablets | Everything stretched edge to edge | Content centred at 640 dp: `Screen`, `Sheet`, `StepScreen`, the list screens, their footers and Welcome |
+| Placeholders (second pass) | Long single-line placeholders ("Enter your shop address") showed a sliver of a second line at large text | Shortened to a hint ("Shop address", "10-digit mobile", "Email or mobile"); every field keeps its persistent label above it, a page title, or a search icon |
+| Delivery (second pass) | Method name cut to "Standard…" beside its "Main" pill; type control cut to "Pickup from st…" | Name wraps with the pills; control reads "Store pickup" |
+| Custom domain (second pass) | Header action cut the title to "Cu…" | Action reads "+ Add" (accessible name still "New domain") |
+| Store settings (second pass) | State cut to "Selec…" beside City; description placeholder overflowed three lines | City and State wrap to their own rows; placeholder "What you sell" |
 
 ## Test matrix (Android emulator, Medium Phone AVD, Expo Go)
 
-| Cell | Result |
-|---|---|
-| 320 x 569 dp, font 1.3x (worst case) | Every screen below checked after the fixes |
-| 360 dp and 411 dp, font 1.0x | **Not re-run on this branch** (covered for the Instagram screens on the parent branch) |
-| Tablet portrait 800 x 1280 dp | All six tabs |
-| Tablet landscape 1280 x 800 dp | Home, Social, Orders, Customers, Account, Welcome; onboarding layout only (that capture hit the icon-font problem below) |
+Run on the final code of this branch (after the second pass), 14 October 2026.
 
-Screens covered at the worst case: Home, Social, Orders, Products, Customers, Account, order detail, customer detail,
-product detail, store settings, Welcome, onboarding (category, details, location) with the keyboard open.
+| Cell | Screens | Result |
+|---|---|---|
+| 411 dp, font 1.0x | All six tabs, top and scrolled | Pass |
+| 360 dp, font 1.0x | All six tabs, top and scrolled | Pass. "Customers" in the tab bar renders smaller than its neighbours (fits, still legible) |
+| 320 x 569 dp, font 1.3x | All six tabs; price/MRP with keyboard; policies, profile, security with keyboard; coupon sheet with keyboard; delivery list and method sheet; domain screen and dialog; store settings placeholders | Pass, after the second-pass fixes below |
+| 320 dp, font 1.3x (first pass) | Order, customer and product detail; store settings; Welcome; onboarding category, details and location with keyboard | Pass in the first pass; **not re-captured after the placeholder change** |
+| Tablet portrait 800 x 1280 dp | All six tabs | Pass |
+| Tablet landscape 1280 x 800 dp | Home, Social, Orders, Products (list and footer), Customers, Account, Welcome | Pass; onboarding layout only (that capture hit the icon-font problem below) |
 
-Screenshots in this folder are named `<cell>_<screen>.jpg` and show the final code.
+Screenshots are named `<cell>_<screen>.jpg`: `default` = 411 dp, `standard` = 360 dp, `small-large` = 320 dp at 1.3x.
 
-## Not verified on screen
+## Not verified
 
-- The product price/MRP wrap: the code is in, but the screenshot predates it.
-- Landscape Products: the capture caught Home while the app reloaded. Portrait confirms the same footer fix.
-- Other forms not walked: coupons, delivery, policies, profile, security, domain.
+- **iOS and iPad:** not run at all. See the top of this file.
+- **Custom domain entry field:** unreachable. The demo store's trial plan does not include custom domains, so both
+  options in the dialog are disabled. The dialog itself fits at the worst case.
+- **Shortened placeholders on onboarding, login, sign-up and forgot password:** changed after those screens were
+  captured. Verified on screen: the Orders and Customers search boxes and every store settings field.
+- **Tablet landscape onboarding** with working icons.
+- **Forms not opened:** variant editor, category editor, policy text editor, order note sheet.
 
-## Known remaining issue
+## Remaining issues
 
-**Long placeholders in single-line fields** ("Enter your shop address", "Enter your business name", "Enter your email
-or mobile number") still show a sliver of a second line at large text. Android wraps a placeholder even in a one-line
-input. Capping the input height did not clip it (Android does not clip at padding), so that attempt was reverted. The
-practical fix is shorter placeholder copy, which is a wording decision.
+- **"Custom domain" title** still truncates to "Custom do…" at 320 dp with 1.3x text (was "Cu…").
+- **Tab bar at 360 dp:** "Customers" shrinks to fit and reads smaller than the other labels.
+- **Truncated secondary text** at the worst case, by design: order age ("1 item · 10 …"), customer mobile and city,
+  long store links. The full value is on the detail screen.
 
 ## Test results
 
-- Mobile: `npm test`, 13 checks passing; `eslint src app scripts` clean.
-- Backend (`feat/instagram-account-connection`): full suite under `caffeinate`, **1480 passing, 0 failing** (3 min).
-  The two earlier failures were in a run the machine slept through (15 min); both files passed alone and the
-  sleep-protected run is clean.
+- Mobile (`feat/responsive-layouts`): `npm test` 13 checks passing; `eslint src app scripts` clean.
+- Backend (`feat/instagram-account-connection`): already contains `main` (0 commits behind `origin/main`), so there was
+  nothing to merge. Full suite under `caffeinate`: **1480 passing, 0 failing**, run twice.
+- Shared-package sync: `backend/packages/{shared,validation}` is now identical in mobile, storefront and web
+  (validation). Storefront `npm run sync:check` passes; storefront lint clean and vitest 244/244; web lint clean and
+  `next build` succeeds. Web `packages/shared` still differs on purpose (its own pricing copy) and was not changed.
 
-## Test environment note
+## Test environment notes
 
-The emulator ran out of storage during testing (93% full), so Expo Go saved an empty icon font and every icon went
-blank. Clearing Expo Go's data fixed it. If icons vanish while testing, check `adb shell df -h /data` first.
+- The emulator ran out of storage (93% full), so Expo Go saved an empty icon font and every icon went blank. Clearing
+  Expo Go's data fixed it. If icons vanish, check `adb shell df -h /data` first.
+- After changing the screen size, a resumed app kept its old window size (content at 70% width). `matrix.sh` now force
+  stops and relaunches the app, then waits for the bundle.

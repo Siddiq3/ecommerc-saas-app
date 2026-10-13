@@ -285,7 +285,7 @@ const AddDomain = ({ businessId, onAdded, onCancel }) => {
         label="Domain"
         value={value}
         onChangeText={(text) => { setValue(text); setError(null); setSuggestions([]); }}
-        placeholder="Enter your domain name"
+        placeholder="e.g. yourshop.com"
         autoCapitalize="none"
         autoCorrect={false}
         keyboardType="url"
@@ -421,8 +421,10 @@ export default function CustomDomain() {
           title: 'Custom domain',
           headerRight: () => (
             <Touchable onPress={() => setDialog(true)} accessibilityLabel="New domain" style={styles.newButton}>
+              {/* "Add", not "New domain": beside the title on a narrow phone with large text the longer label cut the
+                  title to "Cu…". The accessible name still says what it adds. */}
               <Ionicons name="add" size={18} color={colors.accent700} />
-              <Body strong style={{ color: colors.accent700 }}>New domain</Body>
+              <Body strong style={{ color: colors.accent700 }}>Add</Body>
             </Touchable>
           ),
         }}

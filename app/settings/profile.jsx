@@ -60,7 +60,7 @@ export default function Profile() {
 
       <Field
         label="Mobile number"
-        placeholder="Enter your mobile number"
+        placeholder="10-digit mobile"
         value={phone}
         onChangeText={(v) => { setPhone(v); if (errors.phone) setErrors((p) => ({ ...p, phone: undefined })); }}
         keyboardType="phone-pad"

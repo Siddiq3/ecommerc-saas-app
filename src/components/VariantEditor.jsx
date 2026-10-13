@@ -81,7 +81,7 @@ export const VariantEditor = ({ options, rows, onChangeOptions, onChangeRows, er
               label="Values"
               value={option.values}
               onChangeText={(value) => setOption(index, { values: value })}
-              placeholder="Enter values, separated by commas"
+              placeholder="Red, Blue, Green"
               autoCapitalize="characters"
               autoCorrect={false}
               maxLength={400}
