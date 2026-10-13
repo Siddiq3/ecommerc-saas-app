@@ -11,6 +11,7 @@ import { InstagramMark, RuleArt, readinessLabel, canTurnOn, instagramError as fa
 import { InstagramActivityPeriod, displayDay } from './InstagramActivityPeriod.jsx';
 import { Sheet } from './Sheet.jsx';
 import { CountUp, PopIn } from './motion.jsx';
+import { needsMediaLookup } from '../lib/instagram-media.js';
 import { formatMoney, percentChange } from '../lib/format.js';
 import { usePlan } from '../state/plan.jsx';
 import { colors, contentMaxWidth, fonts, radius, space, tones, type } from '../theme.js';
@@ -100,7 +101,7 @@ const MEDIA_SORTS = [['repliesSent', 'Replies'], ['visits', 'Visits'], ['ordersP
 /** One Reel, post or DM source in the breakdown: what it is, then its share of the totals in words. */
 const MediaActivityRow = ({ activity, media }) => {
   const post = activity.media ?? media.find(x => x.id === activity.mediaId);
-  const label = activity.mediaId === 'DM' ? 'Direct messages' : activity.mediaId === 'ALL' ? 'Older all-post links' : activity.mediaId === 'UNKNOWN' ? 'Unidentified source' : post?.caption || `Reel / post ${activity.mediaId}`;
+  const label = activity.mediaId === 'DM' ? 'Direct messages' : activity.mediaId === 'ALL' ? 'Older all-post links' : activity.mediaId === 'UNKNOWN' ? 'Unidentified source' : post?.caption || 'Post or Reel';
   return <View style={styles.mediaCard}>
     <Row gap={space.md} align="flex-start">
       <RuleArt target={activity.mediaId} media={post ? [post] : []} size={48} />
@@ -170,8 +171,9 @@ export function InstagramPanel({ businessId, onEnabled, onConnected, onFirstVisi
         onFirstVisit?.(current.status === 'disconnected' && !(r.value?.items ?? []).length);
         const list = r.value?.items ?? [];
         const snapshots = list.map(x => x.media).filter(Boolean);
-        // Existing rules predate media snapshots; retain their thumbnails when Instagram is reachable.
-        if (current.status === 'connected' && list.some(x => !['ALL','DM'].includes(x.mediaId) && !x.media)) {
+        // Fetch the seller's posts when something on screen has no caption or thumbnail: an old rule without a
+        // snapshot, or a reported post that only "All posts and Reels" reached.
+        if (current.status === 'connected' && needsMediaLookup(list, a.status === 'fulfilled' ? a.value?.byMedia : [])) {
           const posts = await instagram.media(businessId).catch(() => null);
           if (id !== generation.current) return;
           setMedia([...snapshots, ...(posts?.items ?? [])]);
