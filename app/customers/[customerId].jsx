@@ -81,7 +81,8 @@ export default function CustomerDetail() {
       ) : null}
 
       <Card style={styles.card}>
-        <Row>
+        {/* Wraps to a second row on a narrow phone with large text, rather than breaking "Cancelled" or an amount. */}
+        <Row style={styles.stats} align="flex-start">
           <View style={styles.stat}>
             <Caption>Spent</Caption>
             <Body style={styles.statValue}>{formatMoney(customer.totalSpend)}</Body>
@@ -131,11 +132,13 @@ export default function CustomerDetail() {
               {index > 0 ? <Divider /> : null}
               <Touchable onPress={() => router.push(`/orders/${order.orderId}`)} style={styles.orderRow}>
                 <View style={{ flex: 1 }}>
-                  <Body strong>{order.orderNumber}</Body>
+                  <Body strong numberOfLines={1}>{order.orderNumber}</Body>
                   <Caption>{formatDate(order.createdAt, undefined, { dateStyle: 'medium' })}</Caption>
                 </View>
-                <Pill label={ORDER_STATUS_LABELS[order.status]} tone={ORDER_STATUS_TONE[order.status] ?? 'slate'} />
-                <Body style={type.money}>{formatMoney(order.total)}</Body>
+                <View style={styles.orderSide}>
+                  <Body style={type.money}>{formatMoney(order.total)}</Body>
+                  <Pill label={ORDER_STATUS_LABELS[order.status]} tone={ORDER_STATUS_TONE[order.status] ?? 'slate'} />
+                </View>
               </Touchable>
             </View>
           ))
@@ -163,7 +166,9 @@ const styles = StyleSheet.create({
   card: { marginBottom: space.lg },
   cardHead: { padding: space.lg, paddingBottom: space.md },
   innerDivider: { marginVertical: space.md },
-  stat: { flex: 1, gap: 2 },
+  stats: { flexWrap: 'wrap', rowGap: space.md },
+  stat: { flexGrow: 1, flexBasis: 96, gap: 2 },
+  orderSide: { alignItems: 'flex-end', gap: space.xs },
   statValue: { ...type.title, fontSize: 20, color: colors.ink900 },
   lastOrder: { marginTop: space.md },
   orderRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg },

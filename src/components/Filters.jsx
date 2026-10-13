@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Body, Caption, Field, Touchable } from './ui.jsx';
@@ -9,19 +10,31 @@ import { colors, radius, space, type } from '../theme.js';
  * A chip may carry a `count` (rendered as a small counter inside it) and a `tone` that
  * dot-colours it when it is a status filter — so "Low 2" reads at a glance as a warning
  * rather than just another tab. The selected chip goes solid ink, the rest stay quiet.
+ *
+ * While chips run past the right edge, a fade and a chevron there say the row scrolls; they go once it is scrolled
+ * to the end, or when everything fits.
  */
+// Canvas colour at rising opacity: a fade without a gradient dependency.
+const FADE = [0.15, 0.4, 0.7, 0.9, 1].map((a) => `rgba(244,244,246,${a})`);
 const TONE_DOT = {
   warning: colors.warning,
   danger: colors.danger,
   success: colors.success,
 };
 
-export const FilterChips = ({ options, value, onChange, style }) => (
+export const FilterChips = ({ options, value, onChange, style }) => {
+  const [size, setSize] = useState({ view: 0, content: 0, x: 0 });
+  const more = size.content - size.view - size.x > 8;
+  return (
+  <View style={[styles.scroll, style]}>
   <ScrollView
     horizontal
     showsHorizontalScrollIndicator={false}
     contentContainerStyle={styles.chips}
-    style={[styles.scroll, style]}
+    onLayout={(e) => { const view = e.nativeEvent.layout.width; setSize((s) => ({ ...s, view })); }}
+    onContentSizeChange={(content) => setSize((s) => ({ ...s, content }))}
+    onScroll={(e) => { const x = e.nativeEvent.contentOffset.x; setSize((s) => (Math.abs(s.x - x) > 4 ? { ...s, x } : s)); }}
+    scrollEventThrottle={64}
   >
     {options.map((option) => {
       const active = option.value === value;
@@ -46,7 +59,15 @@ export const FilterChips = ({ options, value, onChange, style }) => (
       );
     })}
   </ScrollView>
-);
+  {more ? (
+    <View pointerEvents="none" style={styles.fade} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      {FADE.map((c) => <View key={c} style={[styles.fadeStrip, { backgroundColor: c }]} />)}
+      <Ionicons name="chevron-forward" size={16} color={colors.ink500} style={styles.fadeIcon} />
+    </View>
+  ) : null}
+  </View>
+  );
+};
 
 export const SearchBar = ({ value, onChange, placeholder = 'Search', error }) => (
   <View style={styles.search}>
@@ -76,6 +97,9 @@ export const SearchBar = ({ value, onChange, placeholder = 'Search', error }) =>
 
 const styles = StyleSheet.create({
   scroll: { flexGrow: 0, marginHorizontal: -space.lg },
+  fade: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 44, flexDirection: 'row', alignItems: 'center' },
+  fadeStrip: { flex: 1, alignSelf: 'stretch' },
+  fadeIcon: { position: 'absolute', right: space.sm },
   chips: { gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.sm },
   chip: {
     flexDirection: 'row',

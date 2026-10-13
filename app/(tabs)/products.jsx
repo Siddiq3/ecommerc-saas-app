@@ -4,7 +4,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { searchQuery } from '@storekit/validation';
-import { ListScreen } from '../../src/components/Screen.jsx';
+import { ListScreen, listColumn } from '../../src/components/Screen.jsx';
 import { Body, Button, Display, Divider, EmptyState, ErrorState, Row, Touchable } from '../../src/components/ui.jsx';
 import { ProductRow } from '../../src/components/domain.jsx';
 import { FilterChips, SearchBar } from '../../src/components/Filters.jsx';
@@ -125,7 +125,7 @@ export default function Products() {
         ItemSeparatorComponent={Divider}
         ListHeaderComponent={header}
         ListHeaderComponentStyle={{ paddingHorizontal: space.lg }}
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md, paddingBottom: space.xxl }]}
+        contentContainerStyle={[styles.content, listColumn, { paddingTop: insets.top + space.md, paddingBottom: space.xxl }]}
         style={styles.list}
         refreshControl={(
           <RefreshControl refreshing={list.refreshing} onRefresh={list.onRefresh} tintColor={colors.accent600} colors={[colors.accent600]} />

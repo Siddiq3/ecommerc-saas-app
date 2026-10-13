@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,7 +8,7 @@ import { Logo } from './Brand.jsx';
 import { FadeIn } from './motion.jsx';
 import { TOTAL_STEPS } from '../lib/onboarding.js';
 import { KeyboardSpacer } from './KeyboardSpacer.jsx';
-import { colors, fonts, motion, radius, space } from '../theme.js';
+import { colors, contentMaxWidth, fonts, motion, radius, space } from '../theme.js';
 
 /**
  * The frame every setup screen sits in.
@@ -75,10 +75,15 @@ export const StepScreen = ({
   // While typing, only the button stays above the keyboard: links and the legal note under
   // it took so much of the remaining height that the field itself was cut off.
   const keyboardOpen = useKeyboardOpen();
+  // On a short screen with large text the header, footer and keyboard left no room for the field being typed into,
+  // so it was hidden. While typing there, the header gives way (system back still works) and the field stays in view.
+  const { height, fontScale } = useWindowDimensions();
+  const compact = keyboardOpen && height / fontScale < 640;
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={[styles.header, { paddingTop: insets.top + space.md }]}>
+      {compact ? <View style={{ height: insets.top + space.sm }} /> : (
+      <View style={[styles.header, styles.column, { paddingTop: insets.top + space.md }]}>
         <View style={styles.headerRow}>
           {onBack ? <BackButton onPress={onBack} /> : <View style={styles.backSpacer} />}
           <View style={styles.headerMiddle}>{logo ? <Logo size={26} /> : null}</View>
@@ -92,10 +97,11 @@ export const StepScreen = ({
         </View>
         <Track from={from} to={progress} />
       </View>
+      )}
 
       <ScrollView
         style={styles.flex}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, styles.column]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         showsVerticalScrollIndicator={false}
@@ -120,7 +126,7 @@ export const StepScreen = ({
       </ScrollView>
 
       {footer ? (
-        <View style={[styles.footer, { paddingBottom: (keyboardOpen ? 0 : insets.bottom) + space.md }]}>
+        <View style={[styles.footer, styles.column, { paddingBottom: (keyboardOpen ? 0 : insets.bottom) + space.md }]}>
           {footer}
           {footerNote && !keyboardOpen ? footerNote : null}
         </View>
@@ -133,6 +139,8 @@ export const StepScreen = ({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
+  // The phone-shaped column on tablets: header, content and footer stay one width, centred.
+  column: { width: '100%', maxWidth: contentMaxWidth, alignSelf: 'center' },
   flex: { flex: 1 },
 
   header: { paddingHorizontal: space.xl, paddingBottom: space.md, gap: space.lg },

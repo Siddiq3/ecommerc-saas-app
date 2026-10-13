@@ -19,7 +19,7 @@ import { colors, type } from '../../src/theme.js';
  */
 function TabLabel({ color, children }) {
   return (
-    <Text style={[styles.label, { color }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+    <Text style={[styles.label, { color }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} maxFontSizeMultiplier={1.15}>
       {children}
     </Text>
   );

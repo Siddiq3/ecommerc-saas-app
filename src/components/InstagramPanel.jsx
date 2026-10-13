@@ -422,7 +422,7 @@ export function InstagramPanel({ businessId, onEnabled, onConnected, onFirstVisi
             {report && (report.orderValue || report.previous?.orderValue) ? <View style={styles.money}>
               <Row gap={space.sm}>
                 <InstagramMark size={26} />
-                <Body strong style={{ color: colors.accent900 }}>Orders from Instagram</Body>
+                <Body strong style={{ color: colors.accent900, flexShrink: 1 }}>Orders from Instagram</Body>
               </Row>
               <CountUp value={report.orderValue} format={formatMoney} step={100} style={styles.moneyValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5} accessibilityLabel={`${formatMoney(report.orderValue)} in orders placed`} />
               {comparable(report) ? <TrendPill current={report.orderValue} previous={report.previous.orderValue} label={`vs ${previousLabel(report)}`} />

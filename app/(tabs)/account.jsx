@@ -117,7 +117,8 @@ export default function Account() {
           <View style={{ flex: 1 }}>
             <Body strong numberOfLines={1}>{business?.name ?? 'Your store'}</Body>
             {/* Selectable: Help tells owners to press and hold it to copy for Instagram. */}
-            <Caption numberOfLines={1} selectable>{business?.slug ? storeHostname(business.slug) : 'No store link yet'}</Caption>
+            {/* Not selectable: on Android that disables truncation (the link showed half a second line). */}
+            <Caption numberOfLines={1} ellipsizeMode="middle">{business?.slug ? storeHostname(business.slug) : 'No store link yet'}</Caption>
           </View>
         </Row>
         {storeUrl ? (
@@ -240,8 +241,11 @@ const Item = ({ icon, label, value, onPress, last, tone, disabled }) => {
         accessibilityLabel={label}
       >
         <Ionicons name={icon} size={19} color={danger ? colors.danger : colors.ink600} />
-        <Body style={[{ flex: 1 }, danger && { color: colors.danger }]}>{label}</Body>
-        {value}
+        {/* The value under the label, not beside it: beside, "Custom domain" broke letter by letter at large text. */}
+        <View style={styles.itemText}>
+          <Body style={danger && { color: colors.danger }}>{label}</Body>
+          {value ? <View style={styles.itemValue}>{value}</View> : null}
+        </View>
         <Ionicons name="chevron-forward" size={17} color={colors.ink400} />
       </Touchable>
       {last ? null : <Divider style={styles.itemDivider} />}
@@ -250,6 +254,8 @@ const Item = ({ icon, label, value, onPress, last, tone, disabled }) => {
 };
 
 const styles = StyleSheet.create({
+  itemText: { flex: 1, gap: 2 },
+  itemValue: { alignSelf: 'flex-start' },
   title: { fontSize: 28, marginBottom: space.lg },
   card: { marginBottom: space.xl },
   innerDivider: { marginVertical: space.md },

@@ -248,7 +248,9 @@ export const Field = forwardRef(function Field(
         {typeof prefix === 'string' ? <Text style={styles.fieldPrefix}>{prefix}</Text> : prefix}
         <TextInput
           ref={ref}
-          style={[styles.input, style]}
+          // Multiline gets room for three lines: Android does not grow the box for a wrapping placeholder, so at large
+          // text the store description's placeholder lost its last line. A caller's style still wins.
+          style={[styles.input, rest.multiline && styles.inputMultiline, style]}
           placeholderTextColor={colors.ink400}
           onFocus={(e) => { setFocused(true); onFocus?.(e); }}
           onBlur={(e) => { setFocused(false); onBlur?.(e); }}
@@ -532,6 +534,7 @@ const styles = StyleSheet.create({
     color: colors.ink900,
     paddingVertical: space.md,
   },
+  inputMultiline: { minHeight: 22 * 3 + space.md * 2, textAlignVertical: 'top' },
   fieldError: { ...type.caption, color: colors.danger, marginTop: 7, marginLeft: 2 },
   selectValue: { paddingVertical: 0 },
   selectPlaceholder: { color: colors.ink400 },

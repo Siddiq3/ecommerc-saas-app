@@ -9,7 +9,7 @@ import { Press, haptic } from '../../src/components/motion.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { useOnboarding } from '../../src/state/onboarding.jsx';
 import { CATEGORY_OPTIONS } from '../../src/lib/onboarding.js';
-import { colors, fonts, motion, radius, space, type } from '../../src/theme.js';
+import { colors, contentMaxWidth, fonts, motion, radius, space, type } from '../../src/theme.js';
 
 /**
  * Step 2 — what do you sell?
@@ -22,12 +22,14 @@ const GAP = space.md;
 
 export default function Category() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const { width, fontScale } = useWindowDimensions();
   const { signOut } = useAuth();
   const { draft, update } = useOnboarding();
 
-  // Two columns inside the screen's 24pt gutters.
-  const cardWidth = (width - space.xl * 2 - GAP) / 2;
+  // Two columns inside the screen's 24pt gutters, measured from the tablet column when the window is wider. One column
+  // when two would leave a label too little room at the reader's text size ("Electroni / cs" broke mid-word).
+  const inner = Math.min(width, contentMaxWidth) - space.xl * 2;
+  const cardWidth = inner / fontScale < 260 ? inner : (inner - GAP) / 2;
 
   return (
     <StepScreen
@@ -52,6 +54,7 @@ export default function Category() {
             option={option}
             index={index}
             width={cardWidth}
+            wide={cardWidth === inner}
             selected={draft.categoryId === option.id}
             onPress={() => update('categoryId', option.id)}
           />
@@ -65,7 +68,7 @@ export default function Category() {
   );
 }
 
-const CategoryCard = ({ option, index, width, selected, onPress }) => {
+const CategoryCard = ({ option, index, width, wide, selected, onPress }) => {
   const enter = useSharedValue(0);
   const pick = useSharedValue(selected ? 1 : 0);
 
@@ -93,7 +96,8 @@ const CategoryCard = ({ option, index, width, selected, onPress }) => {
         onPress={() => { haptic.select(); onPress(); }}
         haptics={null}
         scaleTo={0.96}
-        style={styles.card}
+        // One column: icon beside the label, so a full-width card is not a tall, mostly empty box.
+        style={[styles.card, wide && styles.cardWide]}
         accessibilityRole="radio"
         accessibilityState={{ selected }}
         accessibilityLabel={option.label}
@@ -105,7 +109,7 @@ const CategoryCard = ({ option, index, width, selected, onPress }) => {
         <Animated.View style={[styles.medallion, { backgroundColor: option.tint }, iconStyle]}>
           <Ionicons name={option.icon} size={28} color={colors.ink900} />
         </Animated.View>
-        <Body strong style={styles.label}>{option.label}</Body>
+        <Body strong style={[styles.label, wide && styles.labelWide]}>{option.label}</Body>
       </Press>
     </Animated.View>
   );
@@ -149,6 +153,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  cardWide: { minHeight: 0, flexDirection: 'row', alignItems: 'center', gap: space.lg },
+  labelWide: { flex: 1, marginTop: 0, paddingRight: space.xl },
   label: { ...type.heading, fontFamily: fonts.semibold, fontSize: 16, lineHeight: 21, marginTop: space.lg },
 
   signOut: { alignSelf: 'center', marginTop: space.xl, minHeight: 44, justifyContent: 'center', paddingHorizontal: space.lg },

@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TRIAL_DAYS } from '@storekit/shared';
@@ -8,7 +8,7 @@ import { HeroShowcase } from '../../src/components/HeroShowcase.jsx';
 import { Alert, Body, Button, Caption, Display, Row, Touchable } from '../../src/components/ui.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { FadeIn } from '../../src/components/motion.jsx';
-import { colors, fonts, space } from '../../src/theme.js';
+import { colors, contentMaxWidth, fonts, space } from '../../src/theme.js';
 
 /**
  * First run.
@@ -22,6 +22,10 @@ import { colors, fonts, space } from '../../src/theme.js';
  * and yields it on a short one, and the action block stays pinned to the thumb. Nothing
  * here is a fixed offset that would strand the CTA mid-screen on one device and off it on
  * another.
+ *
+ * It scrolls when it must: on a small phone with large text the content is taller than the screen, and without a
+ * scroll view the hero rode up over the logo and "Sign in" sat off screen with no way to reach it. The content still
+ * grows to fill a tall screen, so there the layout is unchanged.
  */
 
 /** Shown once after an account deletion; the route guard lands a signed-out merchant here. */
@@ -49,7 +53,11 @@ export default function Welcome() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + space.lg, paddingBottom: insets.bottom + space.lg }]}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={[styles.container, { paddingTop: insets.top + space.lg, paddingBottom: insets.bottom + space.lg }]}
+      showsVerticalScrollIndicator={false}
+    >
       <FadeIn from="bottom" distance={8}>
         <Logo size={30} />
       </FadeIn>
@@ -95,18 +103,23 @@ export default function Welcome() {
           </Caption>
         </Row>
       </FadeIn>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.canvas },
+  // flexGrow, not flex: fills a tall screen, and grows past a short one so the page scrolls.
   container: {
-    flex: 1,
-    backgroundColor: colors.canvas,
+    flexGrow: 1,
     paddingHorizontal: space.xl,
+    width: '100%',
+    maxWidth: contentMaxWidth,
+    alignSelf: 'center',
   },
 
-  heroRegion: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 260 },
+  // Takes the spare height; never smaller than the hero itself, so it cannot overlap the logo.
+  heroRegion: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: space.lg },
 
   pitch: { marginBottom: space.xxl },
   headline: {
