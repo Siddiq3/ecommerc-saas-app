@@ -36,6 +36,8 @@ export const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 export const RATE_LIMITS = Object.freeze({
   'auth:login': [10, 300],
   'auth:signup': [5, 3600],
+  // The sign-up email step asks once per Continue; generous for typos, tight for enumeration.
+  'auth:email-check': [20, 900],
   'auth:otp-request': [5, 900],
   'auth:otp-verify': [10, 900],
   'auth:password-reset': [5, 3600],

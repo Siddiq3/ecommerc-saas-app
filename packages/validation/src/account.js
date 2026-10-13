@@ -33,3 +33,14 @@ export const accountDeletionRequestSchema = z
     confirm: z.literal(true, { errorMap: () => ({ message: 'Confirm that you want your account and data deleted' }) }),
   })
   .strict();
+
+/**
+ * Deleting the account itself, from the signed-in app. Nothing names the account: the
+ * server deletes the one the access token belongs to, and this only proves the merchant
+ * meant it.
+ */
+export const deleteAccountSchema = z
+  .object({
+    confirm: z.literal(true, { errorMap: () => ({ message: 'Confirm that this permanently deletes your account' }) }),
+  })
+  .strict();

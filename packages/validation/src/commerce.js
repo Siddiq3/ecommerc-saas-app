@@ -86,6 +86,9 @@ export const createOrderSchema = z
     expectedTotal: money,
     note: optionalProse(500, { label: 'Note' }),
     sessionId: sessionId.optional(),
+    // Best-effort Instagram attribution: never a reason to refuse an order. The API validates the format itself and
+    // ignores anything it does not recognise.
+    instagramRef: z.string().max(64).optional(),
   })
   .strict();
 
