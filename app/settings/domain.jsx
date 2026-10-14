@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert as RNAlert, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Alert as RNAlert, Modal, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Stack, useFocusEffect } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
@@ -285,7 +285,7 @@ const AddDomain = ({ businessId, onAdded, onCancel }) => {
         label="Domain"
         value={value}
         onChangeText={(text) => { setValue(text); setError(null); setSuggestions([]); }}
-        placeholder="e.g. yourshop.com"
+        placeholder="e.g. shop.yourshop.com"
         autoCapitalize="none"
         autoCorrect={false}
         keyboardType="url"
@@ -377,6 +377,8 @@ const NewDomainDialog = ({ visible, mode, onClose, onAddExisting }) => (
 /* ───────────── The screen ───────────── */
 
 export default function CustomDomain() {
+  const { width, fontScale } = useWindowDimensions();
+  const narrow = width / fontScale < 340;
   const { businessId, business } = useAuth();
   const { status } = usePlan();
   const [dialog, setDialog] = useState(false);
@@ -420,11 +422,12 @@ export default function CustomDomain() {
         options={{
           title: 'Custom domain',
           headerRight: () => (
-            <Touchable onPress={() => setDialog(true)} accessibilityLabel="New domain" style={styles.newButton}>
-              {/* "Add", not "New domain": beside the title on a narrow phone with large text the longer label cut the
-                  title to "Cu…". The accessible name still says what it adds. */}
-              <Ionicons name="add" size={18} color={colors.accent700} />
-              <Body strong style={{ color: colors.accent700 }}>Add</Body>
+            <Touchable onPress={() => setDialog(true)} accessibilityLabel="New domain"
+              style={[styles.newButton, narrow && styles.newButtonIcon]}>
+              {/* On a narrow phone with large text the labelled button cut the title to "Cu…" ("Custom do…" with
+                  "Add"); there it is a round + of the same tap size, and the title keeps the space. */}
+              <Ionicons name="add" size={narrow ? 22 : 18} color={colors.accent700} />
+              {narrow ? null : <Body strong style={{ color: colors.accent700 }}>New domain</Body>}
             </Touchable>
           ),
         }}
@@ -491,6 +494,7 @@ export default function CustomDomain() {
 const styles = StyleSheet.create({
   section: { marginBottom: space.md, marginTop: space.sm },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success, alignSelf: 'center' },
+  newButtonIcon: { width: 44, height: 44, paddingHorizontal: 0, justifyContent: 'center', borderRadius: 22 },
   newButton: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -115,7 +115,9 @@ export default function Details() {
         label="Store link"
         value={business.slug}
         onChangeText={(value) => set({ slug: value, slugEdited: true })}
-        placeholder="Store link"
+        // One short word: the domain suffix beside it (".storekit.site") leaves about seven characters at 320dp with 1.3x
+        // text; "Store link" wrapped and "yourshop" clipped.
+        placeholder="myshop"
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="next"
