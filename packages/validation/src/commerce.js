@@ -210,6 +210,8 @@ export const createCouponSchema = z
     expiresAt: isoDateTime.nullable().optional(),
     allowedPaymentMethods: z.array(paymentMethodSchema).max(2).default([]),
     active: z.boolean().default(true),
+    /** Advertised on the storefront (offers strip) while it is live. Off by default: codes stay private. */
+    showOnStorefront: z.boolean().default(false),
   })
   .strict()
   .superRefine((data, ctx) => {
@@ -244,6 +246,7 @@ export const updateCouponSchema = z
     expiresAt: isoDateTime.nullable().optional(),
     allowedPaymentMethods: z.array(paymentMethodSchema).max(2).optional(),
     active: z.boolean().optional(),
+    showOnStorefront: z.boolean().optional(),
     productIds: z.array(objectId).max(200).optional(),
     categoryIds: z.array(objectId).max(50).optional(),
   })

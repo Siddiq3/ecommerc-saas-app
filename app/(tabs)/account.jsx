@@ -140,6 +140,7 @@ export default function Account() {
 
       <Group title="Store">
         <Item icon="storefront-outline" label="Store details & payments" onPress={() => router.push('/settings/store')} />
+        <Item icon="color-palette-outline" label="Storefront" onPress={() => router.push('/settings/storefront')} />
         <Item icon="bicycle-outline" label="Delivery" onPress={() => router.push('/settings/delivery')} />
         <Item icon="shield-checkmark-outline" label="Policies" onPress={() => router.push('/settings/policies')} />
         {/* Hidden for now: subscription is managed on the website.

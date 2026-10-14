@@ -157,6 +157,7 @@ export default function Coupons() {
   const [expiresAt, setExpiresAt] = useState(null);
   const [datePickerFor, setDatePickerFor] = useState(null);
   const [active, setActive] = useState(true);
+  const [showOnStorefront, setShowOnStorefront] = useState(false);
 
   const { data, loading, error, refreshing, onRefresh, reload } = useAsync(
     () => (businessId ? couponsApi.list(businessId) : Promise.resolve(null)),
@@ -168,7 +169,7 @@ export default function Coupons() {
   const resetForm = () => {
     setCode(''); setType('percentage'); setValue(''); setScope('all'); setProductIds([]); setDescription('');
     setMinOrderValue(''); setMaxDiscount(''); setUsageLimit(''); setUsageLimitPerCustomer('');
-    setStartAt(null); setExpiresAt(null); setActive(true); setErrors({});
+    setStartAt(null); setExpiresAt(null); setActive(true); setShowOnStorefront(false); setErrors({});
   };
 
   const openCreate = () => { setEditing(null); resetForm(); setSheet('form'); };
@@ -185,6 +186,7 @@ export default function Coupons() {
     setStartAt(coupon.startAt ? new Date(coupon.startAt) : null);
     setExpiresAt(coupon.expiresAt ? new Date(coupon.expiresAt) : null);
     setActive(coupon.active);
+    setShowOnStorefront(Boolean(coupon.showOnStorefront));
     setErrors({});
     setSheet('form');
   };
@@ -201,8 +203,8 @@ export default function Coupons() {
 
   const submit = () => {
     const textErrors = {};
-    const shared = {};
-    if (description.trim()) shared.description = description;
+    const shared = { showOnStorefront };
+    if (editing || description.trim()) shared.description = description;
     if (minOrderValue.trim()) shared.minOrderValue = parseInto(minOrderField, minOrderValue, 'minOrderValue', textErrors);
     if (maxDiscount.trim()) shared.maxDiscount = parseInto(maxDiscountField, maxDiscount, 'maxDiscount', textErrors);
     if (usageLimit.trim()) shared.usageLimit = parseInto(usageLimitField, usageLimit, 'usageLimit', textErrors);
@@ -286,6 +288,7 @@ export default function Coupons() {
                       {coupon.type === 'percentage' ? `${coupon.value}% off` : `${formatMoney(coupon.value)} off`}
                     </Caption>
                     <Caption>{summarize(coupon)}</Caption>
+                    {coupon.showOnStorefront ? <Caption>Shown on storefront while live</Caption> : null}
                   </View>
                   <Touchable
                     onPress={() => confirmDelete(coupon)}
@@ -385,7 +388,8 @@ export default function Coupons() {
           label="Description (optional)"
           value={description}
           onChangeText={(v) => { setDescription(v); if (errors.description) setErrors((p) => ({ ...p, description: undefined })); }}
-          placeholder="A note for yourself"
+          placeholder="Describe the offer"
+          hint="Customers can read this when Show on storefront is on."
           maxLength={200}
           error={fieldErrors.description}
         />
@@ -448,6 +452,8 @@ export default function Coupons() {
           </View>
         </Row>
         {fieldErrors.expiresAt ? <Caption style={styles.errorText}>{fieldErrors.expiresAt}</Caption> : null}
+
+        <Toggle label="Show on storefront" hint="Advertise this code on your website while it is live. Leave off to share it privately." value={showOnStorefront} onChange={setShowOnStorefront} disabled={saving} />
 
         {editing ? (
           <Toggle

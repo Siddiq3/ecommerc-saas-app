@@ -82,7 +82,7 @@ const buttonTone = {
 };
 
 export const Button = ({
-  title, onPress, variant = 'primary', size = 'md', loading, disabled, style, icon, full = true,
+  title, onPress, variant = 'primary', size = 'md', loading, disabled, style, icon, full = true, accessibilityLabel,
 }) => {
   const tone = buttonTone[variant] ?? buttonTone.primary;
   const isDisabled = Boolean(disabled || loading);
@@ -96,6 +96,7 @@ export const Button = ({
       scaleTo={0.975}
       ripple={isDisabled ? undefined : { color: tone.ripple }}
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? title}
       accessibilityState={{ disabled: isDisabled, busy: Boolean(loading) }}
       style={[
         styles.button,
