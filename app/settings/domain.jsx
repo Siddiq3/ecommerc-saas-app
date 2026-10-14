@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert as RNAlert, Modal, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Stack, useFocusEffect } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
@@ -240,7 +240,11 @@ const DomainCard = ({ domain, businessId, onChanged, serving }) => {
 
 /* ───────────── Adding one ───────────── */
 
-const AddDomain = ({ businessId, onAdded, onCancel }) => {
+/**
+ * The actions go to the screen's footer (`onActions`), which stays above the keyboard: inline under the field, the
+ * keyboard covered "Add domain" while typing. The keyboard's Done key submits too.
+ */
+const AddDomain = ({ businessId, onAdded, onCancel, onActions }) => {
   const toast = useToast();
   const [value, setValue] = useState('');
   const [error, setError] = useState(null);
@@ -274,6 +278,17 @@ const AddDomain = ({ businessId, onAdded, onCancel }) => {
     }
   };
 
+  // Rebuilt when what the buttons depend on changes; cleared when the form closes.
+  useEffect(() => {
+    onActions(
+      <Row gap={space.sm}>
+        <View style={{ flex: 1 }}><Button title="Cancel" variant="secondary" disabled={pending} onPress={onCancel} /></View>
+        <View style={{ flex: 1 }}><Button title="Add domain" loading={pending} disabled={!value.trim()} onPress={submit} /></View>
+      </Row>,
+    );
+  }, [value, pending]); // eslint-disable-line react-hooks/exhaustive-deps -- submit reads only value
+  useEffect(() => () => onActions(null), [onActions]);
+
   return (
     <Card style={styles.card}>
       <Heading>Connect a domain</Heading>
@@ -285,7 +300,7 @@ const AddDomain = ({ businessId, onAdded, onCancel }) => {
         label="Domain"
         value={value}
         onChangeText={(text) => { setValue(text); setError(null); setSuggestions([]); }}
-        placeholder="e.g. shop.yourshop.com"
+        placeholder="shop.yourshop.com"
         autoCapitalize="none"
         autoCorrect={false}
         keyboardType="url"
@@ -311,8 +326,6 @@ const AddDomain = ({ businessId, onAdded, onCancel }) => {
         </Row>
       ) : null}
 
-      <Button title="Add domain" loading={pending} disabled={!value.trim()} onPress={submit} style={{ marginTop: space.lg }} />
-      <Button title="Cancel" variant="secondary" disabled={pending} onPress={onCancel} style={{ marginTop: space.sm }} />
     </Card>
   );
 };
@@ -383,6 +396,7 @@ export default function CustomDomain() {
   const { status } = usePlan();
   const [dialog, setDialog] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [formActions, setFormActions] = useState(null);
 
   const { data, error, loading, reload, refreshing, onRefresh } = useAsync(
     () => (businessId ? domainsApi.list(businessId) : Promise.resolve(null)),
@@ -417,7 +431,7 @@ export default function CustomDomain() {
   };
 
   return (
-    <Screen refreshing={refreshing} onRefresh={onRefresh}>
+    <Screen refreshing={refreshing} onRefresh={onRefresh} footer={adding ? formActions : undefined}>
       <Stack.Screen
         options={{
           title: 'Custom domain',
@@ -469,6 +483,7 @@ export default function CustomDomain() {
           businessId={businessId}
           onAdded={async () => { setAdding(false); await reload(); }}
           onCancel={() => setAdding(false)}
+          onActions={setFormActions}
         />
       ) : null}
 

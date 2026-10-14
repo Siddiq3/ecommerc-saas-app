@@ -33,6 +33,7 @@ simulator, before calling any of it iOS-ready.
 | Custom domain (third pass) | Title still cut to "Custom do…" | Header action is a round + (44pt) when the screen is narrow at the reader's text size; labelled "New domain" otherwise. Domain placeholder now matches the help text (subdomain example) |
 | Variant editor (third pass) | Option Name and Values too narrow side by side ("Enter", "Red, Blue") | Wrap to two rows when they do not fit; placeholders "Size, Colour" and "Red, Blue, Green" |
 | Onboarding store link (third pass) | Placeholder wrapped ("Store / link"), then clipped ("yoursho") beside the domain suffix | Placeholder "myshop" |
+| Custom domain form (fourth pass) | Keyboard covered "Add domain" while typing | Add domain and Cancel move to the screen's footer, which stays above the keyboard; the keyboard's Done key still submits. Placeholder "shop.yourshop.com" |
 | Store settings (second pass) | State cut to "Selec…" beside City; description placeholder overflowed three lines | City and State wrap to their own rows; placeholder "What you sell" |
 
 ## Results
@@ -55,29 +56,29 @@ All Android, on the final code of `feat/responsive-layouts`, Medium Phone AVD in
 | Category editor sheet with keyboard | 320 at 1.3x | `small-large_r3-category` |
 | Policy text editor with keyboard; discard prompt on leave | 320 at 1.3x | `small-large_r3-policy_text` |
 | Order note in the status sheet with keyboard | 320 at 1.3x | `small-large_r3-order_note` |
-| Custom domain: title, dialog, add form, typing, keyboard | 320 at 1.3x, local store on the Business plan | `small-large_r3-domain_form` |
+| Custom domain: title, dialog, add form, typing; Add domain and Cancel reachable with the keyboard open | 320 at 1.3x, local store on the Business plan | `small-large_r4-domain-footer` |
+| Variant rows from two values (Size: Small, Large): two rows, own price and stock, price ₹799 and stock 12 entered, stock total updates | 320 at 1.3x | `small-large_r4-variant-rows` |
+| Product, order and customer detail, and Welcome, after the tab-bar change | 320 at 1.3x | `small-large_r4-details`, `small-large_r4-welcome` |
 | Coupon sheet, delivery list and method sheet | 320 at 1.3x | `small-large_sheet-coupon`, `small-large_delivery-*-fixed` |
 | Policies, profile, security forms with keyboard | 320 at 1.3x | `small-large_form-*` |
 | Store settings placeholders and City/State | 320 at 1.3x | `small-large_store-settings-placeholders` |
 | Order, customer, product detail; Welcome | 320 at 1.3x | `small-large_order-detail`, `-customer-detail`, `-product-detail`, `-welcome` |
 
-### Failed (not fixed)
+### Failed
 
-None that block use. Two minor issues:
+None. The custom-domain keyboard issue from the previous pass is fixed (above).
 
-- **Custom domain add form:** while typing, the keyboard covers the "Add domain" button. The keyboard's Done key
-  submits the form, and closing the keyboard shows the button.
-- **Product edit:** leaving with unsaved changes gives no "discard changes?" prompt (the policy editor does). Existing
-  behaviour, not a layout issue; noted for a product decision.
+### Tracked separately (not responsiveness, not blocking)
+
+- **Product edit:** leaving with unsaved changes gives no "discard changes?" prompt; the policy editor does. Existing
+  behaviour; a product decision.
+- **Stock fields start at "0":** typing a number appends to it ("012"); the value is still read as 12.
 
 ### Unverified
 
 - **iOS and iPad:** not run at all.
-- **Variant rows after values are entered:** the field layout passed, but my scripted typing put both strings into one
-  field, so the generated price/stock rows were not seen.
-- **"Buy a new domain":** disabled locally (no domain purchase set up); only "Add existing domain" was tested.
-- **Order, customer, product detail, Welcome** were last captured before the placeholder and tab-bar changes; those
-  changes do not touch these screens apart from the tab bar.
+- **"Buy a new domain":** disabled in the local setup (no domain purchase configured). Unverified until it can be
+  tested without a real purchase.
 - **Tablet landscape onboarding** with working icons.
 - The `default_tabs*` and `standard_tabs*` screenshots predate the tab-bar change; `tab-bar_*` shows the final bar.
 
