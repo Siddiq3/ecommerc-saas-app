@@ -71,6 +71,15 @@ export const placeName = formatted({
   message: 'Use letters, spaces, full stops and hyphens only',
 });
 
+/** Postal districts can contain digits and qualifiers: 24 Paraganas North, Kaimur (Bhabua). */
+export const districtName = formatted({
+  min: 2,
+  max: 60,
+  label: 'District',
+  pattern: /^(?=.*[\p{L}])[\p{L}\p{M}\p{N}][\p{L}\p{M}\p{N} .()-]*$/u,
+  message: 'Use letters, numbers, spaces, full stops, parentheses and hyphens only',
+});
+
 /** A line of a postal address: house numbers need digits, slashes and hashes. */
 export const addressLine = (min, max, label = 'Address') =>
   formatted({

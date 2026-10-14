@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import {
-  addressLine, businessName, couponCode, cursor, dateOnly, email, emptyable, isoDateTime, mobile,
+  addressLine, businessName, couponCode, cursor, dateOnly, districtName, email, emptyable, isoDateTime, mobile,
   money, objectId, objectKey, opaqueId, optionalProse, orderNumber, pageLimit, personName, pincode,
   placeName, searchQuery, trackingReference, trackingToken, utr,
 } from './primitives.js';
@@ -45,7 +45,7 @@ export const addressSchema = z
     area: addressLine(2, 120, 'Area'),
     landmark: addressLine(2, 120, 'Landmark').optional().or(z.literal('')),
     city: placeName,
-    district: placeName,
+    district: districtName,
     state: placeName,
     pincode,
     instructions: optionalProse(300, { label: 'Delivery instructions' }),
