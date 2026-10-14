@@ -3,7 +3,7 @@ import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'r
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { searchQuery } from '@storekit/validation';
-import { ListScreen } from '../../src/components/Screen.jsx';
+import { ListScreen, listColumn } from '../../src/components/Screen.jsx';
 import { Display, Divider, EmptyState, ErrorState, Row } from '../../src/components/ui.jsx';
 import { HelpButton } from '../../src/components/Help.jsx';
 import { OrderRow } from '../../src/components/domain.jsx';
@@ -94,7 +94,7 @@ export default function Orders() {
         <Display style={styles.titleText}>Orders</Display>
         <HelpButton context="orders" />
       </Row>
-      <SearchBar value={search} onChange={setSearch} error={searchError} placeholder="Order no., name or mobile" />
+      <SearchBar value={search} onChange={setSearch} error={searchError} placeholder="Order, name, mobile" />
       <FilterChips options={STATUS_FILTERS} value={status} onChange={setStatus} />
       {paymentStatus !== 'all' ? (
         <FilterChips
@@ -126,6 +126,7 @@ export default function Orders() {
         ListHeaderComponentStyle={{ paddingHorizontal: space.lg }}
         contentContainerStyle={[
           styles.content,
+          listColumn,
           { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxl },
         ]}
         style={styles.list}

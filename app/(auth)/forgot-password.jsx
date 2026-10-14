@@ -100,7 +100,7 @@ export default function ForgotPassword() {
             label="Email"
             value={email}
             onChangeText={setEmail}
-            placeholder="Enter your email address"
+            placeholder="Email address"
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
@@ -138,7 +138,7 @@ export default function ForgotPassword() {
           label="Reset code"
           value={code}
           onChangeText={setCode}
-          placeholder="Enter the 6-digit code"
+          placeholder="6-digit code"
           keyboardType="number-pad"
           autoComplete="one-time-code"
           textContentType="oneTimeCode"
@@ -151,7 +151,7 @@ export default function ForgotPassword() {
           label="New password"
           value={newPassword}
           onChangeText={setNewPassword}
-          placeholder="Create a new password"
+          placeholder="New password"
           autoCapitalize="none"
           autoComplete="new-password"
           textContentType="newPassword"
@@ -164,7 +164,7 @@ export default function ForgotPassword() {
           label="Confirm new password"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
-          placeholder="Re-enter your new password"
+          placeholder="Re-enter password"
           autoCapitalize="none"
           autoComplete="new-password"
           textContentType="newPassword"

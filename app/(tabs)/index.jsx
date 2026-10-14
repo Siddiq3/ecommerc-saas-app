@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Linking, Share, StyleSheet, View } from 'react-native';
+import { Linking, Share, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -51,6 +51,9 @@ const SHORTCUTS = [
 export default function Dashboard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  // Width in units of text: a narrow phone with large text fits two shortcuts across, not four ("Catego…").
+  const { width, fontScale } = useWindowDimensions();
+  const shortcutsAcross = width / fontScale < 300 ? 2 : 4;
   const toast = useToast();
   const { businessId, business, user, refreshUser } = useAuth();
   const [publishing, setPublishing] = useState(false);
@@ -264,7 +267,7 @@ export default function Dashboard() {
               key={item.label}
               onPress={() => router.push(item.href)}
               accessibilityLabel={item.label}
-              style={styles.gridTile}
+              style={[styles.gridTile, shortcutsAcross === 2 && styles.gridTileWide]}
             >
               <View style={styles.gridIcon}>
                 <Ionicons name={item.icon} size={22} color={colors.accent700} />
@@ -566,6 +569,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  gridTileWide: { width: '48.8%' },
   gridLabel: { ...type.caption, color: colors.ink700, fontSize: 11.5 },
   stripButton: {
     width: 36,

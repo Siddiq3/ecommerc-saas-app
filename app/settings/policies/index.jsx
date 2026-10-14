@@ -94,7 +94,7 @@ export default function StorePolicies() {
         {trade.returnsAllowed ? (
           <Field
             label="Return window (days)"
-            placeholder="Enter days, like 7"
+            placeholder="Days, like 7"
             value={trade.returnWindowDays}
             onChangeText={changeTrade('returnWindowDays')}
             keyboardType="number-pad"

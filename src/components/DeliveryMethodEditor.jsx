@@ -80,10 +80,10 @@ export const DeliveryMethodEditor = ({ visible, method, origin, canRemove, onDon
 
   return (
     <Sheet visible={visible} onClose={onClose} title={method?.id || method?.name ? 'Edit delivery method' : 'New delivery method'}>
-      <Field label="Name" placeholder="Enter a name, like Express delivery" value={form.name} onChangeText={set('name')} maxLength={40} error={errors.name} />
+      <Field label="Name" placeholder="e.g. Express delivery" value={form.name} onChangeText={set('name')} maxLength={40} error={errors.name} />
       <Field
         label="Description (optional)"
-        placeholder="Enter a short note for customers"
+        placeholder="Shown to customers"
         value={form.description}
         onChangeText={set('description')}
         maxLength={120}
@@ -92,7 +92,7 @@ export const DeliveryMethodEditor = ({ visible, method, origin, canRemove, onDon
 
       <Section title="Type">
         <Segmented
-          options={[{ value: 'delivery', label: 'Delivery' }, { value: 'pickup', label: 'Pickup from store' }]}
+          options={[{ value: 'delivery', label: 'Delivery' }, { value: 'pickup', label: 'Store pickup' }]}
           value={form.kind}
           onChange={set('kind')}
         />

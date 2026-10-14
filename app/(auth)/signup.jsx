@@ -75,8 +75,8 @@ export default function SignUp() {
             style={styles.alt}
             accessibilityLabel="Sign in to an existing account"
           >
-            <Body style={styles.altMuted}>Already have an account? </Body>
-            <Body style={styles.altLink}>Sign in</Body>
+            {/* One paragraph, not two boxes side by side, so it wraps on a narrow phone with large text. */}
+            <Body style={styles.altMuted}>Already have an account? <Body style={styles.altLink}>Sign in</Body></Body>
           </Touchable>
           <LegalNote />
         </>
@@ -87,7 +87,7 @@ export default function SignUp() {
         value={value}
         onChangeText={(text) => update('account', { email: text })}
         onBlur={() => setTouched(true)}
-        placeholder="Enter your email address"
+        placeholder="Email address"
         keyboardType="email-address"
         autoCapitalize="none"
         autoCorrect={false}
@@ -127,6 +127,6 @@ export default function SignUp() {
 const styles = StyleSheet.create({
   takenActions: { flexDirection: 'row', gap: space.sm },
   alt: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', minHeight: 44 },
-  altMuted: { color: colors.ink500, fontSize: 14.5 },
+  altMuted: { color: colors.ink500, fontSize: 14.5, textAlign: 'center', flexShrink: 1 },
   altLink: { color: colors.accent700, fontFamily: fonts.semibold, fontSize: 14.5 },
 });

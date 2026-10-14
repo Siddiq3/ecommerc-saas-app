@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert as RNAlert, Image, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert as RNAlert, Image, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatMoney, toMajor } from '@storekit/shared';
 import { createProductSchema, rupeesText, updateProductSchema, wholeNumberText } from '@storekit/validation';
@@ -110,6 +110,7 @@ const parseInto = (schema, value, key, errors) => {
   return undefined;
 };
 export const ProductForm = ({ businessId, initial, categories = [], onSubmit, submitting, error, submitLabel }) => {
+  const { fontScale } = useWindowDimensions();
   const [name, setName] = useState(initial?.name ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [price, setPrice] = useState(initial?.price ? String(toMajor(initial.price)) : '');
@@ -312,7 +313,7 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
           label="Product name"
           value={name}
           onChangeText={edit(setName, 'name')}
-          placeholder="Enter product name"
+          placeholder="Product name"
           autoCapitalize="sentences"
           maxLength={140}
           error={fieldErrors.name}
@@ -340,7 +341,9 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
       </FormSection>
 
       <FormSection title="Price" delay={80}>
-        <Row gap={space.md} align="flex-start">
+        {/* Side by side when both fit at the reader's text size; stacked on a narrow phone with large text, where the
+            MRP placeholder was cut to "Enter M". */}
+        <Row gap={space.md} align="flex-start" style={{ flexWrap: 'wrap', rowGap: space.md }}>
           <Field
             label="Selling price"
             value={price}
@@ -348,7 +351,7 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
             placeholder="Enter price"
             keyboardType="decimal-pad"
             prefix="₹"
-            containerStyle={{ flex: 1, marginBottom: 0 }}
+            containerStyle={{ flexGrow: 1, flexBasis: 130 * fontScale, marginBottom: 0 }}
             error={fieldErrors.price}
           />
           <Field
@@ -358,7 +361,7 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
             placeholder="Enter MRP"
             keyboardType="decimal-pad"
             prefix="₹"
-            containerStyle={{ flex: 1, marginBottom: 0 }}
+            containerStyle={{ flexGrow: 1, flexBasis: 130 * fontScale, marginBottom: 0 }}
             hint="Struck through"
             error={fieldErrors.mrp}
           />
@@ -449,7 +452,7 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
           value={sku}
           onChangeText={edit(setSku, 'sku')}
           maxLength={64}
-          placeholder="Enter SKU (optional)"
+          placeholder="Optional"
           autoCapitalize="characters"
           autoCorrect={false}
           containerStyle={{ marginTop: space.lg, marginBottom: 0 }}

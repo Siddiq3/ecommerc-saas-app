@@ -67,7 +67,7 @@ export default function Login() {
           label="Email or mobile number"
           value={form.identifier}
           onChangeText={set('identifier')}
-          placeholder="Enter your email or mobile number"
+          placeholder="Email or mobile"
           // The email keyboard, because it is the one that has both digits and the "@".
           keyboardType="email-address"
           autoCapitalize="none"
@@ -82,7 +82,7 @@ export default function Login() {
           label="Password"
           value={form.password}
           onChangeText={set('password')}
-          placeholder="Enter your password"
+          placeholder="Password"
           autoCapitalize="none"
           autoComplete="current-password"
           textContentType="password"
@@ -113,8 +113,8 @@ export default function Login() {
         style={styles.altAction}
         accessibilityLabel="Create a new account"
       >
-        <Body style={styles.altMuted}>New to StoreKit? </Body>
-        <Body style={styles.altLink}>Create an account</Body>
+        {/* One paragraph, not two boxes side by side, so it wraps on a narrow phone with large text. */}
+        <Body style={styles.altMuted}>New to StoreKit? <Body style={styles.altLink}>Create an account</Body></Body>
       </Touchable>
     </Screen>
   );
@@ -134,6 +134,6 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
     minHeight: 44,
   },
-  altMuted: { color: colors.ink500, fontSize: 14.5 },
+  altMuted: { color: colors.ink500, fontSize: 14.5, textAlign: 'center', flexShrink: 1 },
   altLink: { color: colors.accent700, fontFamily: fonts.semibold, fontSize: 14.5 },
 });

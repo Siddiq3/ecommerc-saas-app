@@ -87,7 +87,7 @@ export default function Security() {
 
       <PasswordField
         label="Current password"
-        placeholder="Enter your current password"
+        placeholder="Current password"
         value={currentPassword}
         onChangeText={(v) => { setCurrentPassword(v); if (errors.currentPassword) setErrors((p) => ({ ...p, currentPassword: undefined })); }}
         maxLength={128}
@@ -97,7 +97,7 @@ export default function Security() {
       />
       <PasswordField
         label="New password"
-        placeholder="Enter a new password"
+        placeholder="New password"
         value={newPassword}
         onChangeText={(v) => { setNewPassword(v); if (errors.newPassword) setErrors((p) => ({ ...p, newPassword: undefined })); }}
         maxLength={128}

@@ -2,7 +2,7 @@ import {
   KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StyleSheet, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, space } from '../theme.js';
+import { colors, contentMaxWidth, space } from '../theme.js';
 import { useKeyboardHeight } from '../lib/useKeyboardHeight.js';
 import { KeyboardSpacer } from './KeyboardSpacer.jsx';
 
@@ -13,8 +13,9 @@ import { KeyboardSpacer } from './KeyboardSpacer.jsx';
  * area (a bottom inset that respects the tab bar, and a gesture bar that must not sit
  * under a button), keyboard avoidance, and pull-to-refresh.
  *
- * `maxWidth` (opt-in) centres the content in a column of at most that width, so a phone layout does not stretch edge
- * to edge on a tablet. Screens that do not pass it are unchanged.
+ * Content sits in a centred column of at most `maxWidth` (contentMaxWidth by default), so a phone layout does not
+ * stretch edge to edge on a tablet; on phones the column is simply the full width. Pass `maxWidth={null}` for a
+ * screen that must use the whole window.
  */
 
 const HEADER_OFFSET = Platform.select({ ios: 0, default: 0 });
@@ -29,7 +30,7 @@ export const Screen = ({
   footer,
   contentStyle,
   style,
-  maxWidth,
+  maxWidth = contentMaxWidth,
 }) => {
   const insets = useSafeAreaInsets();
   const keyboard = useKeyboardHeight();
@@ -93,11 +94,16 @@ export const ListScreen = ({ children, footer }) => {
     <View style={styles.flex}>
       {children}
       {footer ? (
-        <View style={[styles.footer, { paddingBottom: insets.bottom + space.md }]}>{footer}</View>
+        <View style={[styles.footer, { paddingBottom: insets.bottom + space.md }]}>
+          <View style={[styles.column, { maxWidth: contentMaxWidth }]}>{footer}</View>
+        </View>
       ) : null}
     </View>
   );
 };
+
+/** The same tablet column for a FlatList's contentContainerStyle: list screens do their own scrolling. */
+export const listColumn = { width: '100%', maxWidth: contentMaxWidth, alignSelf: 'center' };
 
 /** Standard bottom padding for a FlatList inside ListScreen. */
 export const useListPadding = (extra = 0) => {

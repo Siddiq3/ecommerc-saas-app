@@ -264,12 +264,15 @@ export default function OrderDetail() {
             {index > 0 ? <Divider /> : null}
             <Row style={styles.itemRow} align="flex-start">
               <Thumb uri={item.thumbUrl} size={48} />
+              {/* Total on the quantity line, not beside the name: a long name keeps the full width. */}
               <View style={{ flex: 1 }}>
-                <Body strong numberOfLines={2}>{item.name}</Body>
+                <Body strong numberOfLines={3}>{item.name}</Body>
                 {item.variantLabel ? <Caption>{item.variantLabel}</Caption> : null}
-                <Caption>{item.quantity} × {formatMoney(item.unitPrice)}</Caption>
+                <Row style={{ justifyContent: 'space-between' }} gap={space.sm}>
+                  <Caption style={{ flexShrink: 1 }}>{item.quantity} × {formatMoney(item.unitPrice)}</Caption>
+                  <Body style={type.money}>{formatMoney(item.lineTotal)}</Body>
+                </Row>
               </View>
-              <Body style={type.money}>{formatMoney(item.lineTotal)}</Body>
             </Row>
           </View>
         ))}

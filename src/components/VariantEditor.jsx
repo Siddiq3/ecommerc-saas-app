@@ -1,5 +1,5 @@
 import { Fragment } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Body, Caption, Card, Field, Row, Touchable } from './ui.jsx';
 import { FadeIn } from './motion.jsx';
@@ -28,6 +28,7 @@ export { MAX_VARIANTS, buildRows, comboLabel, fingerprint, optionsFromVariants, 
  */
 
 export const VariantEditor = ({ options, rows, onChangeOptions, onChangeRows, errors = {}, basePrice }) => {
+  const { fontScale } = useWindowDimensions();
   const overflowed = usable(options).length > 0 && rows.length >= MAX_VARIANTS;
 
   const setOption = (index, patch) => {
@@ -67,25 +68,26 @@ export const VariantEditor = ({ options, rows, onChangeOptions, onChangeRows, er
             </Touchable>
           </Row>
 
-          <Row gap={space.md} align="flex-start">
+          {/* Side by side when both fit; stacked on a narrow phone with large text ("Enter", "Red, Blue"). */}
+          <Row gap={space.md} align="flex-start" style={{ flexWrap: 'wrap', rowGap: space.md }}>
             <Field
               label="Name"
               value={option.name}
               onChangeText={(value) => setOption(index, { name: value })}
-              placeholder="Enter option name"
+              placeholder="Size, Colour"
               autoCapitalize="words"
               maxLength={40}
-              containerStyle={{ flex: 1, marginBottom: 0 }}
+              containerStyle={{ flexGrow: 1, flexBasis: 110 * fontScale, marginBottom: 0 }}
             />
             <Field
               label="Values"
               value={option.values}
               onChangeText={(value) => setOption(index, { values: value })}
-              placeholder="Enter values, separated by commas"
+              placeholder="Red, Blue, Green"
               autoCapitalize="characters"
               autoCorrect={false}
               maxLength={400}
-              containerStyle={{ flex: 1.4, marginBottom: 0 }}
+              containerStyle={{ flexGrow: 1.4, flexBasis: 150 * fontScale, marginBottom: 0 }}
               hint="Separate with commas"
             />
           </Row>

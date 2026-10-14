@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Heading, Touchable } from './ui.jsx';
 import { useKeyboardHeight } from '../lib/useKeyboardHeight.js';
-import { colors, radius, shadow, space } from '../theme.js';
+import { colors, contentMaxWidth, radius, shadow, space } from '../theme.js';
 
 /**
  * A bottom sheet.
@@ -27,9 +27,9 @@ import { colors, radius, shadow, space } from '../theme.js';
  * keyboard, so on Android the root is padded by the keyboard's height and the panel sits
  * just above it.
  *
- * `maxWidth` (opt-in) keeps the panel from stretching across a tablet: it is centred at that width instead.
+ * `maxWidth` (contentMaxWidth by default) keeps the panel from stretching across a tablet: it is centred instead.
  */
-export const Sheet = ({ visible, onClose, title, children, maxWidth }) => {
+export const Sheet = ({ visible, onClose, title, children, maxWidth = contentMaxWidth }) => {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const keyboard = useKeyboardHeight();

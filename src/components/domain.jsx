@@ -50,21 +50,17 @@ export const OrderRow = ({ order, onPress }) => (
   <Touchable onPress={onPress} style={styles.row} accessibilityLabel={`Order ${order.orderNumber}`}>
     <Thumb uri={order.thumbUrl} icon="receipt-outline" />
     <View style={styles.rowBody}>
-      <Row style={{ justifyContent: 'space-between' }} gap={space.sm}>
-        <Body strong numberOfLines={1} style={{ flex: 1 }}>
-          {order.customerName ?? order.customer?.name ?? 'Guest'}
-        </Body>
-        <Body style={styles.money}>{formatMoney(order.total)}</Body>
-      </Row>
-      {/* The item count sits under the total, in its own column: at 360pt a third part on the
-          reference line was cut to "3 ite…". The reference line keeps number and age. */}
+      {/* The name gets the row's full width (two lines): beside the total, a long name broke mid-word on a narrow
+          phone with large text. The total leads the reference line instead; the item count follows it. */}
+      <Body strong numberOfLines={2}>{order.customerName ?? order.customer?.name ?? 'Guest'}</Body>
+      {/* The order number has its own line (sellers search by it, so it must never truncate); the total shares the
+          short items-and-age line. */}
+      <Caption numberOfLines={1}>{order.orderNumber}</Caption>
       <Row style={{ justifyContent: 'space-between' }} gap={space.sm}>
         <Caption numberOfLines={1} style={{ flex: 1 }}>
-          {order.orderNumber} · {shortAgo(order.createdAt)}
+          {order.itemCount ? `${order.itemCount} item${order.itemCount === 1 ? '' : 's'} · ` : ''}{shortAgo(order.createdAt)}
         </Caption>
-        {order.itemCount ? (
-          <Caption>{order.itemCount} item{order.itemCount === 1 ? '' : 's'}</Caption>
-        ) : null}
+        <Body style={styles.money}>{formatMoney(order.total)}</Body>
       </Row>
       <Row gap={space.sm} style={styles.rowPills}>
         {/* "Verify payment" says everything "Awaiting payment" would, plus what to do about it. */}
@@ -99,7 +95,7 @@ export const ProductRow = ({ product, onPress }) => {
         ) : null}
       </View>
       <View style={styles.rowBody}>
-        <Body strong numberOfLines={1}>{product.name}</Body>
+        <Body strong numberOfLines={2}>{product.name}</Body>
         <Row gap={space.sm}>
           <Body style={styles.money}>{formatMoney(product.price)}</Body>
           {off > 0 ? <Caption style={styles.strike}>{formatMoney(product.mrp)}</Caption> : null}
@@ -126,15 +122,16 @@ export const CustomerRow = ({ customer, onPress }) => (
   <Touchable onPress={onPress} style={styles.row} accessibilityLabel={customer.name ?? customer.mobile}>
     <Thumb label={customer.name ?? '?'} size={44} />
     <View style={styles.rowBody}>
+      {/* As in OrderRow: the name takes the full width, the spend sits on the detail line. */}
+      <Body strong numberOfLines={2}>{customer.name ?? 'Guest'}</Body>
       <Row style={{ justifyContent: 'space-between' }} gap={space.sm}>
-        <Body strong numberOfLines={1} style={{ flex: 1 }}>{customer.name ?? 'Guest'}</Body>
+        <Caption numberOfLines={1} style={{ flex: 1 }}>
+          {customer.mobile ?? '—'}
+          {customer.city ? ` · ${customer.city}` : ''}
+          {customer.lastOrderAt ? ` · ${shortAgo(customer.lastOrderAt)}` : ''}
+        </Caption>
         <Body style={styles.money}>{formatMoney(customer.totalSpend)}</Body>
       </Row>
-      <Caption numberOfLines={1}>
-        {customer.mobile ?? '—'}
-        {customer.city ? ` · ${customer.city}` : ''}
-        {customer.lastOrderAt ? ` · ${shortAgo(customer.lastOrderAt)}` : ''}
-      </Caption>
       <Row gap={space.sm} style={styles.rowPills}>
         <Pill label={`${customer.orderCount} order${customer.orderCount === 1 ? '' : 's'}`} tone="slate" />
         {customer.blocked ? <Pill label="Blocked" tone="red" /> : null}

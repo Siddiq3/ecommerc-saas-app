@@ -116,7 +116,7 @@ export default function CreateAccount() {
         value={account.name}
         onChangeText={edit('name')}
         onBlur={blur('name')}
-        placeholder="Enter your full name"
+        placeholder="Full name"
         autoCapitalize="words"
         autoComplete="name"
         textContentType="name"
@@ -132,7 +132,7 @@ export default function CreateAccount() {
         value={account.phone}
         onChangeText={edit('phone')}
         onBlur={blur('phone')}
-        placeholder="Enter your mobile number"
+        placeholder="10-digit mobile"
         keyboardType="phone-pad"
         autoComplete="tel"
         textContentType="telephoneNumber"
@@ -168,7 +168,7 @@ export default function CreateAccount() {
         value={account.confirm}
         onChangeText={edit('confirm')}
         onBlur={blur('confirm')}
-        placeholder="Re-enter your password"
+        placeholder="Re-enter password"
         secureTextEntry={!showPassword}
         autoCapitalize="none"
         autoCorrect={false}

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StepScreen } from '../../src/components/StepScreen.jsx';
 import { Button, Field } from '../../src/components/ui.jsx';
@@ -16,6 +16,7 @@ import { space } from '../../src/theme.js';
  * is only ever answering one kind of question at a time: who you are, then where you are.
  */
 export default function Location() {
+  const { fontScale } = useWindowDimensions();
   const router = useRouter();
   const { draft, update } = useOnboarding();
   const { business } = draft;
@@ -57,7 +58,7 @@ export default function Location() {
         value={business.address}
         onChangeText={set('address')}
         onBlur={blur('address')}
-        placeholder="Enter your shop address"
+        placeholder="Shop address"
         autoCapitalize="words"
         autoComplete="street-address"
         textContentType="streetAddressLine1"
@@ -84,7 +85,7 @@ export default function Location() {
 
       <View style={styles.pair}>
         <StateField
-          containerStyle={styles.state}
+          containerStyle={[styles.state, { flexBasis: 150 * fontScale }]}
           value={business.state}
           onChange={set('state')}
           onBlur={blur('state')}
@@ -92,7 +93,7 @@ export default function Location() {
         />
         <Field
           ref={pincodeRef}
-          containerStyle={styles.pincode}
+          containerStyle={[styles.pincode, { flexBasis: 110 * fontScale }]}
           label="Pincode"
           value={business.pincode}
           onChangeText={(value) => set('pincode')(value.replace(/\D/g, ''))}
@@ -109,7 +110,9 @@ export default function Location() {
 }
 
 const styles = StyleSheet.create({
-  pair: { flexDirection: 'row', gap: space.md },
-  state: { flex: 1.3 },
-  pincode: { flex: 1 },
+  // Side by side when both fit; each takes its own row on a narrow phone with large text, where the pincode showed
+  // only "6" of its placeholder. The minimum widths are scaled by the reader's text size where they are used.
+  pair: { flexDirection: 'row', flexWrap: 'wrap', columnGap: space.md },
+  state: { flexGrow: 1.3 },
+  pincode: { flexGrow: 1 },
 });
