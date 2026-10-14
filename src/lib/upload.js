@@ -19,7 +19,7 @@ const contentTypeOf = (asset) => {
 };
 
 /** `aspect: null` lets the owner crop freely — a logo is rarely square. */
-export const pickImage = async ({ aspect = [1, 1] } = {}) => {
+export const pickImage = async ({ aspect = [1, 1], allowsEditing = true, multiple = false, selectionLimit = 12 } = {}) => {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!permission.granted) {
     const error = new Error('StoreKit needs access to your photos to add images.');
@@ -30,7 +30,9 @@ export const pickImage = async ({ aspect = [1, 1] } = {}) => {
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
     // Square, because the storefront grid is square and cropping here beats cropping later.
-    allowsEditing: true,
+    allowsEditing: multiple ? false : allowsEditing,
+    allowsMultipleSelection: multiple,
+    ...(multiple ? { selectionLimit } : {}),
     ...(aspect ? { aspect } : {}),
     // Recompressed on device: a modern phone photo is 5MB of detail nobody will see in a
     // 400px product tile, and the merchant is probably on mobile data.
@@ -39,10 +41,10 @@ export const pickImage = async ({ aspect = [1, 1] } = {}) => {
   });
 
   if (result.canceled || !result.assets?.length) return null;
-  return result.assets[0];
+  return multiple ? result.assets : result.assets[0];
 };
 
-export const takePhoto = async () => {
+export const takePhoto = async ({ allowsEditing = true } = {}) => {
   const permission = await ImagePicker.requestCameraPermissionsAsync();
   if (!permission.granted) {
     const error = new Error('StoreKit needs access to your camera to photograph products.');
@@ -51,7 +53,7 @@ export const takePhoto = async () => {
   }
 
   const result = await ImagePicker.launchCameraAsync({
-    allowsEditing: true,
+    allowsEditing,
     aspect: [1, 1],
     quality: 0.8,
     exif: false,
