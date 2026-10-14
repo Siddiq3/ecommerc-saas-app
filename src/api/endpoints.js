@@ -78,6 +78,23 @@ export const storeSettings = {
 
 const scope = (businessId) => `/businesses/${businessId}`;
 
+/** Instagram rules are managed here; no Meta tokens are sent to the app. */
+export const instagram = {
+  status: (b) => api.get(`${scope(b)}/instagram`),
+  connect: (b) => api.post(`${scope(b)}/instagram/connect`, {}),
+  confirm: (b, input) => api.post(`${scope(b)}/instagram/confirm`, input),
+  check: (b) => api.post(`${scope(b)}/instagram/check`, {}),
+  disconnect: (b) => api.del(`${scope(b)}/instagram`),
+  media: (b, after) => api.get(`${scope(b)}/instagram/media${qs(after ? {after}:{})}`),
+  rules: (b, params) => api.get(`${scope(b)}/instagram/rules${qs(params)}`),
+  rule: (b, id) => api.get(`${scope(b)}/instagram/rules/${encodeURIComponent(id)}`),
+  createRule: (b, input) => api.post(`${scope(b)}/instagram/rules`, input),
+  updateRule: (b, id, input) => api.patch(`${scope(b)}/instagram/rules/${encodeURIComponent(id)}`,input),
+  deleteRule: (b, id) => api.del(`${scope(b)}/instagram/rules/${encodeURIComponent(id)}`),
+  report: (b, params) => api.get(`${scope(b)}/instagram/report${qs(params)}`),
+};
+
+
 /**
  * Delivery methods and areas. Saved whole (PUT), never merged: the body is the complete
  * settings, so a save can never quietly reset something it left out.

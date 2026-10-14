@@ -102,6 +102,8 @@ const Navigation = () => {
         <Stack.Screen name="products/[productId]" options={{ title: 'Product' }} />
         <Stack.Screen name="products/new" options={{ title: 'New product', presentation: 'modal' }} />
         <Stack.Screen name="customers/[customerId]" options={{ title: 'Customer' }} />
+        <Stack.Screen name="instagram/new" options={{ title: 'New automation', presentation: 'modal' }} />
+        <Stack.Screen name="instagram/[ruleId]" options={{ title: 'Automation' }} />
         <Stack.Screen name="categories/index" options={{ title: 'Categories' }} />
         <Stack.Screen name="coupons/index" options={{ title: 'Coupons' }} />
         <Stack.Screen name="analytics" options={{ title: 'Analytics' }} />

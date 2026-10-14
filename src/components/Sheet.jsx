@@ -26,8 +26,10 @@ import { colors, radius, shadow, space } from '../theme.js';
  * longer took taps. Edge to edge (Android 15+), the window is no longer resized for the
  * keyboard, so on Android the root is padded by the keyboard's height and the panel sits
  * just above it.
+ *
+ * `maxWidth` (opt-in) keeps the panel from stretching across a tablet: it is centred at that width instead.
  */
-export const Sheet = ({ visible, onClose, title, children }) => {
+export const Sheet = ({ visible, onClose, title, children, maxWidth }) => {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const keyboard = useKeyboardHeight();
@@ -39,7 +41,7 @@ export const Sheet = ({ visible, onClose, title, children }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close" />
-        <View style={[styles.sheet, { maxHeight: Math.min(height * 0.78, height - keyboard - insets.top - space.lg), paddingBottom: (keyboard ? 0 : insets.bottom) + space.xl }]}>
+        <View style={[styles.sheet, maxWidth && { alignSelf: 'center', width: '100%', maxWidth }, { maxHeight: Math.min(height * 0.78, height - keyboard - insets.top - space.lg), paddingBottom: (keyboard ? 0 : insets.bottom) + space.xl }]}>
           <View style={styles.grabber} />
           <View style={styles.header}>
             <Heading style={{ flex: 1 }}>{title}</Heading>

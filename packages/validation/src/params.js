@@ -20,13 +20,22 @@ const notificationId = z
   .string()
   .regex(/^\d{13}#[0-9A-HJKMNP-TV-Z]{26}$/, 'Invalid notification');
 
+/**
+ * Customer ids are not ULIDs: they are derived from the store and the buyer's mobile number (an HMAC, base64url, cut to
+ * 26 characters; see customerKey in api/src/utils/crypto.js), so the same buyer is one customer across orders. That
+ * alphabet has lower case, '-' and '_'. Validating them as ULIDs rejected every real customer's detail page.
+ */
+const customerId = z
+  .string({ invalid_type_error: 'Invalid identifier' })
+  .regex(/^[A-Za-z0-9_-]{26}$/, 'Invalid identifier');
+
 export const PARAM_SCHEMAS = Object.freeze({
   businessId: objectId,
   productId: objectId,
   variantId: objectId,
   categoryId: objectId,
   couponId: objectId,
-  customerId: objectId,
+  customerId,
   orderId: objectId,
   uploadId: objectId,
   sessionId: objectId,

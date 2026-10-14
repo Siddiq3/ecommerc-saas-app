@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Pressable } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Pressable, Text } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
   interpolate,
   Extrapolation,
+  useReducedMotion,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { motion } from '../theme.js';
@@ -134,6 +135,22 @@ export const FadeIn = ({
 };
 
 /**
+ * Springs a subtree in: fades up from slightly smaller. For the one element a screen wants the eye to finish on,
+ * such as a call to action that arrives after the content explaining it.
+ */
+export const PopIn = ({ children, delay = 0, style }) => {
+  const progress = useSharedValue(0);
+  useEffect(() => {
+    progress.value = withDelay(delay, withSpring(1, motion.spring.enter));
+  }, [delay, progress]);
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [0, 1], [0, 1], Extrapolation.CLAMP),
+    transform: [{ scale: interpolate(progress.value, [0, 1], [0.94, 1]) }],
+  }));
+  return <Animated.View style={[style, animatedStyle]}>{children}</Animated.View>;
+};
+
+/**
  * Staggers a list of children in.
  *
  * Capped at `motion.maxStaggered`: past roughly eight items the last one arrives long
@@ -199,6 +216,37 @@ export const ProgressBar = ({ value, height = 6, track, fill, duration = motion.
       <Animated.View style={[{ height, borderRadius: height, backgroundColor: fill }, animatedStyle]} />
     </Animated.View>
   );
+};
+
+/**
+ * A number that counts up to its value: from 0 on first show, from the old value when it changes, so a new period's
+ * total visibly arrives. Screen readers get the final value; with Reduce Motion on, the final value shows at once.
+ *
+ * Runs on the JS thread with requestAnimationFrame, not a worklet: it formats with Intl (money, grouping), which is
+ * not available on the UI thread, and it lives for well under a second. `step` rounds the frames (100 = whole rupees
+ * when the value is paise); the last frame is always the exact value.
+ */
+export const CountUp = ({ value, format = String, step = 1, duration = motion.duration.ceremony, style, ...rest }) => {
+  const reduce = useReducedMotion();
+  const [shown, setShown] = useState(reduce ? value : 0);
+  const from = useRef(reduce ? value : 0);
+
+  useEffect(() => {
+    if (reduce || !Number.isFinite(value)) { from.current = value; setShown(value); return undefined; }
+    const start = from.current, began = Date.now();
+    let frame;
+    const tick = () => {
+      const t = Math.min(1, (Date.now() - began) / duration);
+      // Quartic ease-out: most of the distance early, then a glide into the final number.
+      const next = t === 1 ? value : Math.round((start + (value - start) * (1 - (1 - t) ** 4)) / step) * step;
+      from.current = next; setShown(next);
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [value, reduce, duration, step]);
+
+  return <Text style={style} accessibilityLabel={format(value)} {...rest}>{format(shown)}</Text>;
 };
 
 export { Animated };

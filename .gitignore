@@ -43,3 +43,6 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Local QA screenshots and logs (scripts/local-qa)
+.local-qa/

@@ -12,6 +12,9 @@ import { KeyboardSpacer } from './KeyboardSpacer.jsx';
  * Handles the three things every screen needs and none of them want to repeat: the safe
  * area (a bottom inset that respects the tab bar, and a gesture bar that must not sit
  * under a button), keyboard avoidance, and pull-to-refresh.
+ *
+ * `maxWidth` (opt-in) centres the content in a column of at most that width, so a phone layout does not stretch edge
+ * to edge on a tablet. Screens that do not pass it are unchanged.
  */
 
 const HEADER_OFFSET = Platform.select({ ios: 0, default: 0 });
@@ -20,11 +23,13 @@ export const Screen = ({
   children,
   scroll = true,
   onRefresh,
+  onEndReached,
   refreshing = false,
   padded = true,
   footer,
   contentStyle,
   style,
+  maxWidth,
 }) => {
   const insets = useSafeAreaInsets();
   const keyboard = useKeyboardHeight();
@@ -44,16 +49,23 @@ export const Screen = ({
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
       showsVerticalScrollIndicator={false}
+      scrollEventThrottle={200}
+      onScroll={onEndReached ? ({ nativeEvent: e }) => {
+        if (e.contentOffset.y + e.layoutMeasurement.height >= e.contentSize.height - 200) onEndReached();
+      } : undefined}
       refreshControl={
         onRefresh ? (
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent600} colors={[colors.accent600]} />
         ) : undefined
       }
     >
-      {children}
+      {maxWidth ? <View style={[styles.column, { maxWidth }]}>{children}</View> : children}
     </ScrollView>
   ) : (
-    <View style={[styles.flex, padded && styles.padded, contentStyle]}>{children}</View>
+    <View style={[styles.flex, padded && styles.padded, contentStyle]}>
+      {/* flex: 1 here too, so a non-scrolling screen's flexible children keep their space inside the column. */}
+      {maxWidth ? <View style={[styles.column, styles.flex, { maxWidth }]}>{children}</View> : children}
+    </View>
   );
 
   return (
@@ -64,7 +76,9 @@ export const Screen = ({
     >
       {body}
       {footer ? (
-        <View style={[styles.footer, { paddingBottom: (keyboard ? 0 : insets.bottom) + space.md }]}>{footer}</View>
+        <View style={[styles.footer, { paddingBottom: (keyboard ? 0 : insets.bottom) + space.md }]}>
+          {maxWidth ? <View style={[styles.column, { maxWidth }]}>{footer}</View> : footer}
+        </View>
       ) : null}
       {/* Android: the keyboard's own room, below everything, so the footer sits just above it. */}
       <KeyboardSpacer />
@@ -93,6 +107,7 @@ export const useListPadding = (extra = 0) => {
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.canvas },
+  column: { width: '100%', alignSelf: 'center' },
   padded: { paddingHorizontal: space.lg, paddingTop: space.lg },
   footer: {
     paddingHorizontal: space.lg,
