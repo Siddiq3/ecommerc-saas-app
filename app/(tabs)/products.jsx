@@ -8,7 +8,6 @@ import { ListScreen, listColumn } from '../../src/components/Screen.jsx';
 import { Body, Button, Display, Divider, EmptyState, ErrorState, Row, Touchable } from '../../src/components/ui.jsx';
 import { ProductRow } from '../../src/components/domain.jsx';
 import { FilterChips, SearchBar } from '../../src/components/Filters.jsx';
-import { HelpButton } from '../../src/components/Help.jsx';
 import { SkeletonList } from '../../src/components/Skeleton.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { usePaginated } from '../../src/lib/usePaginated.js';
@@ -89,7 +88,6 @@ export default function Products() {
       <Row style={{ justifyContent: 'space-between' }}>
         <Display style={styles.title}>Products</Display>
         <Row gap={space.sm} style={{ marginBottom: space.md }}>
-          <HelpButton context="products" />
           <Touchable
             onPress={() => router.push('/categories')}
             accessibilityLabel="Categories"

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert as RNAlert, Image, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Image, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatMoney, toMajor } from '@storekit/shared';
 import { createProductSchema, rupeesText, updateProductSchema, wholeNumberText } from '@storekit/validation';
@@ -9,7 +9,7 @@ import {
 import { Sheet } from './Sheet.jsx';
 import { VariantEditor, optionsFromVariants, parseValues } from './VariantEditor.jsx';
 import { FadeIn } from './motion.jsx';
-import { pickImage, takePhoto, uploadImage } from '../lib/upload.js';
+import { ProductPhotos } from './ProductPhotos.jsx';
 import { check, mergeErrors } from '../lib/validation.js';
 import { colors, radius, shadow, space, type } from '../theme.js';
 
@@ -150,41 +150,8 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
         sortOrder: variant.sortOrder ?? 0,
       })));
 
-  const [pickerOpen, setPickerOpen] = useState(false);
   const [categorySheet, setCategorySheet] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState(null);
-
-  const addImage = async (source) => {
-    setPickerOpen(false);
-    setUploadError(null);
-    try {
-      const asset = source === 'camera' ? await takePhoto() : await pickImage();
-      if (!asset) return;
-
-      setUploading(true);
-      const uploaded = await uploadImage(businessId, asset, { purpose: 'product', productId: initial?.productId });
-      setImages((prev) => [
-        ...prev,
-        { imageKey: uploaded.imageKey, publicUrl: uploaded.publicUrl, sortOrder: prev.length },
-      ]);
-    } catch (err) {
-      setUploadError(err?.message ?? 'That image could not be added.');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const removeImage = (imageKey) =>
-    RNAlert.alert('Remove this image?', undefined, [
-      { text: 'Keep', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: () =>
-          setImages((prev) => prev.filter((img) => img.imageKey !== imageKey).map((img, i) => ({ ...img, sortOrder: i }))),
-      },
-    ]);
 
   const submit = () => {
     const textErrors = {};
@@ -264,49 +231,13 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
 
   return (
     <>
-      <Alert message={uploadError} />
-
-      {/* The live card — what a customer will see, updating as the merchant types. */}
-      <ProductPreview
-        name={name}
-        image={heroImage}
-        price={price}
-        mrp={mrp}
-        stock={stock}
-        trackInventory={trackInventory}
-        active={active}
+      <ProductPhotos
+        businessId={businessId}
+        productId={initial?.productId}
+        images={images}
+        onChange={setImages}
+        onBusyChange={setUploading}
       />
-
-      <FormSection title="Photos" hint="The first photo is what customers see in your store grid.">
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.images}>
-          {images.map((image, index) => (
-            <FadeIn key={image.imageKey} from="right" style={styles.imageWrap}>
-              <Image source={{ uri: image.publicUrl ?? image.url }} style={styles.image} resizeMode="cover" />
-              {index === 0 ? (
-                <View style={styles.coverBadge}>
-                  <Caption style={styles.coverText}>Cover</Caption>
-                </View>
-              ) : null}
-              <Touchable
-                onPress={() => removeImage(image.imageKey)}
-                accessibilityLabel="Remove image"
-                style={styles.imageRemove}
-              >
-                <Ionicons name="close" size={14} color="#ffffff" />
-              </Touchable>
-            </FadeIn>
-          ))}
-          <Touchable
-            onPress={() => setPickerOpen(true)}
-            disabled={uploading || images.length >= 12}
-            accessibilityLabel="Add photo"
-            style={styles.addImage}
-          >
-            <Ionicons name={uploading ? 'cloud-upload-outline' : 'add'} size={24} color={colors.accent600} />
-            <Caption style={{ color: colors.accent700 }}>{uploading ? 'Uploading…' : 'Add'}</Caption>
-          </Touchable>
-        </ScrollView>
-      </FormSection>
 
       <FormSection title="Details" delay={40}>
         <Field
@@ -339,6 +270,11 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
           error={fieldErrors.description}
         />
       </FormSection>
+
+      <ProductPreview
+        name={name} image={heroImage} price={price} mrp={mrp}
+        stock={stock} trackInventory={trackInventory} active={active}
+      />
 
       <FormSection title="Price" delay={80}>
         {/* Side by side when both fit at the reader's text size; stacked on a narrow phone with large text, where the
@@ -474,18 +410,7 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
       {!generalError && Object.values(fieldErrors).some(Boolean) ? (
         <Caption style={styles.fixHint}>Check the highlighted fields above.</Caption>
       ) : null}
-      <Button title={submitLabel} size="lg" loading={submitting} onPress={submit} style={{ marginTop: space.sm }} />
-
-      <Sheet visible={pickerOpen} onClose={() => setPickerOpen(false)} title="Add a photo">
-        <Touchable onPress={() => addImage('camera')} style={styles.sheetRow}>
-          <Ionicons name="camera-outline" size={20} color={colors.ink700} />
-          <Body strong style={{ flex: 1 }}>Take a photo</Body>
-        </Touchable>
-        <Touchable onPress={() => addImage('library')} style={styles.sheetRow}>
-          <Ionicons name="images-outline" size={20} color={colors.ink700} />
-          <Body strong style={{ flex: 1 }}>Choose from gallery</Body>
-        </Touchable>
-      </Sheet>
+      <Button title={submitLabel} size="lg" loading={submitting} disabled={uploading} onPress={submit} style={{ marginTop: space.sm }} />
 
       <Sheet visible={categorySheet} onClose={() => setCategorySheet(false)} title="Category">
         <Touchable onPress={() => { setCategoryId(null); setCategorySheet(false); }} style={styles.sheetRow}>
@@ -551,43 +476,6 @@ const styles = StyleSheet.create({
   /** With no hint beneath, the first label needs the gap the hint would have left. */
   sectionTitleSolo: { marginBottom: space.md },
   sectionHint: { marginBottom: space.md },
-
-  images: { gap: space.sm, paddingVertical: space.xs },
-  imageWrap: { position: 'relative' },
-  image: { width: 92, height: 92, borderRadius: radius.md, backgroundColor: colors.ink200 },
-  coverBadge: {
-    position: 'absolute',
-    bottom: 6,
-    left: 6,
-    backgroundColor: 'rgba(16,16,20,0.72)',
-    borderRadius: radius.xs,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  coverText: { color: '#ffffff', fontSize: 10 },
-  imageRemove: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: 'rgba(12,10,9,0.65)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addImage: {
-    width: 92,
-    height: 92,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: colors.accent200,
-    backgroundColor: colors.accent50,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-  },
 
   textarea: { minHeight: 96, textAlignVertical: 'top', paddingTop: space.md },
   card: {},
