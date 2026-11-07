@@ -200,7 +200,8 @@ const SPINE_INDEX = ORDER_SPINE.reduce((acc, step, i) => {
 }, {});
 
 export const OrderTimeline = ({ order }) => {
-  const history = order.timeline ?? [];
+  // The owner API sends the order as stored, so its status changes are `history`; `timeline` is the customer shape.
+  const history = order.history ?? order.timeline ?? [];
   const timeFor = (matches) => {
     const entry = [...history].reverse().find((e) => matches.includes(e.status));
     return entry?.at ?? null;
@@ -211,9 +212,11 @@ export const OrderTimeline = ({ order }) => {
 
   const rows = ORDER_SPINE.map((step, index) => {
     const at = timeFor(step.matches);
+    // The current step is still happening, except the last one: a delivered order is finished, not in progress.
+    const finished = index === currentIndex && index === ORDER_SPINE.length - 1;
     let state = 'todo';
-    if (at || index < currentIndex) state = 'done';
-    if (index === currentIndex && !terminal) state = 'active';
+    if (at || index < currentIndex || finished) state = 'done';
+    if (index === currentIndex && !terminal && !finished) state = 'active';
     return { ...step, at, state };
   });
 
