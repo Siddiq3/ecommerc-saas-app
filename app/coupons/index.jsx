@@ -97,7 +97,7 @@ const ProductPicker = ({ visible, onClose, businessId, selected, onToggle }) => 
   }, [visible, businessId, query]);
 
   return (
-    <Sheet visible={visible} onClose={onClose} title={`Choose products${selected.length ? ` (${selected.length})` : ''}`}>
+    <View>
       <Field
         value={search}
         onChangeText={setSearch}
@@ -130,7 +130,7 @@ const ProductPicker = ({ visible, onClose, businessId, selected, onToggle }) => 
         <Caption style={{ textAlign: 'center', marginVertical: space.xl }}>No products found.</Caption>
       )}
       <Button title="Done" onPress={onClose} style={{ marginTop: space.lg }} />
-    </Sheet>
+    </View>
   );
 };
 
@@ -167,6 +167,7 @@ export default function Coupons() {
   const items = data?.items ?? [];
 
   const resetForm = () => {
+    setProductPickerOpen(false); setDatePickerFor(null);
     setCode(''); setType('percentage'); setValue(''); setScope('all'); setProductIds([]); setDescription('');
     setMinOrderValue(''); setMaxDiscount(''); setUsageLimit(''); setUsageLimitPerCustomer('');
     setStartAt(null); setExpiresAt(null); setActive(true); setShowOnStorefront(false); setErrors({});
@@ -175,6 +176,7 @@ export default function Coupons() {
   const openCreate = () => { setEditing(null); resetForm(); setSheet('form'); };
 
   const openEdit = (coupon) => {
+    setProductPickerOpen(false); setDatePickerFor(null);
     setEditing(coupon);
     setScope(coupon.scope ?? 'all');
     setProductIds(coupon.productIds ?? []);
@@ -310,7 +312,18 @@ export default function Coupons() {
         )}
       </Screen>
 
-      <Sheet visible={sheet === 'form'} onClose={() => setSheet(null)} title={editing ? editing.code : 'New coupon'}>
+      <Sheet
+        visible={sheet === 'form'}
+        onClose={() => {
+          if (productPickerOpen) setProductPickerOpen(false);
+          else { setDatePickerFor(null); setSheet(null); }
+        }}
+        title={productPickerOpen ? `Choose products${productIds.length ? ` (${productIds.length})` : ''}` : editing ? editing.code : 'New coupon'}
+      >
+        {/* Keep each task inside one native modal: iOS cannot present sibling sheets over this form. */}
+        {productPickerOpen ? (
+          <ProductPicker visible businessId={businessId} selected={productIds} onToggle={toggleProduct} onClose={() => setProductPickerOpen(false)} />
+        ) : <>
         <Alert message={generalError} />
 
         {editing ? null : (
@@ -453,6 +466,27 @@ export default function Coupons() {
         </Row>
         {fieldErrors.expiresAt ? <Caption style={styles.errorText}>{fieldErrors.expiresAt}</Caption> : null}
 
+        {datePickerFor ? (
+          <View>
+            <DateTimePicker
+              value={(datePickerFor === 'start' ? startAt : expiresAt) ?? new Date()}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'inline' : 'default'}
+              themeVariant="light"
+              accentColor={colors.accent600}
+              minimumDate={datePickerFor === 'end' && startAt ? startAt : undefined}
+              onChange={(event, picked) => {
+                const target = datePickerFor;
+                if (Platform.OS === 'android') setDatePickerFor(null);
+                if (event.type === 'dismissed' || !picked) return;
+                if (target === 'start') setStartAt(startOfDay(picked));
+                else setExpiresAt(endOfDay(picked));
+              }}
+            />
+            {Platform.OS === 'ios' ? <Button title="Done" variant="secondary" size="sm" onPress={() => setDatePickerFor(null)} /> : null}
+          </View>
+        ) : null}
+
         <Toggle label="Show on storefront" hint="Advertise this code on your website while it is live. Leave off to share it privately." value={showOnStorefront} onChange={setShowOnStorefront} disabled={saving} />
 
         {editing ? (
@@ -465,31 +499,8 @@ export default function Coupons() {
         ) : null}
 
         <Button title={editing ? 'Save' : 'Create coupon'} loading={saving} onPress={submit} style={{ marginTop: space.lg }} />
+        </>}
       </Sheet>
-
-      <ProductPicker
-        visible={productPickerOpen}
-        onClose={() => setProductPickerOpen(false)}
-        businessId={businessId}
-        selected={productIds}
-        onToggle={toggleProduct}
-      />
-
-      {datePickerFor ? (
-        <DateTimePicker
-          value={(datePickerFor === 'start' ? startAt : expiresAt) ?? new Date()}
-          mode="date"
-          display="default"
-          minimumDate={datePickerFor === 'end' && startAt ? startAt : undefined}
-          onChange={(event, picked) => {
-            const target = datePickerFor;
-            if (Platform.OS === 'android') setDatePickerFor(null);
-            if (event.type === 'dismissed' || !picked) return;
-            if (target === 'start') setStartAt(startOfDay(picked));
-            else setExpiresAt(endOfDay(picked));
-          }}
-        />
-      ) : null}
     </>
   );
 }

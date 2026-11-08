@@ -2,6 +2,7 @@ import {
   KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StyleSheet, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { colors, contentMaxWidth, space } from '../theme.js';
 import { useKeyboardHeight } from '../lib/useKeyboardHeight.js';
 import { KeyboardSpacer } from './KeyboardSpacer.jsx';
@@ -18,8 +19,6 @@ import { KeyboardSpacer } from './KeyboardSpacer.jsx';
  * screen that must use the whole window.
  */
 
-const HEADER_OFFSET = Platform.select({ ios: 0, default: 0 });
-
 export const Screen = ({
   children,
   scroll = true,
@@ -33,6 +32,7 @@ export const Screen = ({
   maxWidth = contentMaxWidth,
 }) => {
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const keyboard = useKeyboardHeight();
 
   // Expo Router's stack and tabs already consume the top inset; only the bottom is ours,
@@ -73,7 +73,7 @@ export const Screen = ({
     <KeyboardAvoidingView
       style={[styles.flex, style]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={HEADER_OFFSET}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
     >
       {body}
       {footer ? (

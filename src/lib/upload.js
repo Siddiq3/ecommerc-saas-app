@@ -1,4 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
+import { deleteAsync } from 'expo-file-system/legacy';
 import { MAX_UPLOAD_BYTES } from '@storekit/shared';
 import { businesses, uploads } from '../api/endpoints.js';
 
@@ -13,9 +15,9 @@ import { businesses, uploads } from '../api/endpoints.js';
 const MIME_BY_EXTENSION = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
 
 const contentTypeOf = (asset) => {
-  if (asset.mimeType && MIME_BY_EXTENSION[asset.mimeType.split('/')[1]]) return asset.mimeType;
-  const extension = String(asset.uri ?? '').split('.').pop()?.toLowerCase();
-  return MIME_BY_EXTENSION[extension] ?? 'image/jpeg';
+  if (asset.mimeType) return Object.values(MIME_BY_EXTENSION).includes(asset.mimeType) ? asset.mimeType : null;
+  const extension = String(asset.fileName ?? asset.uri ?? '').split(/[?#]/)[0].split('.').pop()?.toLowerCase();
+  return MIME_BY_EXTENSION[extension] ?? null;
 };
 
 /** `aspect: null` lets the owner crop freely — a logo is rarely square. */
@@ -70,7 +72,23 @@ export const takePhoto = async ({ allowsEditing = true } = {}) => {
  */
 export const uploadImage = async (businessId, asset, { purpose = 'product', productId } = {}) => {
   const contentType = contentTypeOf(asset);
+  if (contentType) return uploadPreparedImage(businessId, asset, { purpose, productId, contentType });
 
+  // iPhones can return HEIC even with picker quality < 1. Convert the bytes,
+  // rather than labelling an unsupported file as JPEG for the upload API.
+  const context = ImageManipulator.manipulate(asset.uri);
+  if (Math.max(asset.width ?? 0, asset.height ?? 0) > 1600) {
+    context.resize(asset.width >= asset.height ? { width: 1600 } : { height: 1600 });
+  }
+  const converted = await (await context.renderAsync()).saveAsync({ format: SaveFormat.JPEG, compress: 0.85 });
+  try {
+    return await uploadPreparedImage(businessId, converted, { purpose, productId, contentType: 'image/jpeg' });
+  } finally {
+    await deleteAsync(converted.uri, { idempotent: true }).catch(() => undefined);
+  }
+};
+
+const uploadPreparedImage = async (businessId, asset, { purpose, productId, contentType }) => {
   const response = await fetch(asset.uri);
   const blob = await response.blob();
 

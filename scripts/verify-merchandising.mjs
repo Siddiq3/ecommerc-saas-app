@@ -33,9 +33,9 @@ console.log('✓ Storefront drafts keep preview URLs out of saves, order correct
   for (const link of [categoryLink(cats[0]), product, '/products']) {
     assert(updateStoreSettingsSchema.safeParse({ banners: [{ imageKey: key, link }] }).success, link);
   }
-  const free = { delivery: { methods: [{ active: true, primary: true, pricing: { type: 'flat', freeAbove: 99900 } }] }, payments: { codEnabled: true } };
+  const free = { delivery: { methods: [{ active: true, primary: true, pricing: { type: 'flat', freeAbove: 129900 } }] }, payments: { codEnabled: true } };
   const ideas = announcementIdeas(free, [{ code: 'FESTIVE10', type: 'percentage', value: 10, showOnStorefront: true }]);
-  assert.deepEqual(ideas.slice(0, 3), ['Free delivery on orders above ₹999', 'Cash on delivery available', 'Use code FESTIVE10 for 10% off']);
+  assert.deepEqual(ideas.slice(0, 3), ['Free delivery on orders above ₹1299', 'Cash on delivery available', 'Use code FESTIVE10 for 10% off']);
   assert(!announcementIdeas({ payments: { codEnabled: false } }).some((i) => /Cash on delivery|Free delivery|code/.test(i)));
   for (const idea of ideas) assert(updateStoreSettingsSchema.safeParse({ announcement: { text: idea, enabled: true } }).success, idea);
   console.log('✓ Storefront helpers suggest only true announcements and turn picked links into valid banner paths.');

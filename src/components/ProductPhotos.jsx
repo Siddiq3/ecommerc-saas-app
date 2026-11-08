@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Alert as RNAlert, Image, Modal, PanResponder, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Alert as RNAlert, Image, Modal, PanResponder, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
@@ -28,6 +28,7 @@ export const ProductPhotos = ({ businessId, productId, images, onChange, onBusyC
   const lock = useRef(false);
   const panStart = useRef({ x: 0, y: 0 });
   const completed = useRef(new Map());
+  const sourceDismissed = useRef(null);
   const current = draft[index];
   const edge = Math.max(120, Math.min(width, contentMaxWidth, height * 0.47));
   const crop = current?.asset.width && current?.asset.height
@@ -82,10 +83,14 @@ export const ProductPhotos = ({ businessId, productId, images, onChange, onBusyC
   };
   const add = async (source) => {
     if (lock.current || draft.length >= 12) return;
-    setSourceOpen(false);
     setError(null);
     setWorking(true);
     try {
+      if (Platform.OS === 'ios' && sourceOpen && !open) {
+        // UIKit must finish dismissing our source sheet before presenting its
+        // camera/photo picker. Waiting for onDismiss also covers repeat picks.
+        await new Promise((resolve) => { sourceDismissed.current = resolve; setSourceOpen(false); });
+      } else setSourceOpen(false);
       const selected = source === 'camera'
         ? await takePhoto({ allowsEditing: false })
         : await pickImage({ allowsEditing: false, multiple: true, selectionLimit: 12 - draft.length });
@@ -245,7 +250,11 @@ export const ProductPhotos = ({ businessId, productId, images, onChange, onBusyC
           </Row>
         </View>
       </Modal>
-      <Sheet visible={sourceOpen && !open} onClose={() => { if (!busy) setSourceOpen(false); }} title="Add a photo">{sourceOptions}</Sheet>
+      <Sheet visible={sourceOpen && !open} onClose={() => { if (!busy) setSourceOpen(false); }} onDismiss={() => {
+        const resolve = sourceDismissed.current;
+        sourceDismissed.current = null;
+        resolve?.();
+      }} title="Add a photo">{sourceOptions}</Sheet>
     </View>
   );
 };

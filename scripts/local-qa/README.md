@@ -23,8 +23,9 @@ scripts/local-qa/matrix.sh reset            # always restore the emulator afterw
 
 Also check: long usernames, product names and captions; 7-digit rupee amounts; keyboard on form screens; bottom sheets.
 
-**iOS is not covered.** It needs a real iPhone with Expo Go, or Xcode's simulator. Do not mark a screen as working on
-iOS until it has been tested there.
+For iOS Simulator builds, Device Hub support, and the feature QA checklist, see
+[`docs/IOS.md`](../../docs/IOS.md). These Android capture scripts do not drive iOS.
+Do not mark a screen as working on iOS until it has been tested there.
 
 Tab bar y positions used so far: 2267 (default), 2300 (standard-large), 1180 (small, small-large), 2438 (tablet).
 Screenshots go to `mobile/.local-qa/shots/`, which git ignores.

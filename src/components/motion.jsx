@@ -32,7 +32,9 @@ import { motion } from '../theme.js';
  * Haptics are advisory: a device with the motor disabled, or a simulator, rejects these.
  * A failed buzz must never break the action it was decorating, so every call swallows.
  */
-const safely = (fn) => (...args) => { try { fn(...args); } catch { /* no haptic engine */ } };
+const safely = (fn) => (...args) => {
+  try { Promise.resolve(fn(...args)).catch(() => undefined); } catch { /* no haptic engine */ }
+};
 
 export const haptic = {
   /** A control was pressed. */

@@ -29,13 +29,13 @@ import { colors, contentMaxWidth, radius, shadow, space } from '../theme.js';
  *
  * `maxWidth` (contentMaxWidth by default) keeps the panel from stretching across a tablet: it is centred instead.
  */
-export const Sheet = ({ visible, onClose, title, children, maxWidth = contentMaxWidth }) => {
+export const Sheet = ({ visible, onClose, onDismiss, title, children, maxWidth = contentMaxWidth }) => {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const keyboard = useKeyboardHeight();
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} onDismiss={onDismiss} statusBarTranslucent>
       <KeyboardAvoidingView
         style={[styles.root, { width, height, paddingBottom: keyboard }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

@@ -32,6 +32,8 @@ EXPO_PUBLIC_API_URL=http://192.168.1.42:3001
 
 ## Checks
 
+For iOS Simulator setup and the shared-feature QA checklist, see [the iOS guide](docs/IOS.md).
+
 ```bash
 npm run lint -w @storekit/mobile              # includes the banned-import rules
 npm test -w @storekit/mobile                  # the Play payment boundary

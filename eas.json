@@ -17,6 +17,10 @@
         "EXPO_PUBLIC_WEB_URL": "https://ecommerc-saas-web-1yfy.vercel.app"
       }
     },
+    "simulator": {
+      "extends": "preview",
+      "ios": { "simulator": true }
+    },
     "production": {
       "autoIncrement": true,
       "env": {

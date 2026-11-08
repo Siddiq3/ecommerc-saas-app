@@ -7,8 +7,8 @@
  * backend route being renamed out from under the app, which is the harder direction to
  * notice.
  *
- * Run with `npm run verify:endpoints -w @storekit/mobile` (the API workspace must be
- * installed; it does not need to be running).
+ * Run with `npm run verify:endpoints` (the sibling backend/api repository must be
+ * installed; it does not need to be running). Set STOREKIT_API_DIR for another checkout.
  */
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -16,12 +16,12 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const repoRoot = join(root, '..', '..');
+const apiRoot = process.env.STOREKIT_API_DIR ?? join(root, '..', 'backend', 'api');
 
 /* ───────────── The backend's routes ───────────── */
 
-const dump = execFileSync('npm', ['run', '--silent', 'routes', '-w', '@storekit/api'], {
-  cwd: repoRoot,
+const dump = execFileSync('npm', ['run', '--silent', 'routes'], {
+  cwd: apiRoot,
   encoding: 'utf8',
 });
 
