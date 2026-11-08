@@ -12,7 +12,7 @@
     "ios": "node scripts/run-ios.mjs",
     "ios:release": "node scripts/run-ios.mjs --configuration Release",
     "lint": "eslint app src --ext .js,.jsx",
-    "test": "node scripts/verify-no-payment-code.mjs && node scripts/verify-routes.mjs && node scripts/verify-store-styles.mjs && node scripts/verify-variants.mjs && node scripts/verify-help.mjs && node scripts/verify-delivery.mjs && node scripts/verify-policies.mjs && node scripts/verify-states.mjs && node scripts/verify-notifications.mjs && node scripts/verify-format.mjs && node scripts/verify-instagram-access.mjs && node scripts/verify-instagram-products.mjs && node scripts/verify-instagram-media.mjs && node scripts/verify-merchandising.mjs && node scripts/verify-product-photos.mjs && node scripts/verify-image-uploads.mjs && node scripts/verify-ios-launcher.mjs",
+    "test": "node scripts/verify-no-payment-code.mjs && node scripts/verify-routes.mjs && node scripts/verify-store-styles.mjs && node scripts/verify-variants.mjs && node scripts/verify-help.mjs && node scripts/verify-delivery.mjs && node scripts/verify-policies.mjs && node scripts/verify-states.mjs && node scripts/verify-notifications.mjs && node scripts/verify-format.mjs && node scripts/verify-instagram-access.mjs && node scripts/verify-instagram-products.mjs && node scripts/verify-instagram-media.mjs && node scripts/verify-merchandising.mjs && node scripts/verify-product-photos.mjs && node scripts/verify-image-uploads.mjs && node scripts/verify-ios-launcher.mjs && node scripts/verify-i18n.mjs",
     "verify:compliance": "node scripts/verify-no-payment-code.mjs",
     "verify:endpoints": "node scripts/verify-endpoints.mjs",
     "bundle:check": "expo export --platform all --max-workers 2 --output-dir .expo/export-check",

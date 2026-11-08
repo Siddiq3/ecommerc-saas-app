@@ -9,6 +9,7 @@ import { Sheet } from './Sheet.jsx';
 import { pickImage, takePhoto, uploadImage } from '../lib/upload.js';
 import { photoCrop } from '../lib/productPhoto.js';
 import { colors, contentMaxWidth, radius, space } from '../theme.js';
+import { useT } from '../state/locale.jsx';
 
 const dimensions = (uri) => new Promise((resolve, reject) => Image.getSize(uri, (width, height) => resolve({ width, height }), reject));
 let photoSequence = 0;
@@ -17,6 +18,7 @@ const newPhoto = (asset) => ({ id: ++photoSequence, asset, mode: 'cover', zoom: 
 /** A transactional editor: the product's images only change after Next succeeds. */
 export const ProductPhotos = ({ businessId, productId, images, onChange, onBusyChange }) => {
   const insets = useSafeAreaInsets();
+  const t = useT();
   const { width, height } = useWindowDimensions();
   const [open, setOpen] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
@@ -75,9 +77,9 @@ export const ProductPhotos = ({ businessId, productId, images, onChange, onBusyC
   const close = () => {
     if (lock.current) return;
     if (draft.some((photo) => photo.changed) || (open && draft.length !== images.length)) {
-      RNAlert.alert('Discard photo changes?', 'Your product photos have not been changed yet.', [
-        { text: 'Keep editing', style: 'cancel' },
-        { text: 'Discard', style: 'destructive', onPress: () => { setOpen(false); setSourceOpen(false); } },
+      RNAlert.alert(t('Discard photo changes?'), t('Your product photos have not been changed yet.'), [
+        { text: t('Keep editing'), style: 'cancel' },
+        { text: t('Discard'), style: 'destructive', onPress: () => { setOpen(false); setSourceOpen(false); } },
       ]);
     } else setOpen(false);
   };
@@ -104,7 +106,7 @@ export const ProductPhotos = ({ businessId, productId, images, onChange, onBusyC
       setCropping(false);
       setOpen(true);
     } catch (err) {
-      setError(err?.message ?? 'That photo could not be opened. Please try again.');
+      setError(err?.message ?? t('That photo could not be opened. Please try again.'));
     } finally { setWorking(false); }
   };
   const prepareCrop = async () => {
@@ -115,13 +117,13 @@ export const ProductPhotos = ({ businessId, productId, images, onChange, onBusyC
       const size = current.asset.width && current.asset.height ? {} : await dimensions(current.asset.uri);
       updateCurrent({ asset: { ...current.asset, ...size }, mode: 'cover' });
       setCropping(true);
-    } catch { setError('That photo could not be loaded. Please try again.'); }
+    } catch { setError(t('That photo could not be loaded. Please try again.')); }
     finally { setWorking(false); }
   };
   const remove = () => {
-    RNAlert.alert('Remove this photo?', undefined, [
-      { text: 'Keep', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => {
+    RNAlert.alert(t('Remove this photo?'), undefined, [
+      { text: t('Keep'), style: 'cancel' },
+      { text: t('Remove'), style: 'destructive', onPress: () => {
         setDraft((prev) => prev.filter((_, i) => i !== index));
         setIndex(Math.max(0, Math.min(index, draft.length - 2)));
         setCropping(false);
@@ -168,17 +170,17 @@ export const ProductPhotos = ({ businessId, productId, images, onChange, onBusyC
       onChange(next.map((photo, sortOrder) => ({ ...photo, sortOrder })));
       setOpen(false);
       setSourceOpen(false);
-    } catch (err) { setError(err?.message ?? 'Photos could not be uploaded. Please try again.'); }
+    } catch (err) { setError(err?.message ?? t('Photos could not be uploaded. Please try again.')); }
     finally { setWorking(false); }
   };
 
   const sourceOptions = (
     <>
       <Touchable disabled={busy} onPress={() => add('camera')} style={styles.sourceRow}>
-        <Ionicons name="camera-outline" size={24} color={colors.ink700} /><Body strong>Take a photo</Body>
+        <Ionicons name="camera-outline" size={24} color={colors.ink700} /><Body strong>{t('Take a photo')}</Body>
       </Touchable>
       <Touchable disabled={busy} onPress={() => add('gallery')} style={styles.sourceRow}>
-        <Ionicons name="images-outline" size={24} color={colors.ink700} /><Body strong>Choose from gallery</Body>
+        <Ionicons name="images-outline" size={24} color={colors.ink700} /><Body strong>{t('Choose from gallery')}</Body>
       </Touchable>
     </>
   );
@@ -186,30 +188,30 @@ export const ProductPhotos = ({ businessId, productId, images, onChange, onBusyC
   return (
     <View style={styles.section}>
       {!open ? <Alert message={error} /> : null}
-      <Touchable onPress={start} disabled={busy} accessibilityLabel={hero ? 'Edit product photos' : 'Add product photos'} style={styles.hero}>
+      <Touchable onPress={start} disabled={busy} accessibilityLabel={hero ? t('Edit product photos') : t('Add product photos')} style={styles.hero}>
         {hero ? (
           <>
             <Image source={{ uri: hero }} style={StyleSheet.absoluteFillObject} resizeMode="contain" />
-            <View style={styles.heroLabel}><Body strong style={styles.white}>Edit Photos · {images.length}/12</Body></View>
+            <View style={styles.heroLabel}><Body strong style={styles.white}>{t('Edit Photos · {n}/12', { n: images.length })}</Body></View>
           </>
         ) : (
           <View style={styles.empty}>
             <Ionicons name="camera" size={48} color={colors.ink400} />
-            <Heading style={styles.addTitle}>{busy ? 'Opening photos…' : 'Add Photo'}</Heading>
-            <Body muted>Tap to add product images</Body>
+            <Heading style={styles.addTitle}>{busy ? t('Opening photos…') : t('Add Photo')}</Heading>
+            <Body muted>{t('Tap to add product images')}</Body>
           </View>
         )}
       </Touchable>
-      <Caption style={styles.hint}>Up to 12 photos. The first photo is your store cover.</Caption>
+      <Caption style={styles.hint}>{t('Up to 12 photos. The first photo is your store cover.')}</Caption>
       <Modal visible={open} animationType="slide" onRequestClose={close} statusBarTranslucent>
         <View style={[styles.modal, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
           <Row style={styles.header}>
-            <Touchable onPress={close} disabled={busy} accessibilityLabel="Back to product"><Ionicons name="chevron-back" size={28} color={colors.ink900} /></Touchable>
-            <Heading style={styles.headerTitle}>Add Product Photos</Heading>
+            <Touchable onPress={close} disabled={busy} accessibilityLabel={t('Back to product')}><Ionicons name="chevron-back" size={28} color={colors.ink900} /></Touchable>
+            <Heading style={styles.headerTitle}>{t('Add Product Photos')}</Heading>
             <View style={{ width: 44 }} />
           </Row>
           <ScrollView contentContainerStyle={styles.editor}>
-            <Body strong style={styles.counter}>{draft.length ? `${index + 1}/${draft.length}` : 'No photos selected'}</Body>
+            <Body strong style={styles.counter}>{draft.length ? `${index + 1}/${draft.length}` : t('No photos selected')}</Body>
             {current ? (
               <>
                 <View style={[styles.preview, { width: edge, height: edge }]} {...pan.panHandlers}>
@@ -217,36 +219,36 @@ export const ProductPhotos = ({ businessId, productId, images, onChange, onBusyC
                     <Image source={{ uri: current.asset.uri }} style={{ position: 'absolute', width: current.asset.width * scale, height: current.asset.height * scale, left: -crop.originX * scale, top: -crop.originY * scale }} />
                   ) : <Image source={{ uri: current.asset.uri }} style={StyleSheet.absoluteFillObject} resizeMode={current.mode === 'cover' ? 'cover' : 'contain'} />}
                   {cropping ? <View pointerEvents="none" style={styles.cropFrame} /> : null}
-                  <Touchable disabled={busy} onPress={remove} accessibilityLabel="Remove selected photo" style={styles.remove}><Ionicons name="close" size={22} color="#ffffff" /></Touchable>
-                  {!cropping ? <Touchable disabled={busy} onPress={prepareCrop} style={styles.cropButton}><Ionicons name="crop-outline" size={24} color="#ffffff" /><Body strong style={styles.white}>Crop</Body></Touchable> : null}
+                  <Touchable disabled={busy} onPress={remove} accessibilityLabel={t('Remove selected photo')} style={styles.remove}><Ionicons name="close" size={22} color="#ffffff" /></Touchable>
+                  {!cropping ? <Touchable disabled={busy} onPress={prepareCrop} style={styles.cropButton}><Ionicons name="crop-outline" size={24} color="#ffffff" /><Body strong style={styles.white}>{t('Crop')}</Body></Touchable> : null}
                 </View>
                 {cropping ? (
                   <View style={styles.controls}>
-                    <Caption style={styles.hint}>Drag the photo to position it. Use + and − to zoom.</Caption>
+                    <Caption style={styles.hint}>{t('Drag the photo to position it. Use + and − to zoom.')}</Caption>
                     <Row style={{ justifyContent: 'center' }}>
-                      <Button title="−" accessibilityLabel="Zoom out" variant="secondary" full={false} disabled={busy || current.zoom <= 1} onPress={() => updateCurrent({ zoom: Math.max(1, current.zoom - 0.25) })} />
+                      <Button title="−" accessibilityLabel={t('Zoom out')} variant="secondary" full={false} disabled={busy || current.zoom <= 1} onPress={() => updateCurrent({ zoom: Math.max(1, current.zoom - 0.25) })} />
                       <Caption>{current.zoom.toFixed(2)}×</Caption>
-                      <Button title="+" accessibilityLabel="Zoom in" variant="secondary" full={false} disabled={busy || current.zoom >= 4} onPress={() => updateCurrent({ zoom: Math.min(4, current.zoom + 0.25) })} />
-                      <Button title="Done" full={false} disabled={busy} onPress={() => setCropping(false)} />
+                      <Button title="+" accessibilityLabel={t('Zoom in')} variant="secondary" full={false} disabled={busy || current.zoom >= 4} onPress={() => updateCurrent({ zoom: Math.min(4, current.zoom + 0.25) })} />
+                      <Button title={t('Done')} full={false} disabled={busy} onPress={() => setCropping(false)} />
                     </Row>
                   </View>
                 ) : (
                   <View style={styles.modes}>
-                    {['cover', 'fit'].map((mode) => <Touchable key={mode} disabled={busy} accessibilityLabel={mode === 'cover' ? 'Cover: crop to square' : 'Fit: keep full photo'} accessibilityState={{ selected: current.mode === mode }} onPress={() => mode === 'cover' ? prepareCrop().then(() => setCropping(false)) : updateCurrent({ mode })} style={[styles.mode, current.mode === mode && styles.modeSelected]}><Body strong>{mode === 'cover' ? 'Cover' : 'Fit'}</Body></Touchable>)}
+                    {['cover', 'fit'].map((mode) => <Touchable key={mode} disabled={busy} accessibilityLabel={mode === 'cover' ? t('Cover: crop to square') : t('Fit: keep full photo')} accessibilityState={{ selected: current.mode === mode }} onPress={() => mode === 'cover' ? prepareCrop().then(() => setCropping(false)) : updateCurrent({ mode })} style={[styles.mode, current.mode === mode && styles.modeSelected]}><Body strong>{mode === 'cover' ? t('Cover') : t('Fit')}</Body></Touchable>)}
                   </View>
                 )}
-                <Caption style={styles.hint}>{current.mode === 'fit' ? 'Fit keeps the full photo in its original proportions.' : 'Cover saves the square crop shown above.'}</Caption>
+                <Caption style={styles.hint}>{current.mode === 'fit' ? t('Fit keeps the full photo in its original proportions.') : t('Cover saves the square crop shown above.')}</Caption>
                 <ScrollView horizontal contentContainerStyle={styles.thumbnails} showsHorizontalScrollIndicator={false}>
-                  {draft.map((photo, i) => <Touchable key={`${photo.asset.uri}-${i}`} disabled={busy} onPress={() => { setIndex(i); setCropping(false); }} accessibilityLabel={`View photo ${i + 1}`} accessibilityState={{ selected: i === index }} style={[styles.thumbnail, i === index && styles.selectedThumbnail]}><Image source={{ uri: photo.asset.uri }} style={styles.thumbnailImage} /><Caption style={styles.thumbnailNumber}>{i + 1}</Caption></Touchable>)}
+                  {draft.map((photo, i) => <Touchable key={`${photo.asset.uri}-${i}`} disabled={busy} onPress={() => { setIndex(i); setCropping(false); }} accessibilityLabel={t('View photo {n}', { n: i + 1 })} accessibilityState={{ selected: i === index }} style={[styles.thumbnail, i === index && styles.selectedThumbnail]}><Image source={{ uri: photo.asset.uri }} style={styles.thumbnailImage} /><Caption style={styles.thumbnailNumber}>{i + 1}</Caption></Touchable>)}
                 </ScrollView>
               </>
-            ) : <View style={styles.noPhotos}><Ionicons name="camera-outline" size={48} color={colors.ink400} /><Body muted>Add photos or tap Next to remove all photos.</Body></View>}
+            ) : <View style={styles.noPhotos}><Ionicons name="camera-outline" size={48} color={colors.ink400} /><Body muted>{t('Add photos or tap Next to remove all photos.')}</Body></View>}
             <Alert message={error} />
-            {sourceOpen ? <View style={styles.controls}>{sourceOptions}<Button title="Cancel" variant="ghost" disabled={busy} onPress={() => setSourceOpen(false)} /></View> : null}
+            {sourceOpen ? <View style={styles.controls}>{sourceOptions}<Button title={t('Cancel')} variant="ghost" disabled={busy} onPress={() => setSourceOpen(false)} /></View> : null}
           </ScrollView>
           <Row style={styles.footer}>
-            <Button title="Add More" icon="camera-outline" variant="secondary" disabled={busy || draft.length >= 12} style={{ flex: 1 }} onPress={() => setSourceOpen(true)} />
-            <Button title="Next" loading={busy} style={{ flex: 1 }} onPress={save} />
+            <Button title={t('Add More')} icon="camera-outline" variant="secondary" disabled={busy || draft.length >= 12} style={{ flex: 1 }} onPress={() => setSourceOpen(true)} />
+            <Button title={t('Next')} loading={busy} style={{ flex: 1 }} onPress={save} />
           </Row>
         </View>
       </Modal>
@@ -254,7 +256,7 @@ export const ProductPhotos = ({ businessId, productId, images, onChange, onBusyC
         const resolve = sourceDismissed.current;
         sourceDismissed.current = null;
         resolve?.();
-      }} title="Add a photo">{sourceOptions}</Sheet>
+      }} title={t('Add a photo')}>{sourceOptions}</Sheet>
     </View>
   );
 };

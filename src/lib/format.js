@@ -1,7 +1,10 @@
-import { formatMoney, relativeTime, formatDate } from '@storekit/shared';
+import { formatMoney, formatDate as baseFormatDate } from '@storekit/shared';
+import { intlLocale, tr } from './i18n.js';
 
-/** Re-exported so screens import their formatting from one place. */
-export { formatMoney, relativeTime, formatDate };
+export { formatMoney };
+
+/** Dates in the app language. The locale argument is ignored: the app language decides. */
+export const formatDate = (iso, _locale, opts) => baseFormatDate(iso, intlLocale(), opts);
 
 /** Compact money for dense rows: ₹1.2L rather than ₹1,20,000. */
 export const compactMoney = (paise) => {
@@ -36,12 +39,18 @@ export const pluralize = (count, singular, plural) => `${count} ${count === 1 ? 
 export const shortAgo = (iso, now = Date.now()) => {
   if (!iso) return '';
   const minutes = Math.floor((now - new Date(iso).getTime()) / 60_000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes} min ago`;
+  if (minutes < 1) return tr('just now');
+  if (minutes < 60) return tr('{n} min ago', { n: minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hr ago`;
+  if (hours < 24) return tr('{n} hr ago', { n: hours });
   const days = Math.floor(hours / 24);
-  if (days === 1) return 'yesterday';
-  if (days < 7) return `${days} days ago`;
+  if (days === 1) return tr('yesterday');
+  if (days < 7) return tr('{n} days ago', { n: days });
   return formatDate(iso, undefined, { day: 'numeric', month: 'short' });
 };
+
+/**
+ * Past times in sentences ("Placed 3 hr ago"). Hermes has no Intl.RelativeTimeFormat, so this
+ * is the same translated scale as shortAgo rather than the shared English-only helper.
+ */
+export const relativeTime = shortAgo;

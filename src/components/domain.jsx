@@ -6,15 +6,19 @@ import {
 import { Body, Caption, Pill, Row, Touchable } from './ui.jsx';
 import { colors, fonts, radius, space, type } from '../theme.js';
 import { formatMoney, formatDate, initials, shortAgo } from '../lib/format.js';
+import { msg } from '../lib/i18n.js';
+import { useT } from '../state/locale.jsx';
 
 /** Shared pieces that know about the domain: orders, products, customers. */
 
-export const StatusPill = ({ status }) => (
-  <Pill label={ORDER_STATUS_LABELS[status] ?? status} tone={ORDER_STATUS_TONE[status] ?? 'slate'} />
-);
+export const StatusPill = ({ status }) => {
+  const t = useT();
+  return <Pill label={t(ORDER_STATUS_LABELS[status] ?? status)} tone={ORDER_STATUS_TONE[status] ?? 'slate'} />;
+};
 
 export const PaymentPill = ({ paymentStatus, paymentMethod }) => {
-  if (paymentStatus === 'NOT_REQUIRED') return <Pill label={PAYMENT_METHOD_LABELS[paymentMethod] ?? 'COD'} tone="slate" />;
+  const t = useT();
+  if (paymentStatus === 'NOT_REQUIRED') return <Pill label={t(PAYMENT_METHOD_LABELS[paymentMethod] ?? 'COD')} tone="slate" />;
 
   const tone = {
     PENDING_SUBMISSION: 'amber',
@@ -24,7 +28,7 @@ export const PaymentPill = ({ paymentStatus, paymentMethod }) => {
     EXPIRED: 'slate',
   }[paymentStatus] ?? 'slate';
 
-  return <Pill label={PAYMENT_STATUS_LABELS[paymentStatus] ?? paymentStatus} tone={tone} />;
+  return <Pill label={t(PAYMENT_STATUS_LABELS[paymentStatus] ?? paymentStatus)} tone={tone} />;
 };
 
 /**
@@ -46,19 +50,21 @@ export const Thumb = ({ uri, label, size = 52, icon = 'cube-outline' }) => {
   );
 };
 
-export const OrderRow = ({ order, onPress }) => (
-  <Touchable onPress={onPress} style={styles.row} accessibilityLabel={`Order ${order.orderNumber}`}>
+export const OrderRow = ({ order, onPress }) => {
+  const t = useT();
+  return (
+  <Touchable onPress={onPress} style={styles.row} accessibilityLabel={t('Order {number}', { number: order.orderNumber })}>
     <Thumb uri={order.thumbUrl} icon="receipt-outline" />
     <View style={styles.rowBody}>
       {/* The name gets the row's full width (two lines): beside the total, a long name broke mid-word on a narrow
           phone with large text. The total leads the reference line instead; the item count follows it. */}
-      <Body strong numberOfLines={2}>{order.customerName ?? order.customer?.name ?? 'Guest'}</Body>
+      <Body strong numberOfLines={2}>{order.customerName ?? order.customer?.name ?? t('Guest')}</Body>
       {/* The order number has its own line (sellers search by it, so it must never truncate); the total shares the
           short items-and-age line. */}
       <Caption numberOfLines={1}>{order.orderNumber}</Caption>
       <Row style={{ justifyContent: 'space-between' }} gap={space.sm}>
         <Caption numberOfLines={1} style={{ flex: 1 }}>
-          {order.itemCount ? `${order.itemCount} item${order.itemCount === 1 ? '' : 's'} · ` : ''}{shortAgo(order.createdAt)}
+          {order.itemCount ? `${t(order.itemCount === 1 ? '{n} item' : '{n} items', { n: order.itemCount })} · ` : ''}{shortAgo(order.createdAt)}
         </Caption>
         <Body style={styles.money}>{formatMoney(order.total)}</Body>
       </Row>
@@ -67,21 +73,23 @@ export const OrderRow = ({ order, onPress }) => (
         {order.paymentStatus === 'PENDING_VERIFICATION' && order.status === 'PENDING_PAYMENT'
           ? null
           : <StatusPill status={order.status} />}
-        {order.paymentStatus === 'PENDING_VERIFICATION' ? <Pill label="Verify payment" tone="amber" /> : null}
-        {order.duplicateUtr ? <Pill label="Duplicate reference" tone="red" /> : null}
+        {order.paymentStatus === 'PENDING_VERIFICATION' ? <Pill label={t('Verify payment')} tone="amber" /> : null}
+        {order.duplicateUtr ? <Pill label={t('Duplicate reference')} tone="red" /> : null}
       </Row>
     </View>
     <Ionicons name="chevron-forward" size={18} color={colors.ink400} />
   </Touchable>
-);
+  );
+};
 
 export const ProductRow = ({ product, onPress }) => {
+  const t = useT();
   const stockDot = { in_stock: colors.success, low_stock: colors.warning, out_of_stock: colors.danger }[product.stockLabel] ?? colors.ink400;
   const stockText = {
-    in_stock: `${product.stock} in stock`,
-    low_stock: `Only ${product.stock} left`,
-    out_of_stock: 'Out of stock',
-  }[product.stockLabel] ?? `${product.stock} in stock`;
+    in_stock: t('{n} in stock', { n: product.stock }),
+    low_stock: t('Only {n} left', { n: product.stock }),
+    out_of_stock: t('Out of stock'),
+  }[product.stockLabel] ?? t('{n} in stock', { n: product.stock });
   const off = product.mrp > product.price ? Math.round((1 - product.price / product.mrp) * 100) : 0;
 
   return (
@@ -99,7 +107,7 @@ export const ProductRow = ({ product, onPress }) => {
         <Row gap={space.sm}>
           <Body style={styles.money}>{formatMoney(product.price)}</Body>
           {off > 0 ? <Caption style={styles.strike}>{formatMoney(product.mrp)}</Caption> : null}
-          {off > 0 ? <Caption style={styles.off}>{off}% off</Caption> : null}
+          {off > 0 ? <Caption style={styles.off}>{t('{n}% off', { n: off })}</Caption> : null}
         </Row>
         <Row gap={6} style={styles.rowPills}>
           {product.trackInventory ? (
@@ -108,9 +116,9 @@ export const ProductRow = ({ product, onPress }) => {
               <Caption style={{ color: stockDot === colors.ink400 ? colors.ink500 : stockDot }}>{stockText}</Caption>
             </>
           ) : (
-            <Caption>Made to order</Caption>
+            <Caption>{t('Made to order')}</Caption>
           )}
-          {!product.active ? <Pill label="Hidden" tone="slate" style={{ marginLeft: space.xs }} /> : null}
+          {!product.active ? <Pill label={t('Hidden')} tone="slate" style={{ marginLeft: space.xs }} /> : null}
         </Row>
       </View>
       <Ionicons name="chevron-forward" size={18} color={colors.ink400} />
@@ -118,12 +126,14 @@ export const ProductRow = ({ product, onPress }) => {
   );
 };
 
-export const CustomerRow = ({ customer, onPress }) => (
+export const CustomerRow = ({ customer, onPress }) => {
+  const t = useT();
+  return (
   <Touchable onPress={onPress} style={styles.row} accessibilityLabel={customer.name ?? customer.mobile}>
     <Thumb label={customer.name ?? '?'} size={44} />
     <View style={styles.rowBody}>
       {/* As in OrderRow: the name takes the full width, the spend sits on the detail line. */}
-      <Body strong numberOfLines={2}>{customer.name ?? 'Guest'}</Body>
+      <Body strong numberOfLines={2}>{customer.name ?? t('Guest')}</Body>
       <Row style={{ justifyContent: 'space-between' }} gap={space.sm}>
         <Caption numberOfLines={1} style={{ flex: 1 }}>
           {customer.mobile ?? '—'}
@@ -133,17 +143,20 @@ export const CustomerRow = ({ customer, onPress }) => (
         <Body style={styles.money}>{formatMoney(customer.totalSpend)}</Body>
       </Row>
       <Row gap={space.sm} style={styles.rowPills}>
-        <Pill label={`${customer.orderCount} order${customer.orderCount === 1 ? '' : 's'}`} tone="slate" />
-        {customer.blocked ? <Pill label="Blocked" tone="red" /> : null}
-        {customer.cancelledCount > 1 ? <Pill label={`${customer.cancelledCount} cancelled`} tone="amber" /> : null}
+        <Pill label={t(customer.orderCount === 1 ? '{n} order' : '{n} orders', { n: customer.orderCount })} tone="slate" />
+        {customer.blocked ? <Pill label={t('Blocked')} tone="red" /> : null}
+        {customer.cancelledCount > 1 ? <Pill label={t('{n} cancelled', { n: customer.cancelledCount })} tone="amber" /> : null}
       </Row>
     </View>
     <Ionicons name="chevron-forward" size={18} color={colors.ink400} />
   </Touchable>
-);
+  );
+};
 
 /** A labelled figure. `delta` is a signed percentage against the comparison period. */
-export const Stat = ({ label, value, delta, style }) => (
+export const Stat = ({ label, value, delta, style }) => {
+  const t = useT();
+  return (
   <View style={[styles.stat, style]}>
     <Caption>{label}</Caption>
     <Body style={styles.statValue}>{value}</Body>
@@ -155,14 +168,15 @@ export const Stat = ({ label, value, delta, style }) => (
           color={delta > 0 ? colors.success : colors.danger}
         />
         <Caption style={{ color: delta > 0 ? colors.success : colors.danger }}>
-          {Math.abs(delta)}% vs yesterday
+          {t('{n}% vs yesterday', { n: Math.abs(delta) })}
         </Caption>
       </Row>
     ) : (
       <Caption>—</Caption>
     )}
   </View>
-);
+  );
+};
 
 export const SectionHeader = ({ title, action, onAction }) => (
   <Row style={styles.sectionHeader}>
@@ -188,11 +202,11 @@ export const SectionHeader = ({ title, action, onAction }) => (
  * that skipped a step still reads as continuous.
  */
 const ORDER_SPINE = [
-  { key: 'placed', label: 'Order placed', matches: ['NEW', 'PENDING_PAYMENT'] },
-  { key: 'confirmed', label: 'Confirmed', matches: ['PAYMENT_VERIFIED', 'CONFIRMED'] },
-  { key: 'preparing', label: 'Preparing', matches: ['PREPARING', 'READY_TO_SHIP'] },
-  { key: 'shipped', label: 'On its way', matches: ['SHIPPED'] },
-  { key: 'delivered', label: 'Delivered', matches: ['DELIVERED'] },
+  { key: 'placed', label: msg('Order placed'), matches: ['NEW', 'PENDING_PAYMENT'] },
+  { key: 'confirmed', label: msg('Confirmed'), matches: ['PAYMENT_VERIFIED', 'CONFIRMED'] },
+  { key: 'preparing', label: msg('Preparing'), matches: ['PREPARING', 'READY_TO_SHIP'] },
+  { key: 'shipped', label: msg('On its way'), matches: ['SHIPPED'] },
+  { key: 'delivered', label: msg('Delivered'), matches: ['DELIVERED'] },
 ];
 
 const SPINE_INDEX = ORDER_SPINE.reduce((acc, step, i) => {
@@ -224,7 +238,7 @@ export const OrderTimeline = ({ order }) => {
     const at = timeFor([order.status]);
     rows.push({
       key: 'terminal',
-      label: order.status === 'CANCELLED' ? 'Cancelled' : 'Payment rejected',
+      label: order.status === 'CANCELLED' ? msg('Cancelled') : msg('Payment rejected'),
       at,
       state: 'cancelled',
     });
@@ -240,6 +254,7 @@ export const OrderTimeline = ({ order }) => {
 };
 
 const TimelineStep = ({ row, last }) => {
+  const t = useT();
   const done = row.state === 'done';
   const active = row.state === 'active';
   const cancelled = row.state === 'cancelled';
@@ -258,8 +273,8 @@ const TimelineStep = ({ row, last }) => {
         {!last ? <View style={[styles.tlRail, { backgroundColor: railColor }]} /> : null}
       </View>
       <View style={[styles.tlBody, last && { paddingBottom: 0 }]}>
-        <Body strong style={[styles.tlLabel, !done && !active && !cancelled && styles.tlLabelMuted]}>{row.label}</Body>
-        {row.at ? <Caption>{formatDate(row.at)}</Caption> : active ? <Caption style={{ color: colors.accent700 }}>In progress</Caption> : null}
+        <Body strong style={[styles.tlLabel, !done && !active && !cancelled && styles.tlLabelMuted]}>{t(row.label)}</Body>
+        {row.at ? <Caption>{formatDate(row.at)}</Caption> : active ? <Caption style={{ color: colors.accent700 }}>{t('In progress')}</Caption> : null}
       </View>
     </Row>
   );

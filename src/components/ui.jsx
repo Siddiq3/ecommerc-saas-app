@@ -6,6 +6,7 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import { Collapsible, FadeIn, Press } from './motion.jsx';
 import { colors, fonts, motion, radius, shadow, space, tones, type, MIN_TAP } from '../theme.js';
+import { useT } from '../state/locale.jsx';
 
 /**
  * The app's UI primitives.
@@ -277,6 +278,7 @@ export const Field = forwardRef(function Field(
  */
 export const PasswordField = forwardRef(function PasswordField(props, ref) {
   const [visible, setVisible] = useState(false);
+  const t = useT();
   return (
     <Field
       ref={ref}
@@ -290,7 +292,7 @@ export const PasswordField = forwardRef(function PasswordField(props, ref) {
           haptics={null}
           scaleTo={1}
           hitSlop={10}
-          accessibilityLabel={visible ? 'Hide password' : 'Show password'}
+          accessibilityLabel={visible ? t('Hide password') : t('Show password')}
         >
           <Ionicons name={visible ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.ink500} />
         </Touchable>
@@ -303,23 +305,26 @@ export const PasswordField = forwardRef(function PasswordField(props, ref) {
  * A field that opens a picker (a sheet) instead of taking typing: the same label, box and
  * error as Field, with a chevron, so a form reads as one set of inputs.
  */
-export const SelectField = ({ label, value, placeholder = 'Select', onPress, error, containerStyle }) => (
+export const SelectField = ({ label, value, placeholder = 'Select', onPress, error, containerStyle }) => {
+  const t = useT();
+  return (
   <View style={[styles.fieldGroup, containerStyle]}>
     {label ? <Label style={styles.fieldLabel}>{label}</Label> : null}
     <Touchable
       onPress={onPress}
       scaleTo={1}
-      accessibilityLabel={`${label}: ${value || 'not selected'}. Tap to choose.`}
+      accessibilityLabel={t('{label}: {value}. Tap to choose.', { label, value: value || t('not selected') })}
       style={[styles.fieldBox, error && styles.selectError]}
     >
       <Text style={[styles.input, styles.selectValue, !value && styles.selectPlaceholder]} numberOfLines={1}>
-        {value || placeholder}
+        {value || t(placeholder)}
       </Text>
       <Ionicons name="chevron-down" size={18} color={colors.ink500} />
     </Touchable>
     {error ? <Text style={styles.fieldError}>{error}</Text> : null}
   </View>
-);
+  );
+};
 
 /** A labelled on/off row. Uses a pill rather than Switch so it matches the card styling. */
 export const Toggle = ({ label, hint, value, onChange, disabled }) => {
@@ -426,15 +431,18 @@ export const EmptyState = ({ title, message, action, icon, tint = colors.accent5
 /** No response at all (offline, or a timeout), as opposed to the API answering with an error. */
 const isConnectionError = (error) => error?.status === 0 || error?.code === 'NETWORK' || error?.code === 'TIMEOUT';
 
-export const ErrorState = ({ error, onRetry }) => (
-  <EmptyState
-    icon={isConnectionError(error) ? '📶' : '⚠'}
-    tint={colors.dangerTint}
-    title={isConnectionError(error) ? 'No internet connection' : 'Could not load this'}
-    message={error?.message ?? 'Something went wrong. Please try again.'}
-    action={onRetry ? <Button title="Try again" variant="secondary" onPress={onRetry} /> : null}
-  />
-);
+export const ErrorState = ({ error, onRetry }) => {
+  const t = useT();
+  return (
+    <EmptyState
+      icon={isConnectionError(error) ? '📶' : '⚠'}
+      tint={colors.dangerTint}
+      title={isConnectionError(error) ? t('No internet connection') : t('Could not load this')}
+      message={error?.message ?? t('Something went wrong. Please try again.')}
+      action={onRetry ? <Button title={t('Try again')} variant="secondary" onPress={onRetry} /> : null}
+    />
+  );
+};
 
 /** Inline error above a form's submit button. */
 export const Alert = ({ message, tone = 'danger' }) => {

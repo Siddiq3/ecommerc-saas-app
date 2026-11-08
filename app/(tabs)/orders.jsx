@@ -10,6 +10,8 @@ import { OrderRow } from '../../src/components/domain.jsx';
 import { SkeletonList } from '../../src/components/Skeleton.jsx';
 import { FilterChips, SearchBar } from '../../src/components/Filters.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
+import { useT } from '../../src/state/locale.jsx';
+import { msg } from '../../src/lib/i18n.js';
 import { usePaginated } from '../../src/lib/usePaginated.js';
 import { useRefreshOnFocus } from '../../src/lib/useAsync.js';
 import { orders as ordersApi } from '../../src/api/endpoints.js';
@@ -24,15 +26,15 @@ import { colors, space } from '../../src/theme.js';
  */
 
 const STATUS_FILTERS = [
-  { value: 'all', label: 'All' },
-  { value: 'NEW', label: 'New' },
-  { value: 'PENDING_PAYMENT', label: 'Awaiting payment' },
-  { value: 'CONFIRMED', label: 'Confirmed' },
-  { value: 'PREPARING', label: 'Preparing' },
-  { value: 'READY_TO_SHIP', label: 'Ready to ship' },
-  { value: 'SHIPPED', label: 'Shipped' },
-  { value: 'DELIVERED', label: 'Delivered' },
-  { value: 'CANCELLED', label: 'Cancelled' },
+  { value: 'all', label: msg('All') },
+  { value: 'NEW', label: msg('New') },
+  { value: 'PENDING_PAYMENT', label: msg('Awaiting payment') },
+  { value: 'CONFIRMED', label: msg('Confirmed') },
+  { value: 'PREPARING', label: msg('Preparing') },
+  { value: 'READY_TO_SHIP', label: msg('Ready to ship') },
+  { value: 'SHIPPED', label: msg('Shipped') },
+  { value: 'DELIVERED', label: msg('Delivered') },
+  { value: 'CANCELLED', label: msg('Cancelled') },
 ];
 
 export default function Orders() {
@@ -40,6 +42,7 @@ export default function Orders() {
   const insets = useSafeAreaInsets();
   const { businessId } = useAuth();
   const params = useLocalSearchParams();
+  const t = useT();
 
   const [status, setStatus] = useState(String(params.status ?? 'all'));
   const [paymentStatus, setPaymentStatus] = useState(String(params.paymentStatus ?? 'all'));
@@ -91,17 +94,17 @@ export default function Orders() {
   const header = (
     <View style={styles.header}>
       <Row style={[styles.title, { justifyContent: 'space-between' }]}>
-        <Display style={styles.titleText}>Orders</Display>
+        <Display style={styles.titleText}>{t('Orders')}</Display>
         <HelpButton context="orders" />
       </Row>
-      <SearchBar value={search} onChange={setSearch} error={searchError} placeholder="Order, name, mobile" />
+      <SearchBar value={search} onChange={setSearch} error={searchError} placeholder={msg('Order, name, mobile')} />
       <FilterChips options={STATUS_FILTERS} value={status} onChange={setStatus} />
       {paymentStatus !== 'all' ? (
         <FilterChips
           options={[
-            { value: 'all', label: 'Any payment' },
-            { value: 'PENDING_VERIFICATION', label: 'To verify' },
-            { value: 'VERIFIED', label: 'Verified' },
+            { value: 'all', label: msg('Any payment') },
+            { value: 'PENDING_VERIFICATION', label: msg('To verify') },
+            { value: 'VERIFIED', label: msg('Verified') },
           ]}
           value={paymentStatus}
           onChange={setPaymentStatus}
@@ -147,13 +150,13 @@ export default function Orders() {
             <EmptyState
               icon={verifying ? '✅' : '🧾'}
               tint={filtered && !verifying ? colors.sunken : colors.accent50}
-              title={verifying ? 'No payments to verify' : filtered ? 'Nothing matches' : 'No orders yet'}
+              title={verifying ? t('No payments to verify') : filtered ? t('Nothing matches') : t('No orders yet')}
               message={
                 verifying
-                  ? 'When a customer sends a UPI reference, the order shows up here for you to check.'
+                  ? t('When a customer sends a UPI reference, the order shows up here for you to check.')
                   : filtered
-                    ? 'Try a different filter or search term.'
-                    : 'Orders placed on your store will appear here as they come in. Share your store link to get your first one.'
+                    ? t('Try a different filter or search term.')
+                    : t('Orders placed on your store will appear here as they come in. Share your store link to get your first one.')
               }
             />
           )

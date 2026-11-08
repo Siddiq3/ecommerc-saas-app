@@ -15,6 +15,7 @@ import {
 import { AuthProvider, useAuth } from '../src/state/auth.jsx';
 import { OnboardingProvider } from '../src/state/onboarding.jsx';
 import { PlanProvider, usePlan } from '../src/state/plan.jsx';
+import { LocaleProvider, useT } from '../src/state/locale.jsx';
 import { ToastProvider } from '../src/components/Toast.jsx';
 import { PlanLock } from '../src/components/PlanLock.jsx';
 import { colors, type } from '../src/theme.js';
@@ -77,6 +78,7 @@ const Boot = () => (
 
 const Navigation = () => {
   const { isLoading } = useAuth();
+  const t = useT();
 
   return (
     <>
@@ -88,7 +90,7 @@ const Navigation = () => {
           headerShadowVisible: false,
           headerTintColor: colors.ink900,
           headerTitleStyle: { ...type.heading, color: colors.ink900 },
-          headerBackTitle: 'Back',
+          headerBackTitle: t('Back'),
           contentStyle: { backgroundColor: colors.canvas },
           animation: 'slide_from_right',
         }}
@@ -98,27 +100,28 @@ const Navigation = () => {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
 
-        <Stack.Screen name="orders/[orderId]" options={{ title: 'Order' }} />
-        <Stack.Screen name="products/[productId]" options={{ title: 'Product' }} />
-        <Stack.Screen name="products/new" options={{ title: 'New product', presentation: 'modal' }} />
-        <Stack.Screen name="customers/[customerId]" options={{ title: 'Customer' }} />
-        <Stack.Screen name="instagram/new" options={{ title: 'New automation', presentation: 'modal' }} />
-        <Stack.Screen name="instagram/[ruleId]" options={{ title: 'Automation' }} />
-        <Stack.Screen name="categories/index" options={{ title: 'Categories' }} />
-        <Stack.Screen name="coupons/index" options={{ title: 'Coupons' }} />
-        <Stack.Screen name="analytics" options={{ title: 'Analytics' }} />
-        <Stack.Screen name="notifications" options={{ title: 'Activity' }} />
-        <Stack.Screen name="help" options={{ title: 'Help' }} />
-        <Stack.Screen name="settings/store" options={{ title: 'Store details & payments' }} />
-        <Stack.Screen name="settings/storefront" options={{ title: 'Storefront' }} />
-        <Stack.Screen name="settings/delivery" options={{ title: 'Delivery' }} />
-        <Stack.Screen name="settings/policies/index" options={{ title: 'Policies' }} />
-        <Stack.Screen name="settings/policies/[type]" options={{ title: 'Policy' }} />
-        <Stack.Screen name="settings/profile" options={{ title: 'Profile' }} />
-        <Stack.Screen name="settings/security" options={{ title: 'Password and devices' }} />
-        <Stack.Screen name="settings/subscription" options={{ title: 'Subscription' }} />
-        <Stack.Screen name="settings/domain" options={{ title: 'Custom domain' }} />
-        <Stack.Screen name="settings/delete-account" options={{ title: 'Delete account' }} />
+        <Stack.Screen name="orders/[orderId]" options={{ title: t('Order') }} />
+        <Stack.Screen name="products/[productId]" options={{ title: t('Product') }} />
+        <Stack.Screen name="products/new" options={{ title: t('New product'), presentation: 'modal' }} />
+        <Stack.Screen name="customers/[customerId]" options={{ title: t('Customer') }} />
+        <Stack.Screen name="instagram/new" options={{ title: t('New automation'), presentation: 'modal' }} />
+        <Stack.Screen name="instagram/[ruleId]" options={{ title: t('Automation') }} />
+        <Stack.Screen name="categories/index" options={{ title: t('Categories') }} />
+        <Stack.Screen name="coupons/index" options={{ title: t('Coupons') }} />
+        <Stack.Screen name="analytics" options={{ title: t('Analytics') }} />
+        <Stack.Screen name="notifications" options={{ title: t('Activity') }} />
+        <Stack.Screen name="help" options={{ title: t('Help') }} />
+        <Stack.Screen name="settings/store" options={{ title: t('Store details & payments') }} />
+        <Stack.Screen name="settings/storefront" options={{ title: t('Storefront') }} />
+        <Stack.Screen name="settings/delivery" options={{ title: t('Delivery') }} />
+        <Stack.Screen name="settings/policies/index" options={{ title: t('Policies') }} />
+        <Stack.Screen name="settings/policies/[type]" options={{ title: t('Policy') }} />
+        <Stack.Screen name="settings/profile" options={{ title: t('Profile') }} />
+        <Stack.Screen name="settings/security" options={{ title: t('Password and devices') }} />
+        <Stack.Screen name="settings/subscription" options={{ title: t('Subscription') }} />
+        <Stack.Screen name="settings/domain" options={{ title: t('Custom domain') }} />
+        <Stack.Screen name="settings/delete-account" options={{ title: t('Delete account') }} />
+        <Stack.Screen name="settings/language" options={{ title: t('Language') }} />
       </Stack>
       {/* Over every screen once the plan lapses, except account deletion: see PlanLock. */}
       <PlanLock />
@@ -171,6 +174,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <StatusBar style="dark" />
+      <LocaleProvider>
       <AuthProvider>
         <PlanProvider>
           <ToastProvider>
@@ -182,6 +186,7 @@ export default function RootLayout() {
           </ToastProvider>
         </PlanProvider>
       </AuthProvider>
+      </LocaleProvider>
     </SafeAreaProvider>
   );
 }

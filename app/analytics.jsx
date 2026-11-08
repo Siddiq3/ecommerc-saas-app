@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { formatDate, formatMoney } from '@storekit/shared';
+import { formatMoney } from '@storekit/shared';
+import { formatDate } from '../src/lib/format.js';
 import { Screen } from '../src/components/Screen.jsx';
 import {
   Alert, Body, Caption, Card, Divider, ErrorState, Figure, Heading, Row, Touchable,

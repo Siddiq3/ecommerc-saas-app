@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Body, Caption, Field, Touchable } from './ui.jsx';
 import { colors, radius, space, type } from '../theme.js';
+import { useT } from '../state/locale.jsx';
 
 /**
  * A horizontal row of single-select chips.
@@ -25,6 +26,7 @@ const TONE_DOT = {
 export const FilterChips = ({ options, value, onChange, style }) => {
   const [size, setSize] = useState({ view: 0, content: 0, x: 0 });
   const more = size.content - size.view - size.x > 8;
+  const t = useT();
   return (
   <View style={[styles.scroll, style]}>
   <ScrollView
@@ -44,12 +46,12 @@ export const FilterChips = ({ options, value, onChange, style }) => {
           key={option.value}
           onPress={() => onChange(option.value)}
           haptics="select"
-          accessibilityLabel={option.label}
+          accessibilityLabel={t(option.label)}
           accessibilityState={{ selected: active }}
           style={[styles.chip, active && styles.chipActive]}
         >
           {dot ? <View style={[styles.dot, { backgroundColor: dot }]} /> : null}
-          <Body style={[styles.chipText, active && styles.chipTextActive]}>{option.label}</Body>
+          <Body style={[styles.chipText, active && styles.chipTextActive]}>{t(option.label)}</Body>
           {option.count != null ? (
             <View style={[styles.counter, active && styles.counterActive]}>
               <Caption style={[styles.counterText, active && styles.counterTextActive]}>{option.count}</Caption>
@@ -69,12 +71,14 @@ export const FilterChips = ({ options, value, onChange, style }) => {
   );
 };
 
-export const SearchBar = ({ value, onChange, placeholder = 'Search', error }) => (
+export const SearchBar = ({ value, onChange, placeholder = 'Search', error }) => {
+  const t = useT();
+  return (
   <View style={styles.search}>
     <Field
       value={value}
       onChangeText={onChange}
-      placeholder={placeholder}
+      placeholder={t(placeholder)}
       autoCapitalize="none"
       autoCorrect={false}
       returnKeyType="search"
@@ -86,14 +90,15 @@ export const SearchBar = ({ value, onChange, placeholder = 'Search', error }) =>
       prefix={<Ionicons name="search" size={17} color={colors.ink400} />}
       right={
         value ? (
-          <Touchable onPress={() => onChange('')} accessibilityLabel="Clear search">
+          <Touchable onPress={() => onChange('')} accessibilityLabel={t('Clear search')}>
             <Ionicons name="close-circle" size={18} color={colors.ink400} />
           </Touchable>
         ) : null
       }
     />
   </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   scroll: { flexGrow: 0, marginHorizontal: -space.lg },

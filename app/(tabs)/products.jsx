@@ -10,6 +10,8 @@ import { ProductRow } from '../../src/components/domain.jsx';
 import { FilterChips, SearchBar } from '../../src/components/Filters.jsx';
 import { SkeletonList } from '../../src/components/Skeleton.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
+import { useT } from '../../src/state/locale.jsx';
+import { msg } from '../../src/lib/i18n.js';
 import { usePaginated } from '../../src/lib/usePaginated.js';
 import { useRefreshOnFocus } from '../../src/lib/useAsync.js';
 import { products as productsApi } from '../../src/api/endpoints.js';
@@ -26,11 +28,11 @@ import { colors, radius, space } from '../../src/theme.js';
  */
 
 const FILTERS = [
-  { value: 'all', label: 'All' },
-  { value: 'in', label: 'In stock', tone: 'success' },
-  { value: 'low', label: 'Low', tone: 'warning' },
-  { value: 'out', label: 'Out', tone: 'danger' },
-  { value: 'hidden', label: 'Hidden' },
+  { value: 'all', label: msg('All') },
+  { value: 'in', label: msg('In stock'), tone: 'success' },
+  { value: 'low', label: msg('Low'), tone: 'warning' },
+  { value: 'out', label: msg('Out'), tone: 'danger' },
+  { value: 'hidden', label: msg('Hidden') },
 ];
 
 /** Maps the single filter selection onto the two query params the API expects. */
@@ -42,6 +44,7 @@ export default function Products() {
   const insets = useSafeAreaInsets();
   const { businessId } = useAuth();
   const params = useLocalSearchParams();
+  const t = useT();
 
   const [filter, setFilter] = useState(String(params.stock ?? 'all'));
   const [search, setSearch] = useState('');
@@ -86,19 +89,19 @@ export default function Products() {
   const header = (
     <View style={styles.header}>
       <Row style={{ justifyContent: 'space-between' }}>
-        <Display style={styles.title}>Products</Display>
+        <Display style={styles.title}>{t('Products')}</Display>
         <Row gap={space.sm} style={{ marginBottom: space.md }}>
           <Touchable
             onPress={() => router.push('/categories')}
-            accessibilityLabel="Categories"
+            accessibilityLabel={t('Categories')}
             style={styles.iconButton}
           >
             <Ionicons name="folder-outline" size={18} color={colors.ink700} />
-            <Body style={styles.iconButtonText}>Categories</Body>
+            <Body style={styles.iconButtonText}>{t('Categories')}</Body>
           </Touchable>
         </Row>
       </Row>
-      <SearchBar value={search} onChange={setSearch} error={searchError} placeholder="Search products" />
+      <SearchBar value={search} onChange={setSearch} error={searchError} placeholder={msg('Search products')} />
       <FilterChips options={FILTERS} value={filter} onChange={setFilter} />
     </View>
   );
@@ -108,7 +111,7 @@ export default function Products() {
     <ListScreen
       footer={(
         <Button
-          title="Add product"
+          title={t('Add product')}
           icon={<Ionicons name="add" size={20} color="#ffffff" />}
           onPress={() => router.push('/products/new')}
         />
@@ -140,15 +143,15 @@ export default function Products() {
             <EmptyState
               icon={filtered ? '🔍' : '🏷️'}
               tint={filtered ? colors.sunken : colors.accent50}
-              title={filtered ? 'Nothing matches' : 'Your catalogue is empty'}
+              title={filtered ? t('Nothing matches') : t('Your catalogue is empty')}
               message={
                 filtered
-                  ? 'Try a different filter or search term.'
-                  : 'Add your first product and your store is ready to take orders.'
+                  ? t('Try a different filter or search term.')
+                  : t('Add your first product and your store is ready to take orders.')
               }
               action={
                 filtered ? null : (
-                  <Button title="Add your first product" onPress={() => router.push('/products/new')} />
+                  <Button title={t('Add your first product')} onPress={() => router.push('/products/new')} />
                 )
               }
             />

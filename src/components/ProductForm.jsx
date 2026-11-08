@@ -12,6 +12,7 @@ import { FadeIn } from './motion.jsx';
 import { ProductPhotos } from './ProductPhotos.jsx';
 import { check, mergeErrors } from '../lib/validation.js';
 import { colors, radius, shadow, space, type } from '../theme.js';
+import { useT } from '../state/locale.jsx';
 
 /**
  * The product form, shared by create and edit.
@@ -56,17 +57,18 @@ const FormSection = ({ title, hint, children, delay = 0 }) => (
  * so what the merchant builds and what the shopper sees are one thing.
  */
 const ProductPreview = ({ name, image, price, mrp, stock, trackInventory, active }) => {
+  const t = useT();
   const p = previewPaise(price);
   const m = previewPaise(mrp);
   const off = p && m && m > p ? Math.round((1 - p / m) * 100) : 0;
   const stockNum = Number.parseInt(stock, 10);
   const stockState = !trackInventory
-    ? { text: 'Made to order', color: colors.ink500 }
+    ? { text: t('Made to order'), color: colors.ink500 }
     : Number.isNaN(stockNum) || stockNum < 0
       ? null
       : stockNum === 0
-        ? { text: 'Out of stock', color: colors.danger }
-        : { text: `${stockNum} in stock`, color: colors.success };
+        ? { text: t('Out of stock'), color: colors.danger }
+        : { text: t('{n} in stock', { n: stockNum }), color: colors.success };
 
   return (
     <View style={styles.preview}>
@@ -78,18 +80,18 @@ const ProductPreview = ({ name, image, price, mrp, stock, trackInventory, active
         )}
         {!active ? (
           <View style={styles.previewHidden}>
-            <Caption style={styles.previewHiddenText}>Hidden</Caption>
+            <Caption style={styles.previewHiddenText}>{t('Hidden')}</Caption>
           </View>
         ) : null}
       </View>
       <View style={{ flex: 1 }}>
         <Body strong numberOfLines={1} style={!name && styles.previewPlaceholder}>
-          {name.trim() || 'Product name'}
+          {name.trim() || t('Product name')}
         </Body>
         <Row gap={space.sm} style={{ marginTop: 4 }}>
           <Body style={styles.previewPrice}>{p != null ? formatMoney(p) : '₹—'}</Body>
           {off > 0 ? <Caption style={styles.previewStrike}>{formatMoney(m)}</Caption> : null}
-          {off > 0 ? <Caption style={styles.previewOff}>{off}% off</Caption> : null}
+          {off > 0 ? <Caption style={styles.previewOff}>{t('{n}% off', { n: off })}</Caption> : null}
         </Row>
         {stockState ? (
           <Row gap={6} style={{ marginTop: 6 }}>
@@ -111,6 +113,7 @@ const parseInto = (schema, value, key, errors) => {
 };
 export const ProductForm = ({ businessId, initial, categories = [], onSubmit, submitting, error, submitLabel }) => {
   const { fontScale } = useWindowDimensions();
+  const t = useT();
   const [name, setName] = useState(initial?.name ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [price, setPrice] = useState(initial?.price ? String(toMajor(initial.price)) : '');
@@ -239,30 +242,30 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
         onBusyChange={setUploading}
       />
 
-      <FormSection title="Details" delay={40}>
+      <FormSection title={t('Details')} delay={40}>
         <Field
-          label="Product name"
+          label={t('Product name')}
           value={name}
           onChangeText={edit(setName, 'name')}
-          placeholder="Product name"
+          placeholder={t('Product name')}
           autoCapitalize="sentences"
           maxLength={140}
           error={fieldErrors.name}
         />
 
         <SelectField
-          label="Category"
+          label={t('Category')}
           value={selectedCategory?.name}
-          placeholder="No category"
+          placeholder={t('No category')}
           onPress={() => setCategorySheet(true)}
         />
 
         <Field
-          label="Description"
+          label={t('Description')}
           value={description}
           onChangeText={edit(setDescription, 'description')}
           maxLength={8000}
-          placeholder="Enter a product description"
+          placeholder={t('Enter a product description')}
           multiline
           numberOfLines={4}
           style={styles.textarea}
@@ -276,43 +279,43 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
         stock={stock} trackInventory={trackInventory} active={active}
       />
 
-      <FormSection title="Price" delay={80}>
+      <FormSection title={t('Price')} delay={80}>
         {/* Side by side when both fit at the reader's text size; stacked on a narrow phone with large text, where the
             MRP placeholder was cut to "Enter M". */}
         <Row gap={space.md} align="flex-start" style={{ flexWrap: 'wrap', rowGap: space.md }}>
           <Field
-            label="Selling price"
+            label={t('Selling price')}
             value={price}
             onChangeText={edit(setPrice, 'price')}
-            placeholder="Enter price"
+            placeholder={t('Enter price')}
             keyboardType="decimal-pad"
             prefix="₹"
             containerStyle={{ flexGrow: 1, flexBasis: 130 * fontScale, marginBottom: 0 }}
             error={fieldErrors.price}
           />
           <Field
-            label="MRP"
+            label={t('MRP')}
             value={mrp}
             onChangeText={edit(setMrp, 'mrp')}
-            placeholder="Enter MRP"
+            placeholder={t('Enter MRP')}
             keyboardType="decimal-pad"
             prefix="₹"
             containerStyle={{ flexGrow: 1, flexBasis: 130 * fontScale, marginBottom: 0 }}
-            hint="Struck through"
+            hint={t('Struck through')}
             error={fieldErrors.mrp}
           />
         </Row>
       </FormSection>
 
       <FormSection
-        title="Options"
-        hint="For products that come in sizes, colours or flavours."
+        title={t('Options')}
+        hint={t('For products that come in sizes, colours or flavours.')}
         delay={110}
       >
         <Card style={styles.card}>
           <Toggle
-            label="This product has options"
-            hint="Each combination gets its own price and stock."
+            label={t('This product has options')}
+            hint={t('Each combination gets its own price and stock.')}
             value={hasVariants}
             onChange={(next) => {
               setHasVariants(next);
@@ -337,7 +340,7 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
         ) : null}
       </FormSection>
 
-      <FormSection title="Inventory" delay={120}>
+      <FormSection title={t('Inventory')} delay={120}>
         {/* With options on, stock lives on each combination and the total is the API's to
             work out — showing a second stock box here would invite a number that loses. */}
         {hasVariants && variantRows.length ? (
@@ -345,24 +348,26 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
             <Row gap={space.sm}>
               <Ionicons name="layers-outline" size={18} color={colors.ink500} />
               <Body muted style={{ flex: 1 }}>
-                Stock is counted per option above — {variantStockTotal} in stock across{' '}
-                {variantRows.length} combination{variantRows.length === 1 ? '' : 's'}.
+                {t(variantRows.length === 1
+                  ? 'Stock is counted per option above — {total} in stock across {n} combination.'
+                  : 'Stock is counted per option above — {total} in stock across {n} combinations.',
+                { total: variantStockTotal, n: variantRows.length })}
               </Body>
             </Row>
           </Card>
         ) : (
         <Card style={styles.card}>
           <Toggle
-            label="Track stock"
-            hint="Turn off for made-to-order items."
+            label={t('Track stock')}
+            hint={t('Turn off for made-to-order items.')}
             value={trackInventory}
             onChange={setTrackInventory}
           />
           {trackInventory ? (
             <Row gap={space.md} align="flex-start" style={{ marginTop: space.md }}>
               <Field
-                label="In stock"
-                placeholder="Enter quantity"
+                label={t('In stock')}
+                placeholder={t('Enter quantity')}
                 value={stock}
                 onChangeText={edit(setStock, 'stock')}
                 keyboardType="number-pad"
@@ -370,8 +375,8 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
                 error={fieldErrors.stock}
               />
               <Field
-                label="Warn me at"
-                placeholder="Enter quantity"
+                label={t('Warn me at')}
+                placeholder={t('Enter quantity')}
                 value={lowStockThreshold}
                 onChangeText={edit(setLowStockThreshold, 'lowStockThreshold')}
                 keyboardType="number-pad"
@@ -384,11 +389,11 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
         )}
 
         <Field
-          label="SKU"
+          label={t('SKU')}
           value={sku}
           onChangeText={edit(setSku, 'sku')}
           maxLength={64}
-          placeholder="Optional"
+          placeholder={t('Optional')}
           autoCapitalize="characters"
           autoCorrect={false}
           containerStyle={{ marginTop: space.lg, marginBottom: 0 }}
@@ -396,11 +401,11 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
         />
       </FormSection>
 
-      <FormSection title="Visibility" delay={160}>
+      <FormSection title={t('Visibility')} delay={160}>
         <Card style={styles.card}>
-          <Toggle label="Visible in store" hint="Turn off to hide without deleting." value={active} onChange={setActive} />
+          <Toggle label={t('Visible in store')} hint={t('Turn off to hide without deleting.')} value={active} onChange={setActive} />
           <View style={styles.cardDivider} />
-          <Toggle label="Feature on the home page" hint="Highlights it at the top of your storefront." value={featured} onChange={setFeatured} />
+          <Toggle label={t('Feature on the home page')} hint={t('Highlights it at the top of your storefront.')} value={featured} onChange={setFeatured} />
         </Card>
       </FormSection>
 
@@ -408,13 +413,13 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
           (offline, a server error) or a rejected field above would go unseen. */}
       <Alert message={generalError} />
       {!generalError && Object.values(fieldErrors).some(Boolean) ? (
-        <Caption style={styles.fixHint}>Check the highlighted fields above.</Caption>
+        <Caption style={styles.fixHint}>{t('Check the highlighted fields above.')}</Caption>
       ) : null}
       <Button title={submitLabel} size="lg" loading={submitting} disabled={uploading} onPress={submit} style={{ marginTop: space.sm }} />
 
-      <Sheet visible={categorySheet} onClose={() => setCategorySheet(false)} title="Category">
+      <Sheet visible={categorySheet} onClose={() => setCategorySheet(false)} title={t('Category')}>
         <Touchable onPress={() => { setCategoryId(null); setCategorySheet(false); }} style={styles.sheetRow}>
-          <Body style={{ flex: 1 }}>No category</Body>
+          <Body style={{ flex: 1 }}>{t('No category')}</Body>
           {categoryId === null ? <Ionicons name="checkmark" size={20} color={colors.accent600} /> : null}
         </Touchable>
         {categories.map((category) => (

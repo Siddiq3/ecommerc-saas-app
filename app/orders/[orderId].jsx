@@ -18,6 +18,8 @@ import { Sheet } from '../../src/components/Sheet.jsx';
 import { SkeletonCard, SkeletonList } from '../../src/components/Skeleton.jsx';
 import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
+import { useT } from '../../src/state/locale.jsx';
+import { msg } from '../../src/lib/i18n.js';
 import { useAsync, useAction } from '../../src/lib/useAsync.js';
 import { check } from '../../src/lib/validation.js';
 import { orders as ordersApi, payments as paymentsApi } from '../../src/api/endpoints.js';
@@ -34,11 +36,11 @@ import { colors, radius, space, type } from '../../src/theme.js';
  */
 
 const REJECT_REASONS = [
-  { value: 'not_received', label: 'Money not received' },
-  { value: 'amount_mismatch', label: 'Wrong amount' },
-  { value: 'invalid_reference', label: 'Reference not valid' },
-  { value: 'duplicate', label: 'Already used on another order' },
-  { value: 'other', label: 'Something else' },
+  { value: 'not_received', label: msg('Money not received') },
+  { value: 'amount_mismatch', label: msg('Wrong amount') },
+  { value: 'invalid_reference', label: msg('Reference not valid') },
+  { value: 'duplicate', label: msg('Already used on another order') },
+  { value: 'other', label: msg('Something else') },
 ];
 
 export default function OrderDetail() {
@@ -46,6 +48,7 @@ export default function OrderDetail() {
   const router = useRouter();
   const navigation = useNavigation();
   const { businessId } = useAuth();
+  const t = useT();
 
   const toast = useToast();
   const [sheet, setSheet] = useState(null);
@@ -71,7 +74,7 @@ export default function OrderDetail() {
     setData(updated);
     setSheet(null);
     setNote('');
-    toast.success('Order updated');
+    toast.success(t('Order updated'));
   });
 
   const { run: verifyPayment, pending: verifying, error: verifyError, clearError: clearVerifyError } = useAction(async (payload) => {
@@ -79,7 +82,7 @@ export default function OrderDetail() {
     setData(updated);
     setSheet(null);
     setNote('');
-    toast.success('Payment verified');
+    toast.success(t('Payment verified'));
   });
 
   const { run: rejectPayment, pending: rejecting, error: rejectError, clearError: clearRejectError } = useAction(async (payload) => {
@@ -87,7 +90,7 @@ export default function OrderDetail() {
     setData(updated);
     setSheet(null);
     setNote('');
-    toast.info('Payment rejected');
+    toast.info(t('Payment rejected'));
   });
 
   const { run: cancelOrder, pending: cancelling, error: cancelError, clearError: clearCancelError } = useAction(async (payload) => {
@@ -95,7 +98,7 @@ export default function OrderDetail() {
     setData(updated);
     setSheet(null);
     setNote('');
-    toast.info('Order cancelled');
+    toast.info(t('Order cancelled'));
   });
 
   /**
@@ -151,9 +154,9 @@ export default function OrderDetail() {
   const whatsappCustomer = () => {
     const number = order.customer?.mobile;
     if (!number) return;
-    const text = encodeURIComponent(`Hi ${order.customer?.name ?? ''}, about your order ${order.orderNumber}:`);
+    const text = encodeURIComponent(t('Hi {name}, about your order {number}:', { name: order.customer?.name ?? '', number: order.orderNumber }));
     Linking.openURL(`https://wa.me/91${number}?text=${text}`).catch(() =>
-      RNAlert.alert('WhatsApp not available', 'Could not open WhatsApp on this device.'),
+      RNAlert.alert(t('WhatsApp not available'), t('Could not open WhatsApp on this device.')),
     );
   };
 
@@ -165,12 +168,12 @@ export default function OrderDetail() {
         nextStatuses.length || canCancel ? (
           <Row gap={space.sm}>
             {canCancel ? (
-              <Button title="Cancel order" variant="danger" full={false} style={{ flex: 1 }} onPress={() => openSheet('cancel')} />
+              <Button title={t('Cancel order')} variant="danger" full={false} style={{ flex: 1 }} onPress={() => openSheet('cancel')} />
             ) : null}
             {nextStatuses.length ? (
               // Quieter while a payment waits to be checked: that card holds the one primary action.
               <Button
-                title="Update status"
+                title={t('Update status')}
                 variant={awaitingVerification ? 'secondary' : 'primary'}
                 full={false}
                 style={{ flex: 1.4 }}
@@ -184,7 +187,7 @@ export default function OrderDetail() {
       <Row style={styles.head}>
         {/* The order number is already the screen title. */}
         <View style={{ flex: 1 }}>
-          <Body strong>Placed {relativeTime(order.createdAt)}</Body>
+          <Body strong>{t('Placed {time}', { time: relativeTime(order.createdAt) })}</Body>
           <Caption>{formatDate(order.createdAt)}</Caption>
         </View>
         <StatusPill status={order.status} />
@@ -197,25 +200,24 @@ export default function OrderDetail() {
           <Row gap={space.md} align="flex-start">
             <Ionicons name="shield-checkmark-outline" size={22} color={colors.warning} />
             <View style={{ flex: 1 }}>
-              <Body strong>Payment needs checking</Body>
+              <Body strong>{t('Payment needs checking')}</Body>
               <Caption>
-                The customer says they sent {formatMoney(order.totals?.total)} by UPI. Match the reference against
-                your bank app before you verify.
+                {t('The customer says they sent {amount} by UPI. Match the reference against your bank app before you verify.', { amount: formatMoney(order.totals?.total) })}
               </Caption>
             </View>
           </Row>
 
           {order.upi?.utr ? (
             <View style={styles.utrBox}>
-              <Caption>Reference (UTR)</Caption>
+              <Caption>{t('Reference (UTR)')}</Caption>
               <Body style={styles.utr} selectable>{order.upi.utr}</Body>
-              {order.upi.submittedAt ? <Caption>Submitted {relativeTime(order.upi.submittedAt)}</Caption> : null}
+              {order.upi.submittedAt ? <Caption>{t('Submitted {time}', { time: relativeTime(order.upi.submittedAt) })}</Caption> : null}
             </View>
           ) : null}
 
           {order.upi?.duplicateOfOrderId ? (
             <Alert
-              message="This reference was already used on another order in your store. Check both before verifying."
+              message={t('This reference was already used on another order in your store. Check both before verifying.')}
               tone="warning"
             />
           ) : null}
@@ -226,8 +228,8 @@ export default function OrderDetail() {
 
           {/* Stacked, full width: side by side, both labels wrap onto two lines on phones up to 375pt. */}
           <View style={styles.verifyActions}>
-            <Button title="Payment received" onPress={() => openSheet('verify')} />
-            <Button title="Not received" variant="secondary" onPress={() => openSheet('reject')} />
+            <Button title={t('Payment received')} onPress={() => openSheet('verify')} />
+            <Button title={t('Not received')} variant="secondary" onPress={() => openSheet('reject')} />
           </View>
         </Card>
       ) : null}
@@ -236,28 +238,28 @@ export default function OrderDetail() {
 
       <Card style={styles.card}>
         <Row style={{ justifyContent: 'space-between' }}>
-          <Body strong>Payment</Body>
+          <Body strong>{t('Payment')}</Body>
           <PaymentPill paymentStatus={order.paymentStatus} paymentMethod={order.paymentMethod} />
         </Row>
         <Divider style={styles.innerDivider} />
         <Row style={{ justifyContent: 'space-between' }}>
-          <Caption>Method</Caption>
-          <Body>{PAYMENT_METHOD_LABELS[order.paymentMethod] ?? order.paymentMethod}</Body>
+          <Caption>{t('Method')}</Caption>
+          <Body>{t(PAYMENT_METHOD_LABELS[order.paymentMethod] ?? order.paymentMethod)}</Body>
         </Row>
         {order.upi?.utr && !awaitingVerification ? (
           <Row style={{ justifyContent: 'space-between', marginTop: space.sm }}>
-            <Caption>Reference</Caption>
+            <Caption>{t('Reference')}</Caption>
             <Body selectable style={type.money}>{order.upi.utr}</Body>
           </Row>
         ) : null}
         {order.paymentDecision?.note ? (
-          <Caption style={{ marginTop: space.sm }}>Note: {order.paymentDecision.note}</Caption>
+          <Caption style={{ marginTop: space.sm }}>{t('Note: {note}', { note: order.paymentDecision.note })}</Caption>
         ) : null}
       </Card>
 
       <Card style={styles.card} padded={false}>
         <View style={styles.cardHead}>
-          <Body strong>{order.items.length} item{order.items.length === 1 ? '' : 's'}</Body>
+          <Body strong>{t(order.items.length === 1 ? '{n} item' : '{n} items', { n: order.items.length })}</Body>
         </View>
         {order.items.map((item, index) => (
           <View key={`${item.productId}-${item.variantId ?? index}`}>
@@ -279,21 +281,21 @@ export default function OrderDetail() {
 
         <Divider />
         <View style={styles.totals}>
-          <TotalLine label="Subtotal" value={order.totals?.subtotal} />
+          <TotalLine label={t('Subtotal')} value={order.totals?.subtotal} />
           {order.totals?.couponDiscount ? (
-            <TotalLine label={order.coupon?.code ? `Coupon ${order.coupon.code}` : 'Coupon'} value={-order.totals.couponDiscount} />
+            <TotalLine label={order.coupon?.code ? t('Coupon {code}', { code: order.coupon.code }) : t('Coupon')} value={-order.totals.couponDiscount} />
           ) : null}
           <TotalLine
-            label={order.delivery?.name ?? 'Delivery'}
+            label={order.delivery?.name ?? t('Delivery')}
             value={order.totals?.deliveryFee ?? 0}
-            display={order.totals?.deliveryFee ? undefined : 'Free'}
+            display={order.totals?.deliveryFee ? undefined : t('Free')}
           />
           {order.delivery?.estimate ? (
-            <Caption style={styles.estimate}>{order.delivery.estimate.label} (estimated at checkout)</Caption>
+            <Caption style={styles.estimate}>{t('{estimate} (estimated at checkout)', { estimate: order.delivery.estimate.label })}</Caption>
           ) : null}
           <Divider style={styles.innerDivider} />
           <Row style={{ justifyContent: 'space-between' }}>
-            <Body strong>Total</Body>
+            <Body strong>{t('Total')}</Body>
             <Body style={[type.money, styles.grandTotal]}>{formatMoney(order.totals?.total)}</Body>
           </Row>
         </View>
@@ -301,16 +303,16 @@ export default function OrderDetail() {
 
       <Card style={styles.card}>
         <Row style={{ justifyContent: 'space-between' }}>
-          <Body strong>Customer</Body>
+          <Body strong>{t('Customer')}</Body>
           {order.customerId ? (
-            <Touchable onPress={() => router.push(`/customers/${order.customerId}`)} accessibilityLabel="View customer">
-              <Body style={styles.link}>History</Body>
+            <Touchable onPress={() => router.push(`/customers/${order.customerId}`)} accessibilityLabel={t('View customer')}>
+              <Body style={styles.link}>{t('History')}</Body>
             </Touchable>
           ) : null}
         </Row>
         <Divider style={styles.innerDivider} />
-        <Body strong>{order.customer?.name ?? 'Guest'}</Body>
-        <Caption>{order.customer?.mobile ? `+91 ${order.customer.mobile}` : 'No number on file'}</Caption>
+        <Body strong>{order.customer?.name ?? t('Guest')}</Body>
+        <Caption>{order.customer?.mobile ? `+91 ${order.customer.mobile}` : t('No number on file')}</Caption>
         {order.address ? (
           <Body muted style={styles.address}>
             {[order.address.houseNo, order.address.street, order.address.area, order.address.landmark, order.address.city, order.address.state, order.address.pincode]
@@ -321,20 +323,20 @@ export default function OrderDetail() {
 
         {order.customer?.mobile ? (
           <Row gap={space.sm} style={{ marginTop: space.md }}>
-            <Button title="Call" variant="secondary" size="sm" full={false} style={{ flex: 1 }} onPress={callCustomer} />
-            <Button title="WhatsApp" variant="secondary" size="sm" full={false} style={{ flex: 1 }} onPress={whatsappCustomer} />
+            <Button title={t('Call')} variant="secondary" size="sm" full={false} style={{ flex: 1 }} onPress={callCustomer} />
+            <Button title={t('WhatsApp')} variant="secondary" size="sm" full={false} style={{ flex: 1 }} onPress={whatsappCustomer} />
           </Row>
         ) : null}
       </Card>
 
       <Card style={styles.card}>
-        <Body strong style={{ marginBottom: space.lg }}>Progress</Body>
+        <Body strong style={{ marginBottom: space.lg }}>{t('Progress')}</Body>
         <OrderTimeline order={order} />
       </Card>
 
       {/* ───────── Sheets ───────── */}
 
-      <Sheet visible={sheet === 'status'} onClose={() => setSheet(null)} title="Move this order to">
+      <Sheet visible={sheet === 'status'} onClose={() => setSheet(null)} title={t('Move this order to')}>
         <Alert message={statusError?.message} />
         {nextStatuses.map((status) => (
           <Touchable
@@ -342,84 +344,83 @@ export default function OrderDetail() {
             onPress={() => submitAction(updateOrderStatusSchema, { status, ...noteValue }, setStatus)}
             style={styles.sheetRow}
           >
-            <Body strong style={{ flex: 1 }}>{ORDER_STATUS_LABELS[status]}</Body>
+            <Body strong style={{ flex: 1 }}>{t(ORDER_STATUS_LABELS[status])}</Body>
             <Ionicons name="chevron-forward" size={18} color={colors.ink400} />
           </Touchable>
         ))}
         <Field
-          label="Note (optional)"
+          label={t('Note (optional)')}
           value={note}
           onChangeText={(v) => { setNote(v); setNoteError(null); }}
           error={noteError}
           maxLength={300}
-          placeholder="Enter a note"
+          placeholder={t('Enter a note')}
           multiline
         />
-        {settingStatus ? <Caption>Updating…</Caption> : null}
+        {settingStatus ? <Caption>{t('Updating…')}</Caption> : null}
       </Sheet>
 
-      <Sheet visible={sheet === 'verify'} onClose={() => setSheet(null)} title="Confirm you received the money">
+      <Sheet visible={sheet === 'verify'} onClose={() => setSheet(null)} title={t('Confirm you received the money')}>
         <Alert message={verifyError?.message} />
         <Body muted>
-          Only verify once you have seen {formatMoney(order.totals?.total)} in your own bank or UPI app. Verifying
-          marks the order paid and cannot be undone.
+          {t('Only verify once you have seen {amount} in your own bank or UPI app. Verifying marks the order paid and cannot be undone.', { amount: formatMoney(order.totals?.total) })}
         </Body>
         {order.upi?.utr ? <Body style={[styles.utr, { marginTop: space.md }]} selectable>{order.upi.utr}</Body> : null}
         <Field
-          label="Note (optional)"
+          label={t('Note (optional)')}
           value={note}
           onChangeText={(v) => { setNote(v); setNoteError(null); }}
           error={noteError}
           maxLength={300}
-          placeholder="Enter a note"
+          placeholder={t('Enter a note')}
           containerStyle={{ marginTop: space.lg }}
         />
         <Button
-          title="Yes, I received it"
+          title={t('Yes, I received it')}
           loading={verifying}
           onPress={() => submitAction(verifyPaymentSchema, { confirmedAmountMatches: true, ...noteValue }, verifyPayment)}
         />
       </Sheet>
 
-      <Sheet visible={sheet === 'reject'} onClose={() => setSheet(null)} title="Why are you rejecting this?">
+      <Sheet visible={sheet === 'reject'} onClose={() => setSheet(null)} title={t('Why are you rejecting this?')}>
         <Alert message={rejectError?.message} />
         {REJECT_REASONS.map((reason) => (
           <Touchable key={reason.value} onPress={() => setRejectReason(reason.value)} style={styles.sheetRow}>
-            <Body style={{ flex: 1 }}>{reason.label}</Body>
+            <Body style={{ flex: 1 }}>{t(reason.label)}</Body>
             {rejectReason === reason.value ? (
               <Ionicons name="checkmark-circle" size={20} color={colors.accent600} />
             ) : null}
           </Touchable>
         ))}
         <Field
-          label="Note for your records (optional)"
+          label={t('Note for your records (optional)')}
           value={note}
           onChangeText={(v) => { setNote(v); setNoteError(null); }}
           error={noteError}
           maxLength={300}
-          placeholder="Enter a note"
+          placeholder={t('Enter a note')}
           containerStyle={{ marginTop: space.lg }}
         />
         <Button
-          title="Reject payment"
+          title={t('Reject payment')}
           variant="danger"
           loading={rejecting}
           onPress={() => submitAction(rejectPaymentSchema, { reason: rejectReason, cancelOrder: false, ...noteValue }, rejectPayment)}
         />
       </Sheet>
 
-      <Sheet visible={sheet === 'cancel'} onClose={() => setSheet(null)} title="Cancel this order">
+      <Sheet visible={sheet === 'cancel'} onClose={() => setSheet(null)} title={t('Cancel this order')}>
         <Alert message={cancelError?.message} />
         {CANCELLATION_REASONS.map((reason) => (
           <Touchable key={reason} onPress={() => setCancelReason(reason)} style={styles.sheetRow}>
-            <Body style={{ flex: 1 }}>{CANCELLATION_REASON_LABELS[reason]}</Body>
+            <Body style={{ flex: 1 }}>{t(CANCELLATION_REASON_LABELS[reason])}</Body>
             {cancelReason === reason ? <Ionicons name="checkmark-circle" size={20} color={colors.accent600} /> : null}
           </Touchable>
         ))}
         <Touchable onPress={() => setRestock((v) => !v)} style={styles.sheetRow}>
           <View style={{ flex: 1 }}>
-            <Body strong>Put the items back in stock</Body>
-            <Caption>Leave this on unless the stock is actually gone.</Caption>
+            <Body strong>{t('Put the items back in stock')}</Body>
+            <Caption>{t('Leave this on unless the stock is actually gone.')}</Caption>
           </View>
           <Ionicons
             name={restock ? 'checkbox' : 'square-outline'}
@@ -428,16 +429,16 @@ export default function OrderDetail() {
           />
         </Touchable>
         <Field
-          label="Note (optional)"
+          label={t('Note (optional)')}
           value={note}
           onChangeText={(v) => { setNote(v); setNoteError(null); }}
           error={noteError}
           maxLength={300}
-          placeholder="Enter a note"
+          placeholder={t('Enter a note')}
           containerStyle={{ marginTop: space.md }}
         />
         <Button
-          title="Cancel order"
+          title={t('Cancel order')}
           variant="danger"
           loading={cancelling}
           onPress={() => submitAction(ownerCancelOrderSchema, { reason: cancelReason, restock, ...noteValue }, cancelOrder)}

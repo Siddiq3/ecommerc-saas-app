@@ -4,6 +4,7 @@ import { Tabs, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/state/auth.jsx';
+import { useLocale } from '../../src/state/locale.jsx';
 import { useOrderCounts } from '../../src/state/counts.js';
 import { useRefreshOnFocus } from '../../src/lib/useAsync.js';
 import { colors, space, type } from '../../src/theme.js';
@@ -24,7 +25,7 @@ import { colors, space, type } from '../../src/theme.js';
  * slots are measured on the device, not estimated (estimates were off for this typeface). Shrink-to-fit stays as a
  * last resort.
  */
-const measured = { ratios: {}, slots: {} };
+const measured = { ratios: {}, slots: {}, locale: null };
 const listeners = new Set();
 const publish = (kind, label, value) => {
   if (!value || measured[kind][label] === value) return;
@@ -91,6 +92,9 @@ const TITLES = { index: 'Home', social: 'Social', orders: 'Orders', products: 'P
 
 export default function TabsLayout() {
   const { businessId } = useAuth();
+  const { locale, t } = useLocale();
+  // New language, new labels: drop the old labels' measurements, or they skew the shared size.
+  if (measured.locale !== locale) Object.assign(measured, { ratios: {}, slots: {}, locale });
   const { needsAttention, reload: reloadCounts } = useOrderCounts(businessId);
   const insets = useSafeAreaInsets();
   const { ratios } = useMeasured();
@@ -105,7 +109,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={({ route }) => ({
         // No side padding inside each tab, and widths shared by label length (see TabLabel).
-        tabBarItemStyle: { paddingHorizontal: 0, flex: wide ? 1 : weightFor(ratios, TITLES[route.name]) },
+        tabBarItemStyle: { paddingHorizontal: 0, flex: wide ? 1 : weightFor(ratios, t(TITLES[route.name])) },
         headerShown: false,
         tabBarActiveTintColor: colors.accent600,
         tabBarInactiveTintColor: colors.ink500,
@@ -117,11 +121,11 @@ export default function TabsLayout() {
         lazy: true,
       })}
     >
-      <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: icon('home') }} />
+      <Tabs.Screen name="index" options={{ title: t('Home'), tabBarIcon: icon('home') }} />
       <Tabs.Screen
         name="social"
         options={{
-          title: 'Social',
+          title: t('Social'),
           // No outline variant exists for brand logos.
           tabBarIcon: ({ color, size }) => <Ionicons name="logo-instagram" size={size} color={color} />,
         }}
@@ -129,7 +133,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="orders"
         options={{
-          title: 'Orders',
+          title: t('Orders'),
           tabBarIcon: icon('receipt'),
           // Only orders that need the merchant to do something are badged. Badging every
           // open order would keep the dot permanently lit and teach them to ignore it.
@@ -137,9 +141,9 @@ export default function TabsLayout() {
           tabBarBadgeStyle: styles.badge,
         }}
       />
-      <Tabs.Screen name="products" options={{ title: 'Products', tabBarIcon: icon('pricetag') }} />
-      <Tabs.Screen name="customers" options={{ title: 'Customers', tabBarIcon: icon('people') }} />
-      <Tabs.Screen name="account" options={{ title: 'Account', tabBarIcon: icon('person-circle') }} />
+      <Tabs.Screen name="products" options={{ title: t('Products'), tabBarIcon: icon('pricetag') }} />
+      <Tabs.Screen name="customers" options={{ title: t('Customers'), tabBarIcon: icon('people') }} />
+      <Tabs.Screen name="account" options={{ title: t('Account'), tabBarIcon: icon('person-circle') }} />
     </Tabs>
   );
 }

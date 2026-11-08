@@ -3,6 +3,7 @@ import { Screen } from '../../src/components/Screen.jsx';
 import { ProductForm } from '../../src/components/ProductForm.jsx';
 import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
+import { useT } from '../../src/state/locale.jsx';
 import { useAction, useAsync } from '../../src/lib/useAsync.js';
 import { categories as categoriesApi, products as productsApi } from '../../src/api/endpoints.js';
 
@@ -11,6 +12,7 @@ export default function NewProduct() {
   const router = useRouter();
   const toast = useToast();
   const { businessId } = useAuth();
+  const t = useT();
 
   const { data: categories } = useAsync(
     () => (businessId ? categoriesApi.list(businessId) : Promise.resolve(null)),
@@ -19,7 +21,7 @@ export default function NewProduct() {
 
   const { run, pending, error } = useAction(async (input) => {
     const product = await productsApi.create(businessId, input);
-    toast.success('Product added');
+    toast.success(t('Product added'));
     router.replace(`/products/${product.productId}`);
   });
 
@@ -30,7 +32,7 @@ export default function NewProduct() {
         categories={categories?.items ?? []}
         submitting={pending}
         error={error}
-        submitLabel="Add product"
+        submitLabel={t('Add product')}
         onSubmit={(input) => run(input).catch(() => undefined)}
       />
     </Screen>

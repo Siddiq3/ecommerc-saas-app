@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Body, Caption, Card, Field, Row, Touchable } from './ui.jsx';
 import { FadeIn } from './motion.jsx';
 import { colors, fonts, radius, space, type } from '../theme.js';
+import { useT } from '../state/locale.jsx';
 import {
   MAX_OPTIONS, MAX_VARIANTS, buildRows, comboLabel, fingerprint, optionsFromVariants, parseValues,
   usable,
@@ -29,6 +30,7 @@ export { MAX_VARIANTS, buildRows, comboLabel, fingerprint, optionsFromVariants, 
 
 export const VariantEditor = ({ options, rows, onChangeOptions, onChangeRows, errors = {}, basePrice }) => {
   const { fontScale } = useWindowDimensions();
+  const t = useT();
   const overflowed = usable(options).length > 0 && rows.length >= MAX_VARIANTS;
 
   const setOption = (index, patch) => {
@@ -56,11 +58,11 @@ export const VariantEditor = ({ options, rows, onChangeOptions, onChangeRows, er
       {options.map((option, index) => (
         <FadeIn key={index} style={styles.option}>
           <Row style={styles.optionHead}>
-            <Caption style={styles.optionIndex}>Option {index + 1}</Caption>
+            <Caption style={styles.optionIndex}>{t('Option {n}', { n: index + 1 })}</Caption>
             <View style={{ flex: 1 }} />
             <Touchable
               onPress={() => removeOption(index)}
-              accessibilityLabel={`Remove option ${index + 1}`}
+              accessibilityLabel={t('Remove option {n}', { n: index + 1 })}
               hitSlop={10}
               scaleTo={1}
             >
@@ -71,24 +73,24 @@ export const VariantEditor = ({ options, rows, onChangeOptions, onChangeRows, er
           {/* Side by side when both fit; stacked on a narrow phone with large text ("Enter", "Red, Blue"). */}
           <Row gap={space.md} align="flex-start" style={{ flexWrap: 'wrap', rowGap: space.md }}>
             <Field
-              label="Name"
+              label={t('Name')}
               value={option.name}
               onChangeText={(value) => setOption(index, { name: value })}
-              placeholder="Size, Colour"
+              placeholder={t('Size, Colour')}
               autoCapitalize="words"
               maxLength={40}
               containerStyle={{ flexGrow: 1, flexBasis: 110 * fontScale, marginBottom: 0 }}
             />
             <Field
-              label="Values"
+              label={t('Values')}
               value={option.values}
               onChangeText={(value) => setOption(index, { values: value })}
-              placeholder="Red, Blue, Green"
+              placeholder={t('Red, Blue, Green')}
               autoCapitalize="characters"
               autoCorrect={false}
               maxLength={400}
               containerStyle={{ flexGrow: 1.4, flexBasis: 150 * fontScale, marginBottom: 0 }}
-              hint="Separate with commas"
+              hint={t('Separate with commas')}
             />
           </Row>
 
@@ -107,21 +109,21 @@ export const VariantEditor = ({ options, rows, onChangeOptions, onChangeRows, er
       ))}
 
       {options.length < MAX_OPTIONS ? (
-        <Touchable onPress={addOption} style={styles.addOption} accessibilityLabel="Add an option">
+        <Touchable onPress={addOption} style={styles.addOption} accessibilityLabel={t('Add an option')}>
           <Ionicons name="add" size={18} color={colors.accent700} />
           <Body strong style={styles.addOptionText}>
-            {options.length ? 'Add another option' : 'Add an option'}
+            {options.length ? t('Add another option') : t('Add an option')}
           </Body>
         </Touchable>
       ) : (
-        <Caption style={styles.limitNote}>That is the most options a product can have.</Caption>
+        <Caption style={styles.limitNote}>{t('That is the most options a product can have.')}</Caption>
       )}
 
       {rows.length ? (
         <Card style={styles.rows} padded={false}>
           <Row style={styles.rowsHead}>
-            <Body strong style={{ flex: 1 }}>{rows.length} combination{rows.length === 1 ? '' : 's'}</Body>
-            <Caption>Price · Stock</Caption>
+            <Body strong style={{ flex: 1 }}>{t(rows.length === 1 ? '{n} combination' : '{n} combinations', { n: rows.length })}</Body>
+            <Caption>{t('Price · Stock')}</Caption>
           </Row>
 
           {rows.map((row, index) => (
@@ -131,20 +133,20 @@ export const VariantEditor = ({ options, rows, onChangeOptions, onChangeRows, er
                 <Body strong style={styles.rowLabel} numberOfLines={1}>{comboLabel(row.attributes)}</Body>
                 <Row gap={space.sm} align="flex-start">
                   <Field
-                    accessibilityLabel={`Price for ${comboLabel(row.attributes)}`}
+                    accessibilityLabel={t('Price for {option}', { option: comboLabel(row.attributes) })}
                     value={String(row.price ?? '')}
                     onChangeText={(value) => setRow(index, { price: value })}
-                    placeholder="Price"
+                    placeholder={t('Price')}
                     keyboardType="decimal-pad"
                     prefix="₹"
                     containerStyle={{ flex: 1.3, marginBottom: 0 }}
                     error={errors[`variant.${index}.price`]}
                   />
                   <Field
-                    accessibilityLabel={`Stock for ${comboLabel(row.attributes)}`}
+                    accessibilityLabel={t('Stock for {option}', { option: comboLabel(row.attributes) })}
                     value={String(row.stock ?? '')}
                     onChangeText={(value) => setRow(index, { stock: value })}
-                    placeholder="Stock"
+                    placeholder={t('Stock')}
                     keyboardType="number-pad"
                     containerStyle={{ flex: 1, marginBottom: 0 }}
                     error={errors[`variant.${index}.stock`]}
@@ -158,7 +160,7 @@ export const VariantEditor = ({ options, rows, onChangeOptions, onChangeRows, er
 
       {overflowed ? (
         <Caption style={styles.limitNote}>
-          Only the first {MAX_VARIANTS} combinations are kept. Remove a few values to stay under the limit.
+          {t('Only the first {n} combinations are kept. Remove a few values to stay under the limit.', { n: MAX_VARIANTS })}
         </Caption>
       ) : null}
     </View>

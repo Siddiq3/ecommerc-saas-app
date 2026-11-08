@@ -14,6 +14,7 @@ import { SkeletonCard } from '../../src/components/Skeleton.jsx';
 import { ProductForm } from '../../src/components/ProductForm.jsx';
 import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
+import { useT } from '../../src/state/locale.jsx';
 import { useAction, useAsync } from '../../src/lib/useAsync.js';
 import { categories as categoriesApi, products as productsApi } from '../../src/api/endpoints.js';
 import { colors, radius, space, type } from '../../src/theme.js';
@@ -31,6 +32,7 @@ export default function ProductDetail() {
   const navigation = useNavigation();
   const toast = useToast();
   const { businessId } = useAuth();
+  const t = useT();
 
   const [editing, setEditing] = useState(false);
   const [stockSheet, setStockSheet] = useState(false);
@@ -52,7 +54,7 @@ export default function ProductDetail() {
     const updated = await productsApi.update(businessId, String(productId), input);
     setData(updated);
     setEditing(false);
-    toast.success('Changes saved');
+    toast.success(t('Changes saved'));
   });
 
   const { run: adjustStock, pending: adjusting, error: adjustError, clearError: clearAdjustError } = useAction(async (payload) => {
@@ -60,7 +62,7 @@ export default function ProductDetail() {
     setData((prev) => ({ ...prev, stock: updated.stock ?? prev.stock }));
     setStockSheet(false);
     setStockValue('');
-    toast.success('Stock updated');
+    toast.success(t('Stock updated'));
   });
 
   /**
@@ -97,28 +99,28 @@ export default function ProductDetail() {
   const { run: toggleVisibility, pending: toggling } = useAction(async () => {
     const updated = await productsApi.update(businessId, String(productId), { active: !product.active });
     setData(updated);
-    toast.success(updated.active ? 'Product is live' : 'Product hidden');
+    toast.success(updated.active ? t('Product is live') : t('Product hidden'));
   });
 
   // Reports success only once the API has actually deleted it: a failed request (offline, a
   // server error) says so and leaves the merchant on the product, which still exists.
   const { run: removeProduct, pending: removing } = useAction(async () => {
     await productsApi.remove(businessId, String(productId));
-    toast.info('Product deleted');
+    toast.info(t('Product deleted'));
     router.back();
   });
 
   const confirmDelete = () =>
     RNAlert.alert(
-      'Delete this product?',
-      'It will be removed from your store. Past orders keep their record of it.',
+      t('Delete this product?'),
+      t('It will be removed from your store. Past orders keep their record of it.'),
       [
-        { text: 'Keep', style: 'cancel' },
+        { text: t('Keep'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('Delete'),
           style: 'destructive',
           onPress: () =>
-            removeProduct().catch((err) => toast.error(err?.message ?? 'Could not delete this product. Please try again.')),
+            removeProduct().catch((err) => toast.error(err?.message ?? t('Could not delete this product. Please try again.'))),
         },
       ],
     );
@@ -141,8 +143,8 @@ export default function ProductDetail() {
   }, [editing]);
 
   useEffect(() => {
-    if (product) navigation.setOptions?.({ title: editing ? 'Edit product' : product.name });
-  }, [product, editing, navigation]);
+    if (product) navigation.setOptions?.({ title: editing ? t('Edit product') : product.name });
+  }, [product, editing, navigation, t]);
 
   if (loading && !product) {
     return (
@@ -164,10 +166,10 @@ export default function ProductDetail() {
           categories={categories?.items ?? []}
           submitting={saving}
           error={saveError}
-          submitLabel="Save changes"
+          submitLabel={t('Save changes')}
           onSubmit={(input) => save(input).catch(() => undefined)}
         />
-        <Button title="Cancel" variant="ghost" onPress={() => setEditing(false)} />
+        <Button title={t('Cancel')} variant="ghost" onPress={() => setEditing(false)} />
       </Screen>
     );
   }
@@ -182,14 +184,14 @@ export default function ProductDetail() {
       footer={
         <Row gap={space.sm}>
           <Button
-            title={product.active ? 'Hide' : 'Make live'}
+            title={product.active ? t('Hide') : t('Make live')}
             variant="secondary"
             full={false}
             style={{ flex: 1 }}
             loading={toggling}
-            onPress={() => toggleVisibility().catch((err) => toast.error(err?.message ?? 'Could not update this product. Please try again.'))}
+            onPress={() => toggleVisibility().catch((err) => toast.error(err?.message ?? t('Could not update this product. Please try again.')))}
           />
-          <Button title="Edit" full={false} style={{ flex: 1.4 }} onPress={() => setEditing(true)} />
+          <Button title={t('Edit')} full={false} style={{ flex: 1.4 }} onPress={() => setEditing(true)} />
         </Row>
       }
     >
@@ -205,7 +207,7 @@ export default function ProductDetail() {
         )}
         {!product.active ? (
           <View style={styles.heroHidden}>
-            <Pill label="Hidden from store" tone="slate" />
+            <Pill label={t('Hidden from store')} tone="slate" />
           </View>
         ) : null}
       </View>
@@ -224,14 +226,14 @@ export default function ProductDetail() {
         {discount > 0 ? (
           <>
             <Caption style={styles.strike}>{formatMoney(product.mrp)}</Caption>
-            <Pill label={`${discount}% off`} tone="green" />
+            <Pill label={t('{n}% off', { n: discount })} tone="green" />
           </>
         ) : null}
       </Row>
 
       <Row gap={space.sm} style={styles.pills}>
-        <Pill label={product.active ? 'Live' : 'Hidden'} tone={product.active ? 'green' : 'slate'} />
-        {product.featured ? <Pill label="Featured" tone="accent" /> : null}
+        <Pill label={product.active ? t('Live') : t('Hidden')} tone={product.active ? 'green' : 'slate'} />
+        {product.featured ? <Pill label={t('Featured')} tone="accent" /> : null}
         {product.categoryName ? <Pill label={product.categoryName} tone="slate" /> : null}
       </Row>
 
@@ -239,7 +241,7 @@ export default function ProductDetail() {
       <Card style={styles.statsCard} padded={false}>
         <View style={styles.statCell}>
           <Row style={{ justifyContent: 'space-between' }} align="flex-start">
-            <Caption>In stock</Caption>
+            <Caption>{t('In stock')}</Caption>
             {product.trackInventory ? (
               <View style={[styles.stockDot, { backgroundColor: stockTone === 'red' ? colors.danger : stockTone === 'amber' ? colors.warning : colors.success }]} />
             ) : null}
@@ -251,26 +253,26 @@ export default function ProductDetail() {
           {product.hasVariants ? (
             <Touchable onPress={() => setEditing(true)} haptics="tap" style={styles.updateLink}>
               <Ionicons name="layers-outline" size={14} color={colors.accent700} />
-              <Caption style={styles.updateLinkText}>Per option</Caption>
+              <Caption style={styles.updateLinkText}>{t('Per option')}</Caption>
             </Touchable>
           ) : product.trackInventory ? (
             <Touchable onPress={openStockSheet} haptics="tap" style={styles.updateLink}>
               <Ionicons name="add-circle-outline" size={14} color={colors.accent700} />
-              <Caption style={styles.updateLinkText}>Update</Caption>
+              <Caption style={styles.updateLinkText}>{t('Update')}</Caption>
             </Touchable>
-          ) : <Caption>Not tracked</Caption>}
+          ) : <Caption>{t('Not tracked')}</Caption>}
         </View>
         <View style={styles.statSplit} />
         <View style={styles.statCell}>
-          <Caption>Orders</Caption>
+          <Caption>{t('Orders')}</Caption>
           <Figure style={styles.statValue}>{product.orderCount ?? 0}</Figure>
-          <Caption>all time</Caption>
+          <Caption>{t('all time')}</Caption>
         </View>
       </Card>
 
       {product.description ? (
         <Card style={styles.card}>
-          <Body strong>Description</Body>
+          <Body strong>{t('Description')}</Body>
           <Divider style={styles.innerDivider} />
           <Body muted>{product.description}</Body>
         </Card>
@@ -278,7 +280,7 @@ export default function ProductDetail() {
 
       {product.variants?.length ? (
         <Card style={styles.card} padded={false}>
-          <View style={styles.cardHead}><Body strong>Options</Body></View>
+          <View style={styles.cardHead}><Body strong>{t('Options')}</Body></View>
           {product.variants.map((variant, index) => (
             <View key={variant.variantId}>
               {index > 0 ? <Divider /> : null}
@@ -287,7 +289,7 @@ export default function ProductDetail() {
                   {Object.values(variant.attributes ?? {}).join(' · ')}
                 </Body>
                 <Body style={type.money}>{formatMoney(variant.price)}</Body>
-                <Caption>{variant.stock} left</Caption>
+                <Caption>{t('{n} left', { n: variant.stock })}</Caption>
               </Row>
             </View>
           ))}
@@ -303,17 +305,17 @@ export default function ProductDetail() {
         </Card>
       ) : null}
 
-      <Touchable onPress={confirmDelete} disabled={removing} style={styles.deleteRow} accessibilityLabel="Delete product">
+      <Touchable onPress={confirmDelete} disabled={removing} style={styles.deleteRow} accessibilityLabel={t('Delete product')}>
         <Ionicons name="trash-outline" size={18} color={colors.danger} />
-        <Body style={{ color: colors.danger }}>{removing ? 'Deleting…' : 'Delete this product'}</Body>
+        <Body style={{ color: colors.danger }}>{removing ? t('Deleting…') : t('Delete this product')}</Body>
       </Touchable>
 
-      <Sheet visible={stockSheet} onClose={() => setStockSheet(false)} title="Update stock">
+      <Sheet visible={stockSheet} onClose={() => setStockSheet(false)} title={t('Update stock')}>
         <Alert message={adjustError?.message} />
         <Row gap={space.sm} style={styles.modeRow}>
           {[
-            { value: 'set', label: 'Set to' },
-            { value: 'adjust', label: 'Add or remove' },
+            { value: 'set', label: t('Set to') },
+            { value: 'adjust', label: t('Add or remove') },
           ].map((mode) => (
             <Touchable
               key={mode.value}
@@ -325,19 +327,19 @@ export default function ProductDetail() {
           ))}
         </Row>
         <Field
-          label={stockMode === 'set' ? 'New stock count' : 'Change by'}
+          label={stockMode === 'set' ? t('New stock count') : t('Change by')}
           value={stockValue}
           onChangeText={(v) => { setStockValue(v); setStockError(null); }}
           // 'numbers-and-punctuation' is iOS only; Android's 'numeric' pad is the one with a minus key.
           keyboardType={stockMode === 'adjust' ? Platform.select({ ios: 'numbers-and-punctuation', default: 'numeric' }) : 'number-pad'}
-          placeholder={stockMode === 'adjust' ? 'Enter amount (use − to remove)' : 'Enter new stock count'}
+          placeholder={stockMode === 'adjust' ? t('Enter amount (use − to remove)') : t('Enter new stock count')}
           autoFocus
           maxLength={8}
           error={stockError}
-          hint={stockMode === 'adjust' ? 'Applied to the current count, so two devices cannot overwrite each other.' : undefined}
+          hint={stockMode === 'adjust' ? t('Applied to the current count, so two devices cannot overwrite each other.') : undefined}
         />
         <Button
-          title="Update stock"
+          title={t('Update stock')}
           loading={adjusting}
           onPress={submitStock}
         />

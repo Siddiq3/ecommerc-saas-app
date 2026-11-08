@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Heading, Touchable } from './ui.jsx';
 import { useKeyboardHeight } from '../lib/useKeyboardHeight.js';
 import { colors, contentMaxWidth, radius, shadow, space } from '../theme.js';
+import { useT } from '../state/locale.jsx';
 
 /**
  * A bottom sheet.
@@ -33,6 +34,7 @@ export const Sheet = ({ visible, onClose, onDismiss, title, children, maxWidth =
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const keyboard = useKeyboardHeight();
+  const t = useT();
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} onDismiss={onDismiss} statusBarTranslucent>
@@ -40,12 +42,12 @@ export const Sheet = ({ visible, onClose, onDismiss, title, children, maxWidth =
         style={[styles.root, { width, height, paddingBottom: keyboard }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close" />
+        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t('Close')} />
         <View style={[styles.sheet, maxWidth && { alignSelf: 'center', width: '100%', maxWidth }, { maxHeight: Math.min(height * 0.78, height - keyboard - insets.top - space.lg), paddingBottom: (keyboard ? 0 : insets.bottom) + space.xl }]}>
           <View style={styles.grabber} />
           <View style={styles.header}>
             <Heading style={{ flex: 1 }}>{title}</Heading>
-            <Touchable onPress={onClose} accessibilityLabel="Close">
+            <Touchable onPress={onClose} accessibilityLabel={t('Close')}>
               <Ionicons name="close" size={22} color={colors.ink500} />
             </Touchable>
           </View>
