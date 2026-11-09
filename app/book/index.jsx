@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Screen } from '../../src/components/Screen.jsx';
 import { Body, Button, Caption, Card, Divider, Heading, Pill, Row, Touchable } from '../../src/components/ui.jsx';
 import { CATEGORY_LABELS, MODE_LABELS, MoneyLine, SectionTitle, SyncBadge } from '../../src/components/book.jsx';
+import { itemsSummary } from '../../src/components/BillItems.jsx';
 import { dayKey, shiftDay } from '../../src/lib/book.js';
 import { readDay } from '../../src/lib/bookQueries.js';
 import { formatDate, formatMoney } from '../../src/lib/format.js';
@@ -101,12 +102,15 @@ export default function DayBook() {
       <SectionTitle title={t('Bills ({n})', { n: bills.length })} total={day?.sales.total} />
       {bills.length ? (
         <Card padded={false}>
-          {bills.map((e, i) => (
-            <EntryRow key={e.entryId} index={i + 1} entry={e} onPress={() => open({ pathname: '/book/entry', params: { entryId: e.entryId } })}
-              title={e.partyName ?? e.note ?? t('Bill #{n}', { n: i + 1 })}
-              detail={e.partyName && e.note ? e.note : null}
-              pill={t(MODE_LABELS[e.mode])} tone={e.mode === 'credit' ? 'amber' : 'slate'} first={i === 0} />
-          ))}
+          {bills.map((e, i) => {
+            const bought = itemsSummary(t, e.items);
+            return (
+              <EntryRow key={e.entryId} index={i + 1} entry={e} onPress={() => open({ pathname: '/book/entry', params: { entryId: e.entryId } })}
+                title={e.partyName ?? bought ?? e.note ?? t('Bill #{n}', { n: i + 1 })}
+                detail={e.partyName ? (bought ?? e.note) : bought ? e.note : null}
+                pill={t(MODE_LABELS[e.mode])} tone={e.mode === 'credit' ? 'amber' : 'slate'} first={i === 0} />
+            );
+          })}
         </Card>
       ) : <Caption>{t('No bills yet on this day.')}</Caption>}
 

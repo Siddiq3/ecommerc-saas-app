@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { ENTRY_COLS, PARTY_COLS, SCHEMA, saveLocal, toWire, upsert } from '../src/lib/bookStore.js';
+import { ENTRY_COLS, PARTY_COLS, SCHEMA, migrate, saveLocal, toWire, upsert } from '../src/lib/bookStore.js';
 import { acknowledge, pendingCount, syncBook } from '../src/lib/bookSync.js';
 import { readDay, readParties, readParty } from '../src/lib/bookQueries.js';
 
@@ -104,6 +104,29 @@ try {
   assert.equal((await readDay(b, '2026-11-09')).openingBalance, 165000);
   assert.equal((await readParties(b))[0].balance, 40000);
   assert(counter >= 4);
+
+  // Bill items are stored as a list, travel to the second phone intact, and show in the khata.
+  const items = [{ name: 'Silk saree', qty: 1, unit: 'pcs', price: 125000 }, { name: 'Cotton cloth', qty: 2.5, unit: 'm', price: 18000 }];
+  const itemBill = { entryId: 'itembill', kind: 'sale', mode: 'credit', partyId: party.partyId, date: '2026-11-08', amount: 170000, items, updatedAt: at(20) };
+  await saveLocal(a, 'entries', ENTRY_COLS, itemBill);
+  const sentItems = toWire(await a.getFirstAsync("SELECT * FROM entries WHERE entryId = 'itembill'"), ENTRY_COLS);
+  assert.deepEqual(sentItems.items, items, 'items go to the server as a list');
+  await syncBook(a, api, 'store-a');
+  await syncBook(b, api, 'store-a');
+  const onB = (await readParty(b, party.partyId)).entries.find((e) => e.entryId === 'itembill');
+  assert.deepEqual(onB.items, items, 'the second phone sees what was bought');
+  assert.deepEqual((await readDay(b, '2026-11-08')).entries.find((e) => e.entryId === 'itembill').items, items);
+  assert.equal((await readDay(b, '2026-11-08')).entries.find((e) => e.entryId === 'cash').items, null, 'older bills have no list');
+
+  // A book created by the previous app version gains the column without losing bills.
+  const old = new DatabaseSync(':memory:');
+  old.exec(SCHEMA.replace('category TEXT, items TEXT,', 'category TEXT,'));
+  old.exec("INSERT INTO entries (entryId, kind, date, amount, mode, updatedAt) VALUES ('legacy', 'sale', '2026-11-01', 500, 'cash', '2026-11-01T00:00:00.000Z')");
+  const oldDb = { getAllAsync: async (sql, args = []) => old.prepare(sql).all(...args), runAsync: async (sql, args = []) => old.prepare(sql).run(...args) };
+  await migrate(oldDb);
+  await migrate(oldDb);
+  assert.equal(old.prepare("SELECT amount, items FROM entries WHERE entryId = 'legacy'").get().amount, 500);
+  old.close();
 
   // If the owner leaves during a network request, its response is not applied.
   let active = true;

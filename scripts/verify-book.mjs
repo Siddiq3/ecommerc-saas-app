@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 import { summarize, balanceOf, takeIncoming, resumeFrom, shiftDay, ulid } from '../src/lib/book.js';
-import { bookEntrySchema } from '../packages/validation/src/book.js';
+import { bookEntrySchema, itemTotal, itemsTotal } from '../packages/validation/src/book.js';
 
 // A day like the paper book: cash and UPI bills and dues collected come in, expenses go out,
 // a credit bill is a sale but no money.
@@ -42,5 +42,20 @@ const id = ulid(randomBytes);
 assert.match(id, /^[0-9A-HJKMNP-TV-Z]{26}$/);
 assert.ok(ulid(randomBytes, 2) > ulid(randomBytes, 1), 'later ids sort later');
 assert.ok(bookEntrySchema.safeParse({ entryId: id, kind: 'sale', date: '2026-11-08', amount: 100, mode: 'cash', updatedAt: new Date().toISOString() }).success);
+
+// Bill items: what was bought, how much, at what price. The bill amount is their total.
+const now = new Date().toISOString();
+const saree = { name: 'Silk saree', qty: 2, unit: 'pcs', price: 125000 };
+const cloth = { name: 'Cotton cloth', qty: 2.5, unit: 'm', price: 18050 };
+assert.equal(itemTotal(cloth), 45125, '2.5 m at ₹180.50 is ₹451.25');
+assert.equal(itemTotal({ qty: 0.333, price: 100 }), 33, 'line totals round to the paisa');
+const withItems = { entryId: id, kind: 'sale', date: '2026-11-08', mode: 'credit', partyId: id, updatedAt: now, items: [saree, cloth] };
+assert.ok(bookEntrySchema.safeParse({ ...withItems, amount: itemsTotal(withItems.items) }).success, 'a bill with items is valid');
+assert.ok(bookEntrySchema.safeParse({ ...withItems, amount: 300000, items: [{ ...saree, productId: id }, cloth] }).success === false, 'amount must match the items');
+assert.ok(!bookEntrySchema.safeParse({ ...withItems, amount: 295125, items: [{ ...saree, qty: 0 }, cloth] }).success, 'qty must be above zero');
+assert.ok(!bookEntrySchema.safeParse({ ...withItems, amount: 250000, items: [{ ...saree, qty: 1.2345 }] }).success, 'at most 3 decimals');
+assert.ok(!bookEntrySchema.safeParse({ ...withItems, amount: 250000, items: [{ ...saree, unit: 'bag' }] }).success, 'unknown unit');
+assert.ok(!bookEntrySchema.safeParse({ ...withItems, amount: 100, items: [] }).success, 'an empty list is not sent');
+assert.ok(!bookEntrySchema.safeParse({ entryId: id, kind: 'expense', category: 'rent', mode: 'cash', date: '2026-11-08', amount: 250000, updatedAt: now, items: [saree] }).success, 'only a bill has items');
 
 console.log('✓ Bill book: day totals, carried balance, khata dues, sync merge and phone-made ids all behave.');

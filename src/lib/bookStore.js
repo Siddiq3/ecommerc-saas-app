@@ -1,12 +1,12 @@
 /** Local SQLite records shared by the book provider and persistence checks. */
-export const ENTRY_COLS = ['entryId', 'kind', 'date', 'amount', 'mode', 'partyId', 'category', 'note', 'updatedAt', 'deleted'];
+export const ENTRY_COLS = ['entryId', 'kind', 'date', 'amount', 'mode', 'partyId', 'category', 'items', 'note', 'updatedAt', 'deleted'];
 export const PARTY_COLS = ['partyId', 'name', 'mobile', 'note', 'updatedAt', 'deleted'];
 
 export const SCHEMA = `
   PRAGMA journal_mode = WAL;
   CREATE TABLE IF NOT EXISTS entries (
     entryId TEXT PRIMARY KEY NOT NULL, kind TEXT NOT NULL, date TEXT NOT NULL, amount INTEGER NOT NULL,
-    mode TEXT, partyId TEXT, category TEXT, note TEXT, updatedAt TEXT NOT NULL,
+    mode TEXT, partyId TEXT, category TEXT, items TEXT, note TEXT, updatedAt TEXT NOT NULL,
     deleted INTEGER NOT NULL DEFAULT 0, dirty INTEGER NOT NULL DEFAULT 0
   );
   CREATE INDEX IF NOT EXISTS entries_date ON entries (date);
@@ -18,16 +18,39 @@ export const SCHEMA = `
   CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY NOT NULL, value TEXT);
 `;
 
+/**
+ * Books opened by an earlier app version have no `items` column. Adding it is the whole
+ * upgrade: old bills keep a null there and read back as bills without an item list.
+ */
+export const migrate = async (db) => {
+  const cols = await db.getAllAsync('PRAGMA table_info(entries)');
+  if (!cols.some((c) => c.name === 'items')) await db.runAsync('ALTER TABLE entries ADD COLUMN items TEXT');
+};
+
+/** Columns that hold a list, kept as JSON text in SQLite. */
+const JSON_COLS = new Set(['items']);
+const fromColumn = (col, value) => {
+  if (!JSON_COLS.has(col) || typeof value !== 'string') return value;
+  try { return JSON.parse(value); } catch { return null; }
+};
+const toColumn = (col, value) => (JSON_COLS.has(col) && value != null && typeof value !== 'string' ? JSON.stringify(value) : value);
+
+/** A stored row with its lists decoded, for the screens. */
+export const decodeRow = (row) => (row && typeof row.items === 'string' ? { ...row, items: fromColumn('items', row.items) } : row);
+
 /** A row as the API wants it: no local flags, no nulls for absent optional fields. */
 export const toWire = (row, cols) => {
   const out = {};
-  for (const col of cols) if (row[col] !== null && row[col] !== undefined) out[col] = row[col];
+  for (const col of cols) {
+    const value = fromColumn(col, row[col]);
+    if (value !== null && value !== undefined) out[col] = value;
+  }
   out.deleted = Boolean(row.deleted);
   return out;
 };
 
 export const upsert = (db, table, cols, record, dirty) => {
-  const values = cols.map((c) => (c === 'deleted' ? (record.deleted ? 1 : 0) : record[c] ?? null));
+  const values = cols.map((c) => (c === 'deleted' ? (record.deleted ? 1 : 0) : toColumn(c, record[c]) ?? null));
   return db.runAsync(
     `INSERT INTO ${table} (${cols.join(', ')}, dirty) VALUES (${cols.map(() => '?').join(', ')}, ?)
      ON CONFLICT(${cols[0]}) DO UPDATE SET

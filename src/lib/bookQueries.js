@@ -1,4 +1,5 @@
 import { balanceOf, summarize } from './book.js';
+import { decodeRow } from './bookStore.js';
 
 /**
  * Reads for the bill book screens. SQL only groups and sums; what the sums mean (what is
@@ -15,7 +16,7 @@ export const readDay = async (db, date) => {
     `SELECT e.*, p.name AS partyName FROM entries e LEFT JOIN parties p ON p.partyId = e.partyId
      WHERE e.deleted = 0 AND e.date = ? ORDER BY e.entryId`,
     [date],
-  );
+  ).then((rows) => rows.map(decodeRow));
   const openingBalance = before.net;
   return { ...today, openingBalance, closingBalance: openingBalance + today.net, entries };
 };
@@ -38,8 +39,8 @@ export const readParty = async (db, partyId) => {
   const entries = await db.getAllAsync(
     'SELECT * FROM entries WHERE deleted = 0 AND partyId = ? ORDER BY date DESC, entryId DESC',
     [partyId],
-  );
+  ).then((rows) => rows.map(decodeRow));
   return { ...party, balance: balanceOf(entries.map((e) => ({ ...e, total: e.amount }))), entries };
 };
 
-export const readEntry = (db, entryId) => db.getFirstAsync('SELECT * FROM entries WHERE entryId = ?', [entryId]);
+export const readEntry = (db, entryId) => db.getFirstAsync('SELECT * FROM entries WHERE entryId = ?', [entryId]).then(decodeRow);

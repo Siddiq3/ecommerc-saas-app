@@ -7,6 +7,7 @@ import { Screen } from '../../src/components/Screen.jsx';
 import { Alert, Body, Button, Caption, Card, Divider, Field, Row, Touchable } from '../../src/components/ui.jsx';
 import { Sheet } from '../../src/components/Sheet.jsx';
 import { DueAmount, KIND_LABELS, MODE_LABELS, SectionTitle } from '../../src/components/book.jsx';
+import { itemsSummary } from '../../src/components/BillItems.jsx';
 import { readParty } from '../../src/lib/bookQueries.js';
 import { formatDate, formatMoney } from '../../src/lib/format.js';
 import { useAuth } from '../../src/state/auth.jsx';
@@ -96,6 +97,7 @@ export default function KhataCustomer() {
           {party.entries.map((e, i) => {
             const owed = e.kind === 'due' || (e.kind === 'sale' && e.mode === 'credit');
             const paid = e.kind === 'collection';
+            const bought = itemsSummary(t, e.items, 3);
             return (
               <View key={e.entryId}>
                 {i ? <Divider /> : null}
@@ -107,6 +109,7 @@ export default function KhataCustomer() {
                       {paid && e.mode ? ` · ${t(MODE_LABELS[e.mode])}` : ''}
                       {e.note ? ` · ${e.note}` : ''}
                     </Caption>
+                    {bought ? <Caption numberOfLines={2} style={styles.items}>{bought}</Caption> : null}
                   </View>
                   <Body style={[type.money, { color: owed ? colors.danger : paid ? colors.success : colors.ink500 }]}>
                     {owed ? '+ ' : paid ? '− ' : ''}{formatMoney(e.amount)}
@@ -138,5 +141,6 @@ const styles = StyleSheet.create({
   balance: { fontSize: 32 },
   edit: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: space.sm },
   actions: { marginTop: space.md },
+  items: { color: colors.ink700 },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md, minHeight: 56 },
 });
