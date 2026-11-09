@@ -119,6 +119,7 @@ const Navigation = () => {
         <Stack.Screen name="settings/policies/[type]" options={{ title: t('Policy') }} />
         <Stack.Screen name="settings/profile" options={{ title: t('Profile') }} />
         <Stack.Screen name="settings/security" options={{ title: t('Password and devices') }} />
+        <Stack.Screen name="settings/verify-email" options={{ title: t('Verify email') }} />
         <Stack.Screen name="settings/subscription" options={{ title: t('Subscription') }} />
         <Stack.Screen name="settings/domain" options={{ title: t('Custom domain') }} />
         <Stack.Screen name="settings/delete-account" options={{ title: t('Delete account') }} />

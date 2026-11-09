@@ -178,6 +178,15 @@ export default function Account() {
           value={<Caption numberOfLines={1}>{user?.email}</Caption>}
           onPress={() => router.push('/settings/profile')}
         />
+        {/* Optional: only until it is done. Sign-up never waits on it. */}
+        {user && !user.emailVerified ? (
+          <Item
+            icon="mail-unread-outline"
+            label={t('Verify email')}
+            value={<Pill label={t('Not verified')} tone="amber" />}
+            onPress={() => router.push('/settings/verify-email')}
+          />
+        ) : null}
         <Item icon="lock-closed-outline" label={t('Password and devices')} onPress={() => router.push('/settings/security')} />
         <Item
           icon="language-outline"

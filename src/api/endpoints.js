@@ -25,6 +25,9 @@ export const auth = {
   forgotPassword: (email) => api.post('/auth/forgot-password', { email }, { auth: false }),
   resetPassword: (input) => api.post('/auth/reset-password', input, { auth: false }),
   me: () => api.get('/auth/me'),
+  // Optional, after sign-up: a code to the signed-in owner's own address.
+  requestEmailVerification: () => api.post('/auth/me/email-verification', {}),
+  confirmEmailVerification: (code) => api.post('/auth/me/email-verification/confirm', { code }),
   updateProfile: (input) => api.patch('/auth/me', input),
   changePassword: (input) => api.post('/auth/me/change-password', input),
   sessions: () => api.get('/auth/sessions'),
