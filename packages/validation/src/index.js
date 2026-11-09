@@ -8,3 +8,4 @@ export * from './billing.js';
 export * from './params.js';
 export * from './account.js';
 export * from './domains.js';
+export * from './book.js';

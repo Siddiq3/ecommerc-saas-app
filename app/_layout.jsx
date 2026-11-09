@@ -16,6 +16,7 @@ import { AuthProvider, useAuth } from '../src/state/auth.jsx';
 import { OnboardingProvider } from '../src/state/onboarding.jsx';
 import { PlanProvider, usePlan } from '../src/state/plan.jsx';
 import { LocaleProvider, useT } from '../src/state/locale.jsx';
+import { BookProvider } from '../src/state/book.jsx';
 import { ToastProvider } from '../src/components/Toast.jsx';
 import { PlanLock } from '../src/components/PlanLock.jsx';
 import { colors, type } from '../src/theme.js';
@@ -122,6 +123,10 @@ const Navigation = () => {
         <Stack.Screen name="settings/domain" options={{ title: t('Custom domain') }} />
         <Stack.Screen name="settings/delete-account" options={{ title: t('Delete account') }} />
         <Stack.Screen name="settings/language" options={{ title: t('Language') }} />
+        <Stack.Screen name="book/index" options={{ title: t('Bill book') }} />
+        <Stack.Screen name="book/entry" options={{ title: t('New bill'), presentation: 'modal' }} />
+        <Stack.Screen name="khata/index" options={{ title: t('Khata') }} />
+        <Stack.Screen name="khata/[partyId]" options={{ title: t('Customer') }} />
       </Stack>
       {/* Over every screen once the plan lapses, except account deletion: see PlanLock. */}
       <PlanLock />
@@ -181,7 +186,9 @@ export default function RootLayout() {
             {/* Above the navigator: the account and code screens (auth group) and the
                 rest of setup (onboarding group) share one draft. */}
             <OnboardingProvider>
-              <Navigation />
+              <BookProvider>
+                <Navigation />
+              </BookProvider>
             </OnboardingProvider>
           </ToastProvider>
         </PlanProvider>

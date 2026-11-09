@@ -14,6 +14,7 @@ import { SkeletonList, SkeletonStats } from '../../src/components/Skeleton.jsx';
 import { FadeIn, Stagger, haptic } from '../../src/components/motion.jsx';
 import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
+import { BookCard } from '../../src/components/book.jsx';
 import { useAction, useAsync, useRefreshOnFocus } from '../../src/lib/useAsync.js';
 import { pickAndSaveLogo } from '../../src/lib/upload.js';
 import {
@@ -258,6 +259,12 @@ export default function Dashboard() {
           </Card>
         </FadeIn>
       ) : null}
+
+      <BookCard
+        onOpen={() => router.push('/book')}
+        onBill={() => router.push({ pathname: '/book/entry', params: { kind: 'sale' } })}
+        onKhata={() => router.push('/khata')}
+      />
 
       <SectionHeader title="Manage your store" />
       <FadeIn>
