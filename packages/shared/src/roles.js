@@ -17,6 +17,7 @@ export const PERMISSIONS = Object.freeze([
   'member:read', 'member:write',
   'audit:read',
   'domain:read', 'domain:write',
+  'book:read', 'book:write',
 ]);
 
 export const ROLES = Object.freeze(['owner', 'manager', 'staff']);
@@ -28,7 +29,7 @@ export const ROLE_PERMISSIONS = Object.freeze({
     'category:read', 'category:write', 'inventory:read', 'inventory:write',
     'order:read', 'order:write', 'order:cancel', 'payment:read', 'payment:verify',
     'customer:read', 'coupon:read', 'coupon:write', 'settings:read',
-    'analytics:read', 'upload:write',
+    'analytics:read', 'upload:write', 'book:read', 'book:write',
   ],
   staff: [
     'business:read', 'product:read', 'category:read', 'inventory:read',

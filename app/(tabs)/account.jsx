@@ -154,6 +154,8 @@ export default function Account() {
           onPress={() => router.push('/settings/subscription')}
         />
         */}
+        <Item icon="book-outline" label={t('Bill book')} onPress={() => router.push('/book')} />
+        <Item icon="people-outline" label={t('Khata')} onPress={() => router.push('/khata')} />
         <Item icon="bar-chart-outline" label={t('Analytics')} onPress={() => router.push('/analytics')} />
         <Item icon="notifications-outline" label={t('Activity')} onPress={() => router.push('/notifications')} />
         <Item icon="folder-outline" label={t('Categories')} onPress={() => router.push('/categories')} />

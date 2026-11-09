@@ -174,6 +174,11 @@ export const customers = {
 
 /* ───────────── Insight ───────────── */
 
+export const book = {
+  sync: (businessId, body) => api.post(`${scope(businessId)}/book/sync`, body),
+  changes: (businessId, params) => api.get(`${scope(businessId)}/book/changes${qs(params)}`),
+};
+
 export const analytics = {
   dashboard: (businessId) => api.get(`${scope(businessId)}/analytics/dashboard`),
   overview: (businessId, params) => api.get(`${scope(businessId)}/analytics${qs(params)}`),
