@@ -15,6 +15,23 @@ Amounts are stored as integer paise. Enter rupees in the app.
 - Expenses reduce money in hand; choose chit, dealer, rent, salary, bills or other.
 - Old dues carry a customer's paper-khata balance into the app without moving cash.
 
+## Bill items
+
+A bill can list what was bought: item name, quantity, unit and price per unit.
+Tap **Add items** on a bill, then either type the item (works offline) or pick
+from **My products** (needs the internet; name and price are copied onto the
+bill, so later product edits don't change old bills). Units: pcs, meter, kg,
+gram, litre, ml, pair, set, dozen, box. Quantities allow up to 3 decimals
+(2.5 m). Once a bill has items, its amount is their total and can't be typed.
+Bills without items still work as before. The day book and the customer's
+khata show a short list of the items on each bill.
+
+Items are stored per entry in an `items` column (JSON) on the phone; existing
+books gain the column on first open. On the server they are a plain list on the
+entry record. Deploy the backend first: an older backend rejects entries with
+items. A phone on an older app version ignores items and, if it edits such a
+bill, saves it without them.
+
 Each day's closing balance becomes the next day's opening balance. Editing or
 deleting an earlier entry recalculates later balances. A customer's negative
 balance is shown as an advance. Entries can be opened from the day book or the

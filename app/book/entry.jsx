@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react';
-import { Alert as RNAlert, StyleSheet } from 'react-native';
+import { Alert as RNAlert, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { toMajor } from '@storekit/shared';
-import { bookEntrySchema, rupeesText } from '@storekit/validation';
+import { bookEntrySchema, itemsTotal, rupeesText } from '@storekit/validation';
 import { Screen } from '../../src/components/Screen.jsx';
 import { Alert, Body, Button, Caption, Field, SelectField, Touchable } from '../../src/components/ui.jsx';
 import { FilterChips } from '../../src/components/Filters.jsx';
 import { CATEGORY_LABELS, KIND_LABELS, MODE_LABELS, PartyPicker } from '../../src/components/book.jsx';
+import { ItemList, ItemSheet } from '../../src/components/BillItems.jsx';
 import { dayKey } from '../../src/lib/book.js';
 import { msg } from '../../src/lib/i18n.js';
 import { readEntry } from '../../src/lib/bookQueries.js';
-import { formatDate } from '../../src/lib/format.js';
+import { formatDate, formatMoney } from '../../src/lib/format.js';
 import { newBookId, useBook } from '../../src/state/book.jsx';
 import { useToast } from '../../src/components/Toast.jsx';
 import { useT } from '../../src/state/locale.jsx';
@@ -46,6 +47,8 @@ export default function BookEntry() {
   const [note, setNote] = useState('');
   const [date, setDate] = useState(String(params.date ?? dayKey()));
   const [picking, setPicking] = useState(false);
+  const [items, setItems] = useState([]);
+  const [itemIndex, setItemIndex] = useState(null); // null: closed, -1: new line, n: editing line n
   const [errors, setErrors] = useState({});
 
   // Editing: load the entry and its customer's name.
@@ -58,6 +61,7 @@ export default function BookEntry() {
       setAmount(String(toMajor(e.amount)));
       setMode(e.mode ?? 'cash');
       setCategory(e.category);
+      setItems(Array.isArray(e.items) ? e.items : []);
       setNote(e.note ?? '');
       setDate(e.date);
       if (e.partyId) {
@@ -75,15 +79,21 @@ export default function BookEntry() {
   const hasMode = kind === 'sale' || kind === 'expense' || kind === 'collection';
   const needsParty = kind === 'collection' || kind === 'due' || (kind === 'sale' && mode === 'credit');
   const showParty = needsParty || kind === 'sale';
+  const itemized = kind === 'sale' && items.length > 0;
+  const saveItem = (line) => {
+    setItems((list) => (itemIndex >= 0 ? list.map((it, i) => (i === itemIndex ? line : it)) : [...list, line]));
+    setErrors((e) => ({ ...e, amount: undefined, items: undefined }));
+  };
 
   const { run: save, pending: saving, error: saveError } = useAction(async () => {
-    const parsed = amountField.safeParse(amount);
+    const parsed = itemized ? { success: true, data: itemsTotal(items) } : amountField.safeParse(amount);
     if (!parsed.success) { setErrors({ amount: t('Enter an amount, like 250 or 99.50') }); return; }
     const entry = {
       entryId: existing?.entryId ?? newBookId(),
       kind,
       date,
       amount: parsed.data,
+      ...(itemized ? { items } : {}),
       ...(hasMode ? { mode: modes.includes(mode) ? mode : 'cash' } : {}),
       ...(showParty && party ? { partyId: party.partyId } : {}),
       ...(kind === 'expense' && category ? { category } : {}),
@@ -97,7 +107,8 @@ export default function BookEntry() {
         ...next,
         ...(next.partyId ? { partyId: t('Choose the customer') } : {}),
         ...(next.category ? { category: t('Choose what the expense was for') } : {}),
-        ...(next.amount ? { amount: t('Enter an amount, like 250 or 99.50') } : {}),
+        ...(next.amount ? { amount: itemized ? t('The items add up to ₹0. Check the prices.') : t('Enter an amount, like 250 or 99.50') } : {}),
+        ...(next.items ? { items: t('Check the items on this bill') } : {}),
       });
       return;
     }
@@ -128,17 +139,34 @@ export default function BookEntry() {
         />
       ) : null}
 
-      <Field
-        label={t('Amount')}
-        value={amount}
-        onChangeText={(v) => { setAmount(v); setErrors((e) => ({ ...e, amount: undefined })); }}
-        placeholder="0"
-        keyboardType="decimal-pad"
-        prefix="₹"
-        autoFocus={!params.entryId}
-        style={styles.amount}
-        error={errors.amount}
-      />
+      {itemized ? (
+        <View style={styles.totalBox}>
+          <Caption style={errors.amount ? { color: colors.danger } : null}>{errors.amount ?? t('Bill total (adds up from the items)')}</Caption>
+          <Body style={styles.totalFigure}>{formatMoney(itemsTotal(items))}</Body>
+        </View>
+      ) : (
+        <Field
+          label={t('Amount')}
+          value={amount}
+          onChangeText={(v) => { setAmount(v); setErrors((e) => ({ ...e, amount: undefined })); }}
+          placeholder="0"
+          keyboardType="decimal-pad"
+          prefix="₹"
+          autoFocus={!params.entryId}
+          style={styles.amount}
+          error={errors.amount}
+        />
+      )}
+
+      {kind === 'sale' ? (
+        <ItemList
+          items={items}
+          error={errors.items}
+          onAdd={() => setItemIndex(-1)}
+          onEdit={(i) => setItemIndex(i)}
+          onRemove={(i) => setItems((list) => list.filter((_, n) => n !== i))}
+        />
+      ) : null}
 
       {hasMode ? (
         <>
@@ -178,6 +206,12 @@ export default function BookEntry() {
         </Touchable>
       ) : null}
 
+      <ItemSheet
+        visible={itemIndex !== null}
+        item={itemIndex >= 0 ? items[itemIndex] : null}
+        onClose={() => setItemIndex(null)}
+        onSave={saveItem}
+      />
       <PartyPicker visible={picking} onClose={() => setPicking(false)} onPick={(p) => { setParty(p); setErrors((e) => ({ ...e, partyId: undefined })); }} />
     </Screen>
   );
@@ -186,6 +220,8 @@ export default function BookEntry() {
 const styles = StyleSheet.create({
   kinds: { marginBottom: space.md },
   amount: { ...type.figure, fontSize: 28 },
+  totalBox: { marginBottom: space.md, gap: 2 },
+  totalFigure: { ...type.figure, fontSize: 28 },
   label: { marginBottom: space.xs, color: colors.ink600 },
   chips: { marginBottom: space.md },
   creditHint: { color: colors.warning, marginTop: -space.sm, marginBottom: space.md },

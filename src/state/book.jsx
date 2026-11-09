@@ -6,7 +6,7 @@ import { book as bookApi } from '../api/endpoints.js';
 import { ulid } from '../lib/book.js';
 import { useAuth } from './auth.jsx';
 import { pendingCount, syncBook } from '../lib/bookSync.js';
-import { ENTRY_COLS, PARTY_COLS, SCHEMA, saveLocal } from '../lib/bookStore.js';
+import { ENTRY_COLS, PARTY_COLS, SCHEMA, migrate, saveLocal } from '../lib/bookStore.js';
 
 /**
  * The bill book's copy on this phone, and its sync with the server.
@@ -41,6 +41,7 @@ const BookSession = ({ children, businessId }) => {
       if (!businessId) return;
       opened = await SQLite.openDatabaseAsync(`book-${businessId}.db`);
       await opened.execAsync(SCHEMA);
+      await migrate(opened);
       if (!cancelled) { setDb(opened); setVersion((v) => v + 1); }
     })().catch((error) => {
       if (!cancelled) setSync({ state: 'error', pending: 0, lastSyncedAt: null, error });
