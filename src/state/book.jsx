@@ -3,10 +3,10 @@ import { AppState } from 'react-native';
 import * as SQLite from 'expo-sqlite';
 import * as Crypto from 'expo-crypto';
 import { book as bookApi } from '../api/endpoints.js';
-import { ulid } from '../lib/book.js';
+import { attendanceId, ulid } from '../lib/book.js';
 import { useAuth } from './auth.jsx';
 import { pendingCount, syncBook } from '../lib/bookSync.js';
-import { ENTRY_COLS, PARTY_COLS, SCHEMA, migrate, saveLocal } from '../lib/bookStore.js';
+import { ATTENDANCE_COLS, ENTRY_COLS, PARTY_COLS, SCHEMA, STAFF_COLS, migrate, saveLocal } from '../lib/bookStore.js';
 
 /**
  * The bill book's copy on this phone, and its sync with the server.
@@ -105,6 +105,17 @@ const BookSession = ({ children, businessId }) => {
     },
     saveParty: async (party) => {
       await saveLocal(db, 'parties', PARTY_COLS, party);
+      await changed();
+    },
+    saveStaff: async (staff) => {
+      await saveLocal(db, 'staff', STAFF_COLS, staff);
+      await changed();
+    },
+    /** Marks one person for one day; `status` null clears the mark. */
+    markAttendance: async (staffId, date, status) => {
+      await saveLocal(db, 'attendance', ATTENDANCE_COLS, {
+        attendanceId: attendanceId(staffId, date), staffId, date, status: status ?? 'absent', deleted: !status,
+      });
       await changed();
     },
   }), [db, version, sync, syncNow, changed]);

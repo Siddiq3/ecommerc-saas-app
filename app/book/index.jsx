@@ -98,6 +98,11 @@ export default function DayBook() {
         <Body strong style={{ color: colors.accent700, flex: 1 }}>{t('Khata: who owes you')}</Body>
         <Ionicons name="chevron-forward" size={18} color={colors.accent700} />
       </Touchable>
+      <Touchable onPress={() => router.push('/staff')} style={[styles.khataLink, { paddingTop: 0 }]}>
+        <Ionicons name="calendar-outline" size={18} color={colors.accent700} />
+        <Body strong style={{ color: colors.accent700, flex: 1 }}>{t('Staff attendance')}</Body>
+        <Ionicons name="chevron-forward" size={18} color={colors.accent700} />
+      </Touchable>
 
       <SectionTitle title={t('Bills ({n})', { n: bills.length })} total={day?.sales.total} />
       {bills.length ? (

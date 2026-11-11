@@ -1,49 +1,65 @@
 import { resumeFrom } from './book.js';
-import { ENTRY_COLS, PARTY_COLS, toWire, upsert, withBookTransaction } from './bookStore.js';
+import { TABLES, toWire, upsert, withBookTransaction } from './bookStore.js';
+
+const TYPES = Object.keys(TABLES);
 
 export const pendingCount = async (db) => {
-  const a = await db.getFirstAsync('SELECT COUNT(*) AS n FROM entries WHERE dirty = 1');
-  const b = await db.getFirstAsync('SELECT COUNT(*) AS n FROM parties WHERE dirty = 1');
-  return (a?.n ?? 0) + (b?.n ?? 0);
+  let n = 0;
+  for (const type of TYPES) n += (await db.getFirstAsync(`SELECT COUNT(*) AS n FROM ${TABLES[type].table} WHERE dirty = 1`))?.n ?? 0;
+  return n;
 };
 
-/** Only acknowledge the revision sent; a later local edit must stay dirty. */
-export const acknowledge = async (db, parties, entries, conflicts = []) => {
+/** Stores a record from the server in its table. A type this app version does not know is skipped. */
+const storeIncoming = (tx, record) => {
+  const spec = TABLES[record.type];
+  return spec ? upsert(tx, spec.table, spec.cols, record, false) : undefined;
+};
+
+/**
+ * Only acknowledge the revision sent; a later local edit must stay dirty.
+ * `sent` maps each record type to the rows pushed: `{ entry: rows, party: rows, ... }`.
+ */
+export const acknowledge = async (db, sent, conflicts = []) => {
   await withBookTransaction(db, async (tx) => {
-    for (const r of parties) await tx.runAsync('UPDATE parties SET dirty = 0 WHERE partyId = ? AND updatedAt = ?', [r.partyId, r.updatedAt]);
-    for (const r of entries) await tx.runAsync('UPDATE entries SET dirty = 0 WHERE entryId = ? AND updatedAt = ?', [r.entryId, r.updatedAt]);
-    for (const record of conflicts) {
-      const party = record.type === 'party';
-      await upsert(tx, party ? 'parties' : 'entries', party ? PARTY_COLS : ENTRY_COLS, record, false);
+    for (const [type, rows] of Object.entries(sent)) {
+      const { table, cols } = TABLES[type];
+      for (const r of rows) await tx.runAsync(`UPDATE ${table} SET dirty = 0 WHERE ${cols[0]} = ? AND updatedAt = ?`, [r[cols[0]], r.updatedAt]);
     }
+    for (const record of conflicts) await storeIncoming(tx, record);
   });
 };
 
 /** Push local revisions, then pull remote changes. Network calls never hold a SQL lock. */
 export const syncBook = async (db, api, businessId, active = () => true) => {
   while (active()) {
-    const parties = await db.getAllAsync('SELECT * FROM parties WHERE dirty = 1 LIMIT 50');
-    const entries = await db.getAllAsync(`SELECT * FROM entries WHERE dirty = 1 LIMIT ${100 - parties.length}`);
-    if (!parties.length && !entries.length) break;
-    const result = await api.sync(businessId, {
-      parties: parties.map((r) => toWire(r, PARTY_COLS)),
-      entries: entries.map((r) => toWire(r, ENTRY_COLS)),
-    });
+    // Up to 100 rows a request across every table, customers first so a bill's customer lands with it.
+    const sent = {};
+    let room = 100;
+    for (const type of TYPES) {
+      if (room <= 0) break;
+      const rows = await db.getAllAsync(`SELECT * FROM ${TABLES[type].table} WHERE dirty = 1 LIMIT ${room}`);
+      if (rows.length) { sent[type] = rows; room -= rows.length; }
+    }
+    if (room === 100) break;
+    const body = Object.fromEntries(TYPES.map((type) => [TABLES[type].key, (sent[type] ?? []).map((r) => toWire(r, TABLES[type].cols))]));
+    const result = await api.sync(businessId, body);
     if (!active()) return;
-    await acknowledge(db, parties, entries, result?.conflicts);
+    await acknowledge(db, sent, result?.conflicts);
   }
 
-  let since = resumeFrom((await db.getFirstAsync("SELECT value FROM meta WHERE key = 'next'"))?.value);
+  // A book last synced by an app version without staff attendance moved its position past the
+  // staff records it was not sent. Read the feed once from the start to pick them up; records
+  // already on the phone are simply stored again.
+  const feed = (await db.getFirstAsync("SELECT value FROM meta WHERE key = 'feed'"))?.value;
+  let since = feed === 'staff' ? resumeFrom((await db.getFirstAsync("SELECT value FROM meta WHERE key = 'next'"))?.value) : undefined;
   while (active()) {
-    const page = await api.changes(businessId, { since, limit: 200 });
+    const page = await api.changes(businessId, { since, limit: 200, include: 'staff' });
     if (!active()) return;
     await withBookTransaction(db, async (tx) => {
-      for (const record of page.items) {
-        const party = record.type === 'party';
-        // The upsert checks dirty/timestamps atomically, including conflicts from a push.
-        await upsert(tx, party ? 'parties' : 'entries', party ? PARTY_COLS : ENTRY_COLS, record, false);
-      }
+      // The upsert checks dirty/timestamps atomically, including conflicts from a push.
+      for (const record of page.items) await storeIncoming(tx, record);
       if (page.next) await tx.runAsync("INSERT OR REPLACE INTO meta (key, value) VALUES ('next', ?)", [page.next]);
+      await tx.runAsync("INSERT OR REPLACE INTO meta (key, value) VALUES ('feed', 'staff')");
     });
     if (!page.more) break;
     if (!page.next || page.next === since) throw new Error('The book change feed did not advance.');

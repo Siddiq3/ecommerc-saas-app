@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { ENTRY_COLS, PARTY_COLS, SCHEMA, migrate, saveLocal, toWire, upsert } from '../src/lib/bookStore.js';
+import { ATTENDANCE_COLS, ENTRY_COLS, PARTY_COLS, SCHEMA, STAFF_COLS, migrate, saveLocal, toWire, upsert } from '../src/lib/bookStore.js';
 import { acknowledge, pendingCount, syncBook } from '../src/lib/bookSync.js';
-import { readDay, readParties, readParty } from '../src/lib/bookQueries.js';
+import { readDay, readParties, readParty, readRegister, readStaffMonth } from '../src/lib/bookQueries.js';
 
 // Exercise production SQL and sync with two independent real SQLite databases.
 function database() {
@@ -35,7 +35,7 @@ try {
   await upsert(a, 'entries', ENTRY_COLS, bill, true);
   const sent = await a.getAllAsync('SELECT * FROM entries');
   await upsert(a, 'entries', ENTRY_COLS, { ...bill, amount: 30000, updatedAt: at(3) }, true);
-  await acknowledge(a, [], sent, [{ ...bill, type: 'entry', amount: 27000, updatedAt: at(2) }]);
+  await acknowledge(a, { entry: sent }, [{ ...bill, type: 'entry', amount: 27000, updatedAt: at(2) }]);
   let stored = await a.getFirstAsync('SELECT * FROM entries');
   assert.equal(stored.amount, 30000, 'a delayed server conflict must preserve a newer local edit');
   assert.equal(stored.dirty, 1, 'acknowledging an earlier revision cannot clear a later edit');
@@ -64,12 +64,13 @@ try {
       assert.equal(store, 'store-a');
       if (fail) throw Object.assign(new Error('offline'), { status: 0 });
       assert(payload.parties.length + payload.entries.length <= 100);
-      for (const [type, rows] of [['party', payload.parties], ['entry', payload.entries]]) {
-        for (const row of rows) remote.set(row.partyId && type === 'party' ? row.partyId : row.entryId, { ...row, type });
+      for (const [type, rows] of [['party', payload.parties], ['entry', payload.entries], ['staff', payload.staff], ['attendance', payload.attendance]]) {
+        for (const row of rows) remote.set(`${type}:${row[{ party: 'partyId', entry: 'entryId', staff: 'staffId', attendance: 'attendanceId' }[type]]}`, { ...row, type });
       }
       return { conflicts: [] };
     },
-    async changes() {
+    async changes(store, params) {
+      assert.equal(params.include, 'staff', 'this app asks for staff records');
       counter += 1;
       return { items: [...remote.values()], next: `${at(20)}#cursor`, more: false };
     },
@@ -127,6 +128,41 @@ try {
   await migrate(oldDb);
   assert.equal(old.prepare("SELECT amount, items FROM entries WHERE entryId = 'legacy'").get().amount, 500);
   old.close();
+
+  // Staff and attendance: saved on one phone, restored on another; a cleared mark stays cleared.
+  const worker = { staffId: 'lakshmi', name: 'Lakshmi', wageType: 'monthly', wage: 3000000 };
+  await saveLocal(a, 'staff', STAFF_COLS, worker);
+  const markOn = (date, status) => saveLocal(a, 'attendance', ATTENDANCE_COLS, { attendanceId: `lakshmi:${date}`, staffId: 'lakshmi', date, status: status ?? 'absent', deleted: !status });
+  await markOn('2026-11-02', 'present');
+  await markOn('2026-11-03', 'absent');
+  await markOn('2026-11-04', 'half');
+  await markOn('2026-11-05', 'present');
+  await markOn('2026-11-05', null);
+  await syncBook(a, api, 'store-a');
+  await syncBook(b, api, 'store-a');
+  const register = await readRegister(b, '2026-11-03');
+  assert.deepEqual(register.map((r) => [r.name, r.status]), [['Lakshmi', 'absent']], 'the second phone has the register');
+  assert.equal((await readRegister(b, '2026-11-05'))[0].status, null, 'a cleared mark reaches the second phone');
+  const month = await readStaffMonth(b, 'lakshmi', '2026-11');
+  assert.deepEqual(month.counts, { present: 1, half: 1, absent: 1, leave: 0 });
+  assert.equal(month.pay, 3000000 - 150000, '30 days: one absent and one half day cut 1.5 days of 1,000');
+  await saveLocal(a, 'staff', STAFF_COLS, { ...worker, deleted: true });
+  await syncBook(a, api, 'store-a');
+  await syncBook(b, api, 'store-a');
+  assert.deepEqual(await readRegister(b, '2026-11-03'), [], 'a removed person leaves the register');
+
+  // A phone updated from a version without staff attendance reads the feed once from the start.
+  const upgraded = database();
+  await upgraded.runAsync("INSERT INTO meta (key, value) VALUES ('next', ?)", [`${at(59)}#cursor`]);
+  let asked;
+  await syncBook(upgraded, { sync: api.sync, changes: async (s, params) => { asked = params.since; return { items: [], next: `${at(59)}#x`, more: false }; } }, 'store-a');
+  assert.equal(asked, undefined, 'first sync after the update starts from the beginning');
+  await syncBook(upgraded, { sync: api.sync, changes: async (s, params) => { asked = params.since; return { items: [], next: `${at(59)}#x`, more: false }; } }, 'store-a');
+  assert.notEqual(asked, undefined, 'later syncs resume where they left off');
+  // A record type from a newer server is skipped, not stored as a bill.
+  await syncBook(upgraded, { sync: api.sync, changes: async () => ({ items: [{ type: 'payroll', payrollId: 'x', updatedAt: at(1) }], next: `${at(59)}#y`, more: false }) }, 'store-a');
+  assert.equal((await upgraded.getFirstAsync('SELECT COUNT(*) AS n FROM entries')).n, 0);
+  upgraded.close();
 
   // If the owner leaves during a network request, its response is not applied.
   let active = true;

@@ -96,13 +96,58 @@ export const bookPartySchema = z
   })
   .strict();
 
+/**
+ * Staff attendance: the shop's own register of the people who work there. Staff here are
+ * names on a list, not app accounts; the owner marks each day. How a status counts:
+ *   present  a full day worked
+ *   half     half a day worked
+ *   absent   not worked; a monthly salary is cut for it
+ *   leave    approved leave; paid on a monthly salary, unpaid on a daily wage
+ */
+export const STAFF_WAGE_TYPES = ['monthly', 'daily'];
+export const ATTENDANCE_STATUSES = ['present', 'half', 'absent', 'leave'];
+
+export const bookStaffSchema = z
+  .object({
+    staffId: objectId,
+    name: shortText(1, 80, 'Name'),
+    mobile: mobile.optional(),
+    wageType: z.enum(STAFF_WAGE_TYPES),
+    wage: money,
+    note,
+    updatedAt: isoDateTime,
+    deleted: z.boolean().default(false),
+  })
+  .strict();
+
+/**
+ * One mark per person per day. The id is `<staffId>:<date>`, so two phones marking the same
+ * day write the same record and the later mark wins, instead of leaving two marks.
+ */
+export const bookAttendanceSchema = z
+  .object({
+    attendanceId: z.string().max(40),
+    staffId: objectId,
+    date: dateOnly,
+    status: z.enum(ATTENDANCE_STATUSES),
+    updatedAt: isoDateTime,
+    deleted: z.boolean().default(false),
+  })
+  .strict()
+  .refine((a) => a.attendanceId === `${a.staffId}:${a.date}`, { path: ['attendanceId'], message: 'Invalid attendance id' });
+
 export const bookSyncSchema = z
   .object({
     entries: z.array(bookEntrySchema).max(BOOK_SYNC_MAX).default([]),
     parties: z.array(bookPartySchema).max(BOOK_SYNC_MAX).default([]),
+    staff: z.array(bookStaffSchema).max(BOOK_SYNC_MAX).default([]),
+    attendance: z.array(bookAttendanceSchema).max(BOOK_SYNC_MAX).default([]),
   })
   .strict()
-  .refine((body) => body.entries.length + body.parties.length <= BOOK_SYNC_MAX, `Send at most ${BOOK_SYNC_MAX} records at a time`);
+  .refine(
+    (body) => body.entries.length + body.parties.length + body.staff.length + body.attendance.length <= BOOK_SYNC_MAX,
+    `Send at most ${BOOK_SYNC_MAX} records at a time`,
+  );
 
 /** `<server time>#<record id>`: the position in the change feed a phone has read up to. */
 export const bookChangesQuerySchema = z
@@ -113,5 +158,8 @@ export const bookChangesQuerySchema = z
       .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z#(?:[0-9A-HJKMNP-TV-Z]{26})?$/, 'Invalid sync position')
       .optional(),
     limit: pageLimit(500, 200),
+    // Staff and attendance records only go to app versions that ask for them: an older app
+    // would try to store them as bills.
+    include: z.enum(['staff']).optional(),
   })
   .strict();

@@ -264,6 +264,7 @@ export default function Dashboard() {
         onOpen={() => router.push('/book')}
         onBill={() => router.push({ pathname: '/book/entry', params: { kind: 'sale' } })}
         onKhata={() => router.push('/khata')}
+        onStaff={() => router.push('/staff')}
       />
 
       <SectionHeader title="Manage your store" />

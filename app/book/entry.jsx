@@ -40,11 +40,12 @@ export default function BookEntry() {
 
   const [existing, setExisting] = useState(null);
   const [kind, setKind] = useState(String(params.kind ?? 'sale'));
-  const [amount, setAmount] = useState('');
+  // A new entry can arrive pre-filled, e.g. a salary from staff attendance.
+  const [amount, setAmount] = useState(params.amount ? String(params.amount) : '');
   const [mode, setMode] = useState(params.mode ? String(params.mode) : 'cash');
-  const [category, setCategory] = useState(null);
+  const [category, setCategory] = useState(params.category ? String(params.category) : null);
   const [party, setParty] = useState(params.partyId ? { partyId: String(params.partyId), name: String(params.partyName ?? '') } : null);
-  const [note, setNote] = useState('');
+  const [note, setNote] = useState(params.note ? String(params.note) : '');
   const [date, setDate] = useState(String(params.date ?? dayKey()));
   const [picking, setPicking] = useState(false);
   const [items, setItems] = useState([]);

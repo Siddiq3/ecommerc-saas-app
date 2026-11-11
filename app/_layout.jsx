@@ -128,6 +128,8 @@ const Navigation = () => {
         <Stack.Screen name="book/entry" options={{ title: t('New bill'), presentation: 'modal' }} />
         <Stack.Screen name="khata/index" options={{ title: t('Khata') }} />
         <Stack.Screen name="khata/[partyId]" options={{ title: t('Customer') }} />
+        <Stack.Screen name="staff/index" options={{ title: t('Staff attendance') }} />
+        <Stack.Screen name="staff/[staffId]" options={{ title: t('Staff') }} />
       </Stack>
       {/* Over every screen once the plan lapses, except account deletion: see PlanLock. */}
       <PlanLock />

@@ -1,4 +1,4 @@
-import { balanceOf, summarize } from './book.js';
+import { balanceOf, monthSummary, summarize } from './book.js';
 import { decodeRow } from './bookStore.js';
 
 /**
@@ -44,3 +44,26 @@ export const readParty = async (db, partyId) => {
 };
 
 export const readEntry = (db, entryId) => db.getFirstAsync('SELECT * FROM entries WHERE entryId = ?', [entryId]).then(decodeRow);
+
+/** Everyone on the staff list, by name. */
+export const readStaff = (db) =>
+  db.getAllAsync('SELECT * FROM staff WHERE deleted = 0 ORDER BY name COLLATE NOCASE');
+
+/** The register for one day: every person on the staff list and how they are marked, if at all. */
+export const readRegister = async (db, date) => {
+  const staff = await readStaff(db);
+  const marks = await db.getAllAsync('SELECT staffId, status FROM attendance WHERE deleted = 0 AND date = ?', [date]);
+  const byStaff = new Map(marks.map((m) => [m.staffId, m.status]));
+  return staff.map((s) => ({ ...s, status: byStaff.get(s.staffId) ?? null }));
+};
+
+/** One person's month: their marks by day and what the month comes to. */
+export const readStaffMonth = async (db, staffId, month) => {
+  const staff = await db.getFirstAsync('SELECT * FROM staff WHERE staffId = ?', [staffId]);
+  if (!staff) return null;
+  const marks = await db.getAllAsync(
+    "SELECT date, status FROM attendance WHERE deleted = 0 AND staffId = ? AND date LIKE ? ORDER BY date",
+    [staffId, `${month}-%`],
+  );
+  return { staff, marks: Object.fromEntries(marks.map((m) => [m.date, m.status])), ...monthSummary(staff, marks, month) };
+};

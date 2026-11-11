@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
-import { summarize, balanceOf, takeIncoming, resumeFrom, shiftDay, ulid } from '../src/lib/book.js';
+import { summarize, balanceOf, takeIncoming, resumeFrom, shiftDay, ulid, monthSummary, daysInMonth, shiftMonth, attendanceId } from '../src/lib/book.js';
+import { bookAttendanceSchema, bookStaffSchema } from '../packages/validation/src/book.js';
 import { bookEntrySchema, itemTotal, itemsTotal } from '../packages/validation/src/book.js';
 
 // A day like the paper book: cash and UPI bills and dues collected come in, expenses go out,
@@ -36,6 +37,32 @@ assert.equal(resumeFrom('2026-11-08T10:05:00.000Z#01JC000000000000000000000A'), 
 assert.equal(resumeFrom(null), undefined);
 assert.equal(shiftDay('2026-03-01', -1), '2026-02-28');
 assert.equal(shiftDay('2026-12-31', 1), '2027-01-01');
+
+// Staff attendance: what a month comes to.
+assert.equal(daysInMonth('2026-02'), 28);
+assert.equal(daysInMonth('2028-02'), 29);
+assert.equal(shiftMonth('2026-01', -1), '2025-12');
+assert.equal(shiftMonth('2026-12', 1), '2027-01');
+const marks = (...statuses) => statuses.map((status) => ({ status }));
+const monthly = { wageType: 'monthly', wage: 3000000 };
+assert.equal(monthSummary(monthly, [], '2026-11').pay, 3000000, 'unmarked days (offs, holidays) are paid on a monthly salary');
+assert.equal(monthSummary(monthly, marks('absent', 'absent'), '2026-11').pay, 2800000, 'each absent day cuts a day of 1,000');
+assert.equal(monthSummary(monthly, marks('half'), '2026-11').pay, 2950000, 'a half day cuts half a day');
+assert.equal(monthSummary(monthly, marks('leave', 'leave'), '2026-11').pay, 3000000, 'leave is paid on a monthly salary');
+assert.equal(monthSummary(monthly, marks(...Array(40).fill('absent')), '2026-11').pay, 0, 'never below zero');
+const daily = { wageType: 'daily', wage: 60000 };
+const week = monthSummary(daily, marks('present', 'present', 'half', 'absent', 'leave'), '2026-11');
+assert.deepEqual(week.counts, { present: 2, half: 1, absent: 1, leave: 1 });
+assert.equal(week.worked, 2.5);
+assert.equal(week.pay, 150000, 'a daily wage pays only days worked: 2.5 × 600');
+assert.equal(monthSummary({ wageType: 'monthly', wage: 1000000 }, marks('absent'), '2026-11').pay, 966667, 'rounded to the paisa');
+
+// The phone's staff and marks pass the server's checks.
+const staffId = ulid(randomBytes);
+assert.ok(bookStaffSchema.safeParse({ staffId, name: 'Lakshmi', wageType: 'monthly', wage: 1500000, updatedAt: new Date().toISOString() }).success);
+const mark = { attendanceId: attendanceId(staffId, '2026-11-08'), staffId, date: '2026-11-08', status: 'half', updatedAt: new Date().toISOString() };
+assert.ok(bookAttendanceSchema.safeParse(mark).success);
+assert.ok(!bookAttendanceSchema.safeParse({ ...mark, date: '2026-11-09' }).success, 'a mark is for the day in its id');
 
 // Ids minted on the phone pass the server's own id check.
 const id = ulid(randomBytes);

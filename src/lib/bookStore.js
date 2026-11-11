@@ -1,6 +1,16 @@
 /** Local SQLite records shared by the book provider and persistence checks. */
 export const ENTRY_COLS = ['entryId', 'kind', 'date', 'amount', 'mode', 'partyId', 'category', 'items', 'note', 'updatedAt', 'deleted'];
 export const PARTY_COLS = ['partyId', 'name', 'mobile', 'note', 'updatedAt', 'deleted'];
+export const STAFF_COLS = ['staffId', 'name', 'mobile', 'wageType', 'wage', 'note', 'updatedAt', 'deleted'];
+export const ATTENDANCE_COLS = ['attendanceId', 'staffId', 'date', 'status', 'updatedAt', 'deleted'];
+
+/** Every synced table, by the record `type` the server uses and the key its rows travel under. */
+export const TABLES = {
+  party: { table: 'parties', cols: PARTY_COLS, key: 'parties' },
+  entry: { table: 'entries', cols: ENTRY_COLS, key: 'entries' },
+  staff: { table: 'staff', cols: STAFF_COLS, key: 'staff' },
+  attendance: { table: 'attendance', cols: ATTENDANCE_COLS, key: 'attendance' },
+};
 
 export const SCHEMA = `
   PRAGMA journal_mode = WAL;
@@ -15,6 +25,16 @@ export const SCHEMA = `
     partyId TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL, mobile TEXT, note TEXT, updatedAt TEXT NOT NULL,
     deleted INTEGER NOT NULL DEFAULT 0, dirty INTEGER NOT NULL DEFAULT 0
   );
+  CREATE TABLE IF NOT EXISTS staff (
+    staffId TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL, mobile TEXT, wageType TEXT NOT NULL, wage INTEGER NOT NULL,
+    note TEXT, updatedAt TEXT NOT NULL, deleted INTEGER NOT NULL DEFAULT 0, dirty INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS attendance (
+    attendanceId TEXT PRIMARY KEY NOT NULL, staffId TEXT NOT NULL, date TEXT NOT NULL, status TEXT NOT NULL,
+    updatedAt TEXT NOT NULL, deleted INTEGER NOT NULL DEFAULT 0, dirty INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE INDEX IF NOT EXISTS attendance_date ON attendance (date);
+  CREATE INDEX IF NOT EXISTS attendance_staff ON attendance (staffId, date);
   CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY NOT NULL, value TEXT);
 `;
 

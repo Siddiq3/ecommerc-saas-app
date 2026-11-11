@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
  * The Home screen's way into the book: today's sales and balance, what is owed, and the
  * one action a shopkeeper takes most often, adding a bill.
  */
-export const BookCard = ({ onOpen, onBill, onKhata }) => {
+export const BookCard = ({ onOpen, onBill, onKhata, onStaff }) => {
   const t = useT();
   const day = useBookQuery((db) => readDayLite(db));
   return (
@@ -185,6 +185,10 @@ export const BookCard = ({ onOpen, onBill, onKhata }) => {
       <Row gap={space.sm} style={{ marginTop: space.md }}>
         <Button title={t('Khata')} variant="secondary" size="sm" full={false} style={{ flex: 1 }} onPress={onKhata}
           icon={<Ionicons name="people-outline" size={16} color={colors.ink900} />} />
+        {onStaff ? (
+          <Button title={t('Staff')} variant="secondary" size="sm" full={false} style={{ flex: 1 }} onPress={onStaff}
+            icon={<Ionicons name="calendar-outline" size={16} color={colors.ink900} />} />
+        ) : null}
         <Button title={t('Add bill')} size="sm" full={false} style={{ flex: 1 }} onPress={onBill}
           icon={<Ionicons name="add" size={18} color="#ffffff" />} />
       </Row>

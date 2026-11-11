@@ -7,6 +7,7 @@
 import { ORDERS } from './strings-orders.js';
 import { PRODUCTS } from './strings-products.js';
 import { BOOK } from './strings-book.js';
+import { STAFF } from './strings-staff.js';
 
 export const ORDER = ['hi', 'ta', 'te', 'kn', 'ml', 'mr', 'bn', 'gu'];
 
@@ -14,6 +15,7 @@ export const STRINGS = {
   ...ORDERS,
   ...PRODUCTS,
   ...BOOK,
+  ...STAFF,
   // Tabs
   'Home': ['होम', 'முகப்பு', 'హోమ్', 'ಮುಖಪುಟ', 'ഹോം', 'होम', 'হোম', 'હોમ'],
   'Social': ['सोशल', 'சமூகம்', 'సోషల్', 'ಸೋಶಿಯಲ್', 'സോഷ്യൽ', 'सोशल', 'সোশ্যাল', 'સોશિયલ'],

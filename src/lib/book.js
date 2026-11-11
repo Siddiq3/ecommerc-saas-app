@@ -71,3 +71,43 @@ export const ulid = (randomBytes, now = Date.now()) => {
   for (let i = 0; i < 16; i += 1) rand += ALPHABET[bytes[i] % 32];
   return time + rand;
 };
+
+/**
+ * Staff attendance. One mark per person per day, with the id `<staffId>:<date>` so marks made
+ * on two phones for the same day are the same record.
+ */
+export const attendanceId = (staffId, date) => `${staffId}:${date}`;
+
+/** `2026-02` → 28. */
+export const daysInMonth = (month) => {
+  const [y, m] = month.split('-').map(Number);
+  return new Date(y, m, 0).getDate();
+};
+
+/** `2026-11-10` → `2026-11`; shiftMonth('2026-01', -1) → `2025-12`. */
+export const monthOf = (day) => day.slice(0, 7);
+export const shiftMonth = (month, by) => {
+  const [y, m] = month.split('-').map(Number);
+  const d = new Date(y, m - 1 + by, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+
+/**
+ * A month of one person's attendance, and what it comes to.
+ *
+ * Monthly salary: the full salary, less a day's pay for each absent day and half a day's pay
+ * for each half day. Leave and unmarked days (weekly offs, holidays) are paid, as most shops
+ * pay a monthly hand.
+ * Daily wage: paid only for days worked, a full day's wage for present and half for a half day.
+ * A day's pay on a monthly salary is the salary divided by the days in that month.
+ */
+export const monthSummary = (staff, marks, month) => {
+  const counts = { present: 0, half: 0, absent: 0, leave: 0 };
+  for (const mark of marks) if (mark.status in counts) counts[mark.status] += 1;
+  const worked = counts.present + counts.half / 2;
+  const wage = Number(staff?.wage ?? 0);
+  const pay = staff?.wageType === 'daily'
+    ? Math.round(wage * worked)
+    : Math.max(0, Math.round(wage - (wage / daysInMonth(month)) * (counts.absent + counts.half / 2)));
+  return { counts, worked, pay };
+};
