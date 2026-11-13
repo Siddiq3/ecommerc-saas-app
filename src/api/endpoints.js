@@ -39,6 +39,8 @@ export const auth = {
    * long-lived secret on the wire for no reason.
    */
   logout: () => api.post('/auth/logout', {}),
+  /** Tied to this login session server-side, so logout alone stops pushes to this phone. */
+  registerPushToken: (input) => api.put('/auth/me/push-token', input),
 };
 
 /* ───────────── Store ───────────── */
@@ -151,6 +153,8 @@ export const orders = {
   setStatus: (businessId, orderId, input) =>
     api.patch(`${scope(businessId)}/orders/${orderId}/status`, input, withKey()),
   cancel: (businessId, orderId, input) => api.post(`${scope(businessId)}/orders/${orderId}/cancel`, input, withKey()),
+  /** The order's bill: numbered and frozen on the first call, the same bill after that. */
+  invoice: (businessId, orderId) => api.post(`${scope(businessId)}/orders/${orderId}/invoice`, {}),
 };
 
 /**

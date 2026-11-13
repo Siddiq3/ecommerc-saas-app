@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import * as Notifications from 'expo-notifications';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { Stack, useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -20,6 +21,7 @@ import { BookProvider } from '../src/state/book.jsx';
 import { ToastProvider } from '../src/components/Toast.jsx';
 import { PlanLock } from '../src/components/PlanLock.jsx';
 import { colors, type } from '../src/theme.js';
+import { registerForPush } from '../src/lib/push.js';
 
 /**
  * Root layout: providers, navigation chrome, and the one guard that decides which of the
@@ -71,6 +73,33 @@ const RouteGuard = () => {
   return null;
 };
 
+/**
+ * Order and store alerts on the phone: registers this session for push once a store
+ * exists, and opens the order/product a tapped alert is about (also from a cold start).
+ */
+const PushBridge = () => {
+  const { status, user, businessId } = useAuth();
+  const router = useRouter();
+  const navigationReady = Boolean(useRootNavigationState()?.key);
+  const response = Notifications.useLastNotificationResponse();
+  const handled = useRef(null);
+  const ready = status === 'authenticated' && Boolean(businessId) && Boolean(user?.businesses?.length);
+
+  useEffect(() => {
+    if (ready) registerForPush();
+  }, [ready]);
+
+  useEffect(() => {
+    const id = response?.notification?.request?.identifier;
+    if (!ready || !navigationReady || !id || handled.current === id) return;
+    handled.current = id;
+    const link = response.notification.request.content.data?.link;
+    router.push(typeof link === 'string' && link.startsWith('/') ? link : '/notifications');
+  }, [ready, navigationReady, response, router]);
+
+  return null;
+};
+
 const Boot = () => (
   <View style={styles.boot}>
     <ActivityIndicator color={colors.accent600} size="large" />
@@ -84,6 +113,7 @@ const Navigation = () => {
   return (
     <>
       <RouteGuard />
+      <PushBridge />
       {isLoading ? <Boot /> : null}
       <Stack
         screenOptions={{
@@ -114,6 +144,7 @@ const Navigation = () => {
         <Stack.Screen name="help" options={{ title: t('Help') }} />
         <Stack.Screen name="settings/store" options={{ title: t('Store details & payments') }} />
         <Stack.Screen name="settings/storefront" options={{ title: t('Storefront') }} />
+        <Stack.Screen name="settings/qr-poster" options={{ title: t('Shop QR poster') }} />
         <Stack.Screen name="settings/delivery" options={{ title: t('Delivery') }} />
         <Stack.Screen name="settings/policies/index" options={{ title: t('Policies') }} />
         <Stack.Screen name="settings/policies/[type]" options={{ title: t('Policy') }} />

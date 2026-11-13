@@ -47,7 +47,7 @@
         {
           "photosPermission": "StoreKit uses your photos so you can add pictures of your products.",
           "cameraPermission": "StoreKit uses your camera so you can photograph your products.",
-          "microphonePermission": false
+          "microphonePermission": "StoreKit uses the microphone only when you tap the mic button, so you can type with your voice."
         }
       ],
       "@react-native-community/datetimepicker",
@@ -65,7 +65,24 @@
           ]
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-notifications",
+        {
+          "color": "#e2511e",
+          "defaultChannel": "store_updates"
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "StoreKit uses the microphone only when you tap the mic button, so you can type with your voice.",
+          "speechRecognitionPermission": "StoreKit turns your speech into text when you tap the mic button.",
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox"
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false

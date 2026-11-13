@@ -53,6 +53,7 @@ const toForm = (business, settings) => ({
   city: business?.contact?.city ?? '',
   state: business?.contact?.state ?? '',
   pincode: business?.contact?.pincode ?? '',
+  gstin: business?.gstin ?? '',
   upiEnabled: Boolean(settings?.payments?.upiEnabled),
   upiId: settings?.payments?.upiId ?? '',
   upiPayeeName: settings?.payments?.upiPayeeName ?? '',
@@ -206,7 +207,7 @@ export default function StoreSettings() {
     // how a number is cleared.
     if (form.phone.trim()) contact.phone = form.phone;
     if (form.whatsapp.trim()) contact.whatsapp = form.whatsapp;
-    const business = check(updateBusinessSchema, { name: form.name, description: form.description, contact });
+    const business = check(updateBusinessSchema, { name: form.name, description: form.description, contact, gstin: form.gstin });
 
     const payments = check(paymentSettingsSchema, {
       ...pickKeys(data.settings?.payments ?? {}, KEPT_PAYMENT_KEYS),
@@ -334,7 +335,7 @@ export default function StoreSettings() {
           ) : null}
         </Row>
       </Card>
-      <Field
+      <Field latin
         label="Store name"
         placeholder="Store name"
         value={form.name}
@@ -343,7 +344,7 @@ export default function StoreSettings() {
         maxLength={80}
         error={fieldErrors.name}
       />
-      <Field
+      <Field latin
         label="Description (optional)"
         value={form.description}
         onChangeText={set('description')}
@@ -431,6 +432,18 @@ export default function StoreSettings() {
         textContentType="postalCode"
         maxLength={6}
         error={fieldErrors['contact.pincode']}
+      />
+      <Field
+        label="GSTIN (optional)"
+        placeholder="e.g. 36ABCDE1234F1Z5"
+        value={form.gstin}
+        onChangeText={(v) => set('gstin')(v.toUpperCase())}
+        autoCapitalize="characters"
+        autoCorrect={false}
+        voice={false}
+        maxLength={15}
+        hint="Fill this only if you are GST-registered. Your bills will then show GST. Your state above is used to choose CGST + SGST or IGST."
+        error={fieldErrors.gstin}
       />
 
       {/* ───── Payments ───── */}

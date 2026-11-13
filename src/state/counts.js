@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { orders } from '../api/endpoints.js';
 
 /**
@@ -34,7 +35,9 @@ export const useOrderCounts = (businessId) => {
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') load();
     });
-    return () => sub.remove();
+    // A push (new order, payment) while the app is open updates the badge straight away.
+    const pushSub = Notifications.addNotificationReceivedListener(() => load());
+    return () => { sub.remove(); pushSub.remove(); };
   }, [load]);
 
   return { ...counts, reload: load };

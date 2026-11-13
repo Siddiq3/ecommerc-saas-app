@@ -7,7 +7,7 @@ import { LANGUAGES } from '../../src/lib/i18n.js';
 import { colors, radius, space } from '../../src/theme.js';
 
 export default function LanguageSettings() {
-  const { locale, setLocale, t } = useLocale();
+  const { locale, setLocale, t, voiceLang, setVoiceLang } = useLocale();
 
   return (
     <Screen>
@@ -32,6 +32,28 @@ export default function LanguageSettings() {
         ))}
       </Card>
       {locale === 'en' ? null : (
+        <>
+          <Caption style={styles.section}>{t('Voice typing language').toUpperCase()}</Caption>
+          <Card padded={false} style={styles.card}>
+            {[['app', t('Same as app language')], ['en', 'English']].map(([key, name], i) => (
+              <View key={key}>
+                {i ? <Divider /> : null}
+                <Touchable
+                  onPress={() => setVoiceLang(key)}
+                  style={styles.row}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: voiceLang === key }}
+                >
+                  <View style={styles.text}><Body strong={voiceLang === key}>{name}</Body></View>
+                  {voiceLang === key ? <Ionicons name="checkmark" size={20} color={colors.accent600} /> : null}
+                </Touchable>
+              </View>
+            ))}
+          </Card>
+          <Caption style={styles.note}>{t('English product names are easier for customers to search.')}</Caption>
+        </>
+      )}
+      {locale === 'en' ? null : (
         <Caption style={styles.note}>{t('Some screens are still in English while we finish translating.')}</Caption>
       )}
     </Screen>
@@ -43,4 +65,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md, minHeight: 54 },
   text: { flex: 1, gap: 2 },
   note: { marginTop: space.lg, textAlign: 'center' },
+  section: { marginTop: space.xl, marginBottom: space.sm, marginLeft: space.xs },
 });

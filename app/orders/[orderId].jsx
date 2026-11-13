@@ -24,6 +24,11 @@ import { useAsync, useAction } from '../../src/lib/useAsync.js';
 import { check } from '../../src/lib/validation.js';
 import { orders as ordersApi, payments as paymentsApi } from '../../src/api/endpoints.js';
 import { formatDate, relativeTime } from '../../src/lib/format.js';
+import { codConfirmMessage, orderUpdateMessage, waLink } from '../../src/lib/whatsapp.js';
+import { storeUrl } from '../../src/lib/storefront.js';
+import { invoiceHtml } from '../../src/lib/invoiceHtml.js';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { colors, radius, space, type } from '../../src/theme.js';
 
 /**
@@ -47,10 +52,11 @@ export default function OrderDetail() {
   const { orderId } = useLocalSearchParams();
   const router = useRouter();
   const navigation = useNavigation();
-  const { businessId } = useAuth();
+  const { businessId, business } = useAuth();
   const t = useT();
 
   const toast = useToast();
+  const [billBusy, setBillBusy] = useState(false);
   const [sheet, setSheet] = useState(null);
   const [note, setNote] = useState('');
   const [rejectReason, setRejectReason] = useState('not_received');
@@ -151,14 +157,31 @@ export default function OrderDetail() {
     if (number) Linking.openURL(`tel:+91${number}`).catch(() => undefined);
   };
 
-  const whatsappCustomer = () => {
-    const number = order.customer?.mobile;
-    if (!number) return;
-    const text = encodeURIComponent(t('Hi {name}, about your order {number}:', { name: order.customer?.name ?? '', number: order.orderNumber }));
-    Linking.openURL(`https://wa.me/91${number}?text=${text}`).catch(() =>
+  // Opens one chat with this customer, message typed in; the seller reviews it and taps Send.
+  const openWhatsApp = (text) => {
+    const link = waLink(order.customer?.mobile, text);
+    if (!link) return;
+    Linking.openURL(link).catch(() =>
       RNAlert.alert(t('WhatsApp not available'), t('Could not open WhatsApp on this device.')),
     );
   };
+  const storeName = business?.name ?? '';
+  const trackUrl = business?.slug ? `${storeUrl(business.slug)}/track` : null;
+  const whatsappCustomer = () => openWhatsApp(orderUpdateMessage(order, storeName, trackUrl));
+  // The bill as a PDF, through the share sheet (WhatsApp, print, save). Numbered once by the API.
+  const shareBill = async () => {
+    setBillBusy(true);
+    try {
+      const bill = await ordersApi.invoice(businessId, order.orderId);
+      const { uri } = await Print.printToFileAsync({ html: invoiceHtml(bill) });
+      await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: bill.number, UTI: 'com.adobe.pdf' });
+    } catch (err) {
+      toast.error(err?.message ?? t('Could not create the bill. Please try again.'));
+    } finally {
+      setBillBusy(false);
+    }
+  };
+  const awaitingCodConfirmation = order.paymentMethod === 'COD' && ['NEW', 'CONFIRMED', 'PREPARING', 'READY_TO_SHIP'].includes(order.status);
 
   return (
     <Screen
@@ -299,6 +322,17 @@ export default function OrderDetail() {
             <Body style={[type.money, styles.grandTotal]}>{formatMoney(order.totals?.total)}</Body>
           </Row>
         </View>
+        {order.demo ? null : (
+          <Button
+            title={t('Share bill (PDF)')}
+            variant="secondary"
+            size="sm"
+            icon={<Ionicons name="document-text-outline" size={18} color={colors.ink900} />}
+            onPress={shareBill}
+            loading={billBusy}
+            style={{ marginTop: space.md }}
+          />
+        )}
       </Card>
 
       <Card style={styles.card}>
@@ -324,8 +358,20 @@ export default function OrderDetail() {
         {order.customer?.mobile ? (
           <Row gap={space.sm} style={{ marginTop: space.md }}>
             <Button title={t('Call')} variant="secondary" size="sm" full={false} style={{ flex: 1 }} onPress={callCustomer} />
-            <Button title={t('WhatsApp')} variant="secondary" size="sm" full={false} style={{ flex: 1 }} onPress={whatsappCustomer} />
+            <Button title={t('WhatsApp')} variant="secondary" size="sm" full={false} style={{ flex: 1 }} onPress={whatsappCustomer} accessibilityLabel={t('Send order update on WhatsApp')} />
           </Row>
+        ) : null}
+        {order.customer?.mobile && awaitingCodConfirmation ? (
+          <>
+            <Button
+              title={t('Confirm COD on WhatsApp')}
+              icon={<Ionicons name="logo-whatsapp" size={18} color={colors.surface} />}
+              size="sm"
+              style={{ marginTop: space.sm }}
+              onPress={() => openWhatsApp(codConfirmMessage(order, storeName))}
+            />
+            <Caption style={{ marginTop: space.xs }}>{t('Ask the customer to reply YES before you ship. Fewer parcels come back unpaid.')}</Caption>
+          </>
         ) : null}
       </Card>
 

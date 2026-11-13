@@ -2,11 +2,16 @@ import { useState } from 'react';
 import { Image, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatMoney, toMajor } from '@storekit/shared';
-import { createProductSchema, rupeesText, updateProductSchema, wholeNumberText } from '@storekit/validation';
+import { GST_RATES, createProductSchema, rupeesText, updateProductSchema, wholeNumberText } from '@storekit/validation';
 import {
   Alert, Body, Button, Caption, Card, Field, Heading, Row, SelectField, Toggle, Touchable,
 } from './ui.jsx';
 import { Sheet } from './Sheet.jsx';
+import { FilterChips } from './Filters.jsx';
+import { VoiceButton } from './VoiceButton.jsx';
+import { useToast } from './Toast.jsx';
+import { parseProductSpeech } from '../lib/voice.js';
+import { toLatinTitle } from '../lib/transliterate.js';
 import { VariantEditor, optionsFromVariants, parseValues } from './VariantEditor.jsx';
 import { FadeIn } from './motion.jsx';
 import { ProductPhotos } from './ProductPhotos.jsx';
@@ -114,11 +119,14 @@ const parseInto = (schema, value, key, errors) => {
 export const ProductForm = ({ businessId, initial, categories = [], onSubmit, submitting, error, submitLabel }) => {
   const { fontScale } = useWindowDimensions();
   const t = useT();
+  const toast = useToast();
   const [name, setName] = useState(initial?.name ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [price, setPrice] = useState(initial?.price ? String(toMajor(initial.price)) : '');
   const [mrp, setMrp] = useState(initial?.mrp ? String(toMajor(initial.mrp)) : '');
   const [sku, setSku] = useState(initial?.sku ?? '');
+  const [gstRate, setGstRate] = useState(initial?.gstRate ?? null);
+  const [hsn, setHsn] = useState(initial?.hsn ?? '');
   const [stock, setStock] = useState(String(initial?.stock ?? 0));
   const [lowStockThreshold, setLowStockThreshold] = useState(String(initial?.lowStockThreshold ?? 5));
   const [trackInventory, setTrackInventory] = useState(initial?.trackInventory ?? true);
@@ -171,6 +179,9 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
     // price", which is absence, not a price of zero.
     if (description.trim()) payload.description = description;
     if (sku.trim()) payload.sku = sku;
+    // For GST bills (only used when the store has a GSTIN). Blank HSN clears it on an edit.
+    if (gstRate !== null) payload.gstRate = gstRate;
+    if (hsn.trim() || initial?.hsn) payload.hsn = hsn.trim();
     if (mrp.trim()) payload.mrp = parseInto(mrpField, mrp, 'mrp', textErrors);
     const usingVariants = hasVariants && variantRows.length > 0;
 
@@ -220,6 +231,18 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
     if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
   };
 
+  /** "Red cotton kurti, 499 rupees, 20 pieces" → fills the fields it recognises; all stay editable. */
+  const fillFromVoice = (said) => {
+    const spoken = parseProductSpeech(said);
+    // Parsed in the spoken language (so "రూపాయలు" still means price), then the name kept in English letters.
+    if (spoken.name) edit(setName, 'name')(toLatinTitle(spoken.name).slice(0, 140));
+    if (spoken.price) edit(setPrice, 'price')(spoken.price);
+    if (spoken.mrp) edit(setMrp, 'mrp')(spoken.mrp);
+    if (spoken.stock) edit(setStock, 'stock')(spoken.stock);
+    if (spoken.price || spoken.mrp || spoken.stock) toast.success(t('Filled from your voice. Check and edit before saving.'));
+    else toast.info(t('Only the name was heard. Say the price and stock too, e.g. 499 rupees, 20 pieces.'));
+  };
+
   const fieldErrors = mergeErrors(errors, error);
   const generalError = error && Object.keys(error.fieldErrors ?? {}).length === 0 ? error.message : null;
   const selectedCategory = categories.find((c) => c.categoryId === categoryId);
@@ -243,7 +266,12 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
       />
 
       <FormSection title={t('Details')} delay={40}>
-        <Field
+        <VoiceButton
+          label={t('Speak product details')}
+          hint={t('Say the name, price and stock, e.g. "Red cotton kurti, 499 rupees, 20 pieces".')}
+          onText={fillFromVoice}
+        />
+        <Field latin
           label={t('Product name')}
           value={name}
           onChangeText={edit(setName, 'name')}
@@ -260,7 +288,7 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
           onPress={() => setCategorySheet(true)}
         />
 
-        <Field
+        <Field latin
           label={t('Description')}
           value={description}
           onChangeText={edit(setDescription, 'description')}
@@ -398,6 +426,24 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
           autoCorrect={false}
           containerStyle={{ marginTop: space.lg, marginBottom: 0 }}
           error={fieldErrors.sku}
+        />
+
+        <Caption style={{ marginTop: space.lg, marginBottom: space.xs }}>{t('GST rate (included in price)')}</Caption>
+        <FilterChips
+          options={[{ value: 'none', label: t('Not set') }, ...GST_RATES.map((r) => ({ value: String(r), label: `${r}%` }))]}
+          value={gstRate === null ? 'none' : String(gstRate)}
+          onChange={(v) => setGstRate(v === 'none' ? null : Number(v))}
+        />
+        <Field
+          label={t('HSN code')}
+          value={hsn}
+          onChangeText={edit(setHsn, 'hsn')}
+          keyboardType="number-pad"
+          maxLength={8}
+          placeholder={t('Optional')}
+          hint={t('Only needed for GST bills. 4, 6 or 8 digits.')}
+          containerStyle={{ marginTop: space.md, marginBottom: 0 }}
+          error={fieldErrors.hsn}
         />
       </FormSection>
 

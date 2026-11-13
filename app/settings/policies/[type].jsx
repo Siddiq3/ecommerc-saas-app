@@ -154,7 +154,7 @@ export default function PolicyEditor() {
         Review and customise the text for your business. You are responsible for what your policies say.
       </Caption>
 
-      <Field
+      <Field latin
         label="Policy text"
         value={draft.content}
         onChangeText={change('content')}

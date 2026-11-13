@@ -72,7 +72,7 @@ export const VariantEditor = ({ options, rows, onChangeOptions, onChangeRows, er
 
           {/* Side by side when both fit; stacked on a narrow phone with large text ("Enter", "Red, Blue"). */}
           <Row gap={space.md} align="flex-start" style={{ flexWrap: 'wrap', rowGap: space.md }}>
-            <Field
+            <Field latin
               label={t('Name')}
               value={option.name}
               onChangeText={(value) => setOption(index, { name: value })}
@@ -81,7 +81,7 @@ export const VariantEditor = ({ options, rows, onChangeOptions, onChangeRows, er
               maxLength={40}
               containerStyle={{ flexGrow: 1, flexBasis: 110 * fontScale, marginBottom: 0 }}
             />
-            <Field
+            <Field latin
               label={t('Values')}
               value={option.values}
               onChangeText={(value) => setOption(index, { values: value })}

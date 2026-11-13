@@ -35,6 +35,9 @@ export const variantInputSchema = z
   })
   .strict();
 
+/** GST slabs a price can include. */
+export const GST_RATES = Object.freeze([0, 3, 5, 12, 18, 28]);
+
 const productFields = {
   name: productName,
   description: optionalProse(8000, { label: 'Description' }),
@@ -49,6 +52,9 @@ const productFields = {
   stock: z.number().int().min(0).max(1_000_000).default(0),
   trackInventory: z.boolean().default(true),
   allowBackorder: z.boolean().default(false),
+  /** GST on the bill: the rate the price includes, and the HSN code. Only used when the store has a GSTIN. */
+  gstRate: z.union(GST_RATES.map((r) => z.literal(r))).optional(),
+  hsn: z.string().trim().regex(/^\d{4}(\d{2}){0,2}$/, 'HSN code is 4, 6 or 8 digits').optional().or(z.literal('')),
   lowStockThreshold: z.number().int().min(0).max(10_000).default(5),
   variantOptions: z
     .array(z.object({ name: optionLabel(40), values: z.array(optionLabel(60)).min(1).max(30) }).strict())

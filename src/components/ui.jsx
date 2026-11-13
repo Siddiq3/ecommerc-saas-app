@@ -7,6 +7,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Collapsible, FadeIn, Press } from './motion.jsx';
 import { colors, fonts, motion, radius, shadow, space, tones, type, MIN_TAP } from '../theme.js';
 import { useT } from '../state/locale.jsx';
+import { VoiceButton, spokenNumber } from './VoiceButton.jsx';
+import { toLatinSentence, toLatinTitle } from '../lib/transliterate.js';
 
 /**
  * The app's UI primitives.
@@ -215,8 +217,18 @@ export const StatusDot = ({ live = true, size = 8, style }) => {
 
 /* ───────────── Inputs ───────────── */
 
+const NUMERIC_KEYBOARDS = ['numeric', 'number-pad', 'decimal-pad', 'phone-pad'];
+
+/** Number fields take just the spoken number (replacing); text fields get the words added on. */
+const voiceValue = ({ value, keyboardType, maxLength }, said) => {
+  const next = NUMERIC_KEYBOARDS.includes(keyboardType)
+    ? spokenNumber(said) || (value ?? '')
+    : value ? `${value} ${said}` : said;
+  return maxLength ? next.slice(0, maxLength) : next;
+};
+
 export const Field = forwardRef(function Field(
-  { label, error, hint, style, containerStyle, prefix, right, onFocus, onBlur, ...rest },
+  { label, error, hint, style, containerStyle, prefix, right, onFocus, onBlur, voice = true, latin = false, ...rest },
   ref,
 ) {
   const [focused, setFocused] = useState(false);
@@ -262,6 +274,15 @@ export const Field = forwardRef(function Field(
           numberOfLines={rest.multiline ? undefined : 1}
           {...rest}
         />
+        {voice && !rest.secureTextEntry && rest.editable !== false && rest.onChangeText ? (
+          <VoiceButton
+            onText={(said) => {
+              // Website text (latin): spoken Telugu, Hindi… is kept in English letters for every customer.
+              const text = !latin ? said : rest.multiline ? toLatinSentence(said) : toLatinTitle(said);
+              rest.onChangeText(voiceValue(rest, text));
+            }}
+          />
+        ) : null}
         {right}
       </Animated.View>
       <Collapsible open={Boolean(error)}>
@@ -283,6 +304,7 @@ export const PasswordField = forwardRef(function PasswordField(props, ref) {
     <Field
       ref={ref}
       {...props}
+      voice={false}
       secureTextEntry={!visible}
       autoCapitalize="none"
       autoCorrect={false}

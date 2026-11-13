@@ -173,7 +173,7 @@ export default function StorefrontSettings() {
           </Touchable>
         ))}
       </View>
-      <Field label="Or write your own" placeholder="e.g. Diwali sale: 20% off all sarees" value={draft.announcement.text} maxLength={200} editable={!busy} multiline blurOnSubmit
+      <Field latin label="Or write your own" placeholder="e.g. Diwali sale: 20% off all sarees" value={draft.announcement.text} maxLength={200} editable={!busy} multiline blurOnSubmit
         error={fieldErrors['announcement.text']} hint={`${draft.announcement.text.length}/200`}
         onChangeText={(text) => setAnnouncement({ text, enabled: text.trim() ? true : draft.announcement.enabled })} />
       <Toggle label="Show this message on my website" value={draft.announcement.enabled} disabled={busy} onChange={(enabled) => setAnnouncement({ enabled })} />
@@ -227,7 +227,7 @@ export default function StorefrontSettings() {
           <View key={section.type} style={[styles.section, index > 0 && styles.sectionLine]}>
             <Toggle label={section.title || SECTIONS[section.type]?.name} hint={SECTIONS[section.type]?.hint} value={section.enabled} disabled={busy} onChange={(enabled) => changeSection(index, { enabled })} />
             {renaming === section.type ? (
-              <Field label="Row title on website" value={section.title} maxLength={60} editable={!busy} autoFocus error={fieldErrors[`sections.${index}.title`]}
+              <Field latin label="Row title on website" value={section.title} maxLength={60} editable={!busy} autoFocus error={fieldErrors[`sections.${index}.title`]}
                 onChangeText={(title) => changeSection(index, { title })} onBlur={() => setRenaming(null)} />
             ) : null}
             <Row gap={space.sm}>

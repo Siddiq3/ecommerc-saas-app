@@ -12,6 +12,7 @@ import { Thumb } from '../../src/components/domain.jsx';
 import { Sheet } from '../../src/components/Sheet.jsx';
 import { SkeletonCard } from '../../src/components/Skeleton.jsx';
 import { ProductForm } from '../../src/components/ProductForm.jsx';
+import { ShareProductButton } from '../../src/components/ShareProductButton.jsx';
 import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { useT } from '../../src/state/locale.jsx';
@@ -31,7 +32,7 @@ export default function ProductDetail() {
   const router = useRouter();
   const navigation = useNavigation();
   const toast = useToast();
-  const { businessId } = useAuth();
+  const { businessId, business } = useAuth();
   const t = useT();
 
   const [editing, setEditing] = useState(false);
@@ -230,6 +231,10 @@ export default function ProductDetail() {
           </>
         ) : null}
       </Row>
+
+      {product.active && business?.slug ? (
+        <View style={{ marginBottom: space.md }}><ShareProductButton product={product} business={business} /></View>
+      ) : null}
 
       <Row gap={space.sm} style={styles.pills}>
         <Pill label={product.active ? t('Live') : t('Hidden')} tone={product.active ? 'green' : 'slate'} />

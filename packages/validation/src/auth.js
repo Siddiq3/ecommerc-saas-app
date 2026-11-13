@@ -101,6 +101,14 @@ export const updateProfileSchema = z
   })
   .strict();
 
+/** An Expo push token for this login session's phone. */
+export const pushTokenSchema = z
+  .object({
+    token: z.string().max(200).regex(/^Expo(nent)?PushToken\[[A-Za-z0-9_-]+\]$/),
+    platform: z.enum(['android', 'ios']),
+  })
+  .strict();
+
 export const createBusinessSchema = z
   .object({
     name: businessName,

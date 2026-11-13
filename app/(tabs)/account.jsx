@@ -144,6 +144,7 @@ export default function Account() {
       <Group title={t('Store')}>
         <Item icon="storefront-outline" label={t('Store details & payments')} onPress={() => router.push('/settings/store')} />
         <Item icon="color-palette-outline" label={t('Storefront')} onPress={() => router.push('/settings/storefront')} />
+        <Item icon="qr-code-outline" label={t('Shop QR poster')} onPress={() => router.push('/settings/qr-poster')} />
         <Item icon="bicycle-outline" label={t('Delivery')} onPress={() => router.push('/settings/delivery')} />
         <Item icon="shield-checkmark-outline" label={t('Policies')} onPress={() => router.push('/settings/policies')} />
         {/* Hidden for now: subscription is managed on the website.

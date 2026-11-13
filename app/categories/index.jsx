@@ -181,7 +181,7 @@ export default function Categories() {
         title={editingId ? 'Rename category' : 'New category'}
       >
         <Alert message={saveError && Object.keys(saveError.fieldErrors ?? {}).length === 0 ? saveError.message : null} />
-        <Field
+        <Field latin
           label="Name"
           value={name}
           onChangeText={(v) => { setName(v); if (errors.name) setErrors({}); }}

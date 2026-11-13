@@ -97,7 +97,7 @@ export default function Details() {
         />
       }
     >
-      <Field
+      <Field latin
         label="Business name"
         value={business.name}
         onChangeText={onName}
