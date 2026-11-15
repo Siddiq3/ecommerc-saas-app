@@ -244,12 +244,16 @@ export const ProductPhotos = ({ businessId, productId, images, onChange, onBusyC
               </>
             ) : <View style={styles.noPhotos}><Ionicons name="camera-outline" size={48} color={colors.ink400} /><Body muted>{t('Add photos or tap Next to remove all photos.')}</Body></View>}
             <Alert message={error} />
-            {sourceOpen ? <View style={styles.controls}>{sourceOptions}<Button title={t('Cancel')} variant="ghost" disabled={busy} onPress={() => setSourceOpen(false)} /></View> : null}
           </ScrollView>
-          <Row style={styles.footer}>
-            <Button title={t('Add More')} icon="camera-outline" variant="secondary" disabled={busy || draft.length >= 12} style={{ flex: 1 }} onPress={() => setSourceOpen(true)} />
-            <Button title={t('Next')} loading={busy} style={{ flex: 1 }} onPress={save} />
-          </Row>
+          {/* The source choices replace the footer: at the end of the scroll view they landed below the fold. */}
+          {sourceOpen ? (
+            <View style={styles.footer}>{sourceOptions}<Button title={t('Cancel')} variant="ghost" disabled={busy} onPress={() => setSourceOpen(false)} /></View>
+          ) : (
+            <Row style={styles.footer}>
+              <Button title={t('Add More')} icon="camera-outline" variant="secondary" disabled={busy || draft.length >= 12} style={{ flex: 1 }} onPress={() => setSourceOpen(true)} />
+              <Button title={t('Next')} loading={busy} style={{ flex: 1 }} onPress={save} />
+            </Row>
+          )}
         </View>
       </Modal>
       <Sheet visible={sourceOpen && !open} onClose={() => { if (!busy) setSourceOpen(false); }} onDismiss={() => {
