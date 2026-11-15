@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Image, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatMoney, toMajor } from '@storekit/shared';
-import { GST_RATES, createProductSchema, rupeesText, updateProductSchema, wholeNumberText } from '@storekit/validation';
+import { GST_RATES, createCategorySchema, createProductSchema, rupeesText, updateProductSchema, wholeNumberText } from '@storekit/validation';
 import {
   Alert, Body, Button, Caption, Card, Field, Heading, Row, SelectField, Toggle, Touchable,
 } from './ui.jsx';
@@ -11,6 +11,7 @@ import { FilterChips } from './Filters.jsx';
 import { VoiceButton } from './VoiceButton.jsx';
 import { useToast } from './Toast.jsx';
 import { parseProductSpeech } from '../lib/voice.js';
+import { categories as categoriesApi } from '../api/endpoints.js';
 import { toLatinTitle } from '../lib/transliterate.js';
 import { VariantEditor, optionsFromVariants, parseValues } from './VariantEditor.jsx';
 import { FadeIn } from './motion.jsx';
@@ -162,6 +163,11 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
       })));
 
   const [categorySheet, setCategorySheet] = useState(false);
+  // Categories made from this form ("New category" in the picker), until the parent reloads its list.
+  const [createdCategories, setCreatedCategories] = useState([]);
+  const [newCategory, setNewCategory] = useState('');
+  const [newCategoryError, setNewCategoryError] = useState(null);
+  const [creatingCategory, setCreatingCategory] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   const submit = () => {
@@ -245,7 +251,28 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
 
   const fieldErrors = mergeErrors(errors, error);
   const generalError = error && Object.keys(error.fieldErrors ?? {}).length === 0 ? error.message : null;
-  const selectedCategory = categories.find((c) => c.categoryId === categoryId);
+  const allCategories = [...categories, ...createdCategories.filter((c) => !categories.some((x) => x.categoryId === c.categoryId))];
+  const selectedCategory = allCategories.find((c) => c.categoryId === categoryId);
+
+  /** Creates a category without leaving the product, and picks it. */
+  const addCategory = async () => {
+    const result = check(createCategorySchema, { name: newCategory.trim() });
+    if (!result.ok) { setNewCategoryError(result.errors.name ?? Object.values(result.errors)[0]); return; }
+    setCreatingCategory(true);
+    setNewCategoryError(null);
+    try {
+      const category = await categoriesApi.create(businessId, result.data);
+      setCreatedCategories((prev) => [...prev, category]);
+      setCategoryId(category.categoryId);
+      setNewCategory('');
+      setCategorySheet(false);
+      toast.success(t('Category "{name}" added', { name: category.name }));
+    } catch (err) {
+      setNewCategoryError(err?.message ?? t('Could not add the category. Please try again.'));
+    } finally {
+      setCreatingCategory(false);
+    }
+  };
 
   const heroImage = images[0]?.publicUrl ?? images[0]?.url ?? null;
 
@@ -464,11 +491,30 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
       <Button title={submitLabel} size="lg" loading={submitting} disabled={uploading} onPress={submit} style={{ marginTop: space.sm }} />
 
       <Sheet visible={categorySheet} onClose={() => setCategorySheet(false)} title={t('Category')}>
+        <Row gap={space.sm} align="flex-start">
+          <Field
+            latin
+            label={t('New category')}
+            value={newCategory}
+            onChangeText={(v) => { setNewCategory(v); if (newCategoryError) setNewCategoryError(null); }}
+            placeholder={t('e.g. Sarees')}
+            maxLength={60}
+            autoCapitalize="words"
+            returnKeyType="done"
+            onSubmitEditing={addCategory}
+            error={newCategoryError}
+            containerStyle={{ flex: 1, marginBottom: space.sm }}
+          />
+          <Button title={t('Add')} full={false} loading={creatingCategory} disabled={!newCategory.trim()} onPress={addCategory} style={{ marginTop: 26 }} />
+        </Row>
+        {allCategories.length === 0 ? (
+          <Caption style={{ marginBottom: space.sm }}>{t('No categories yet. Type a name above and tap Add.')}</Caption>
+        ) : null}
         <Touchable onPress={() => { setCategoryId(null); setCategorySheet(false); }} style={styles.sheetRow}>
           <Body style={{ flex: 1 }}>{t('No category')}</Body>
           {categoryId === null ? <Ionicons name="checkmark" size={20} color={colors.accent600} /> : null}
         </Touchable>
-        {categories.map((category) => (
+        {allCategories.map((category) => (
           <Touchable
             key={category.categoryId}
             onPress={() => { setCategoryId(category.categoryId); setCategorySheet(false); }}
