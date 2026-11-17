@@ -80,7 +80,6 @@ export default function Subscription() {
         ? `You keep access until ${formatDate(status.accessEndsAt, undefined, { dateStyle: 'medium' })}.`
         : 'Your subscription has been cancelled.',
     },
-    past_due: { tone: 'red', label: 'Inactive', detail: 'Your subscription could not be renewed. Your account is currently inactive.' },
   }[planStatus] ?? { tone: 'slate', label: '—', detail: '' };
 
   return (

@@ -32,6 +32,22 @@ export const canTransition = (from, to) => (ORDER_TRANSITIONS[from] ?? []).inclu
 
 export const isTerminal = (status) => TERMINAL_STATUSES.includes(status);
 
+/**
+ * Payment moves, enforced by the payment service. A COD order stays NOT_REQUIRED for good.
+ * PENDING_VERIFICATION -> itself is a corrected reference; REJECTED -> itself is a rejection
+ * re-recorded when the owner later cancels the order with it.
+ */
+export const PAYMENT_TRANSITIONS = Object.freeze({
+  NOT_REQUIRED: [],
+  PENDING_SUBMISSION: ['PENDING_VERIFICATION', 'REJECTED', 'EXPIRED'],
+  PENDING_VERIFICATION: ['PENDING_VERIFICATION', 'VERIFIED', 'REJECTED', 'EXPIRED'],
+  VERIFIED: [],
+  REJECTED: ['REJECTED'],
+  EXPIRED: [],
+});
+
+export const canTransitionPayment = (from, to) => (PAYMENT_TRANSITIONS[from] ?? []).includes(to);
+
 export const ORDER_STATUS_LABELS = Object.freeze({
   NEW: 'New',
   PENDING_PAYMENT: 'Awaiting payment',

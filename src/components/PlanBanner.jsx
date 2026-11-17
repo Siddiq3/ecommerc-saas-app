@@ -30,12 +30,6 @@ export const PlanBanner = () => {
       title: 'Free trial ended',
       body: 'Your free trial has ended. Your account is currently inactive.',
     },
-    past_due: {
-      tone: 'stop',
-      icon: 'alert-circle-outline',
-      title: 'Subscription inactive',
-      body: 'Your subscription could not be renewed. Your account is currently inactive.',
-    },
     cancelled: {
       tone: 'warn',
       icon: 'information-circle-outline',

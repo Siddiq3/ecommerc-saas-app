@@ -96,7 +96,6 @@ export default function Account() {
     trial_expired: 'Trial ended',
     subscribed: status?.plan?.name ? `${status.plan.name} plan` : 'Subscribed',
     cancelled: 'Cancelled',
-    past_due: 'Payment failed',
   }[planStatus] ?? '—';
 
   const planTone = {
@@ -104,7 +103,6 @@ export default function Account() {
     trial_expired: 'red',
     subscribed: 'green',
     cancelled: 'amber',
-    past_due: 'red',
   }[planStatus] ?? 'slate';
   */
 

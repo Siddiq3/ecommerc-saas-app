@@ -19,7 +19,6 @@ export const PLAN_STATUSES = Object.freeze([
   'trial_expired',
   'subscribed',
   'cancelled',
-  'past_due',
 ]);
 
 /** Statuses that grant access to the product. Everything else hits the paywall. */
@@ -32,7 +31,6 @@ export const PLAN_STATUS_LABELS = Object.freeze({
   trial_expired: 'Trial ended',
   subscribed: 'Active',
   cancelled: 'Cancelling',
-  past_due: 'Payment failed',
 });
 
 export const BILLING_CYCLES = Object.freeze(['monthly', 'yearly']);

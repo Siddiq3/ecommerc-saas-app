@@ -28,10 +28,6 @@ const COPY = {
     title: 'Free trial ended',
     message: 'Your free trial has ended. Your account is currently inactive.',
   },
-  past_due: {
-    title: 'Subscription inactive',
-    message: 'Your subscription could not be renewed. Your account is currently inactive.',
-  },
 };
 
 export const PlanLock = () => {
