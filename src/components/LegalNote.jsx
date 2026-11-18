@@ -13,7 +13,7 @@ const open = (page) => WebBrowser.openBrowserAsync(`${WEB_URL}/legal/${page}`).c
 
 export const LegalNote = () => (
   <Text style={styles.note}>
-    By continuing, you agree to StoreKit&apos;s{'\n'}
+    By continuing, you agree to StoreFlick&apos;s{'\n'}
     <Text style={styles.link} onPress={() => open('terms')}>Terms</Text>
     {' '}&amp;{' '}
     <Text style={styles.link} onPress={() => open('privacy')}>Privacy Policy</Text>

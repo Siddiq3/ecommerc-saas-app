@@ -13,7 +13,7 @@ import { colors, contentMaxWidth, fonts, space } from '../../src/theme.js';
 /**
  * First run.
  *
- * Reads top to bottom as a four-beat story: this is StoreKit (the wordmark), this is what
+ * Reads top to bottom as a four-beat story: this is StoreFlick (the wordmark), this is what
  * it does (the storefront cycling through businesses), here is why it helps (three words of
  * benefit), and here is the way in (one confident button). Each beat enters a little after
  * the one above, so the eye is led down the page rather than meeting it all at once.

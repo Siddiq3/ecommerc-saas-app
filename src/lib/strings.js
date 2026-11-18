@@ -99,7 +99,7 @@ export const STRINGS = {
   'Terms of service': ['सेवा की शर्तें', 'சேவை விதிமுறைகள்', 'సేవా నిబంధనలు', 'ಸೇವಾ ನಿಯಮಗಳು', 'സേവന നിബന്ധനകൾ', 'सेवा अटी', 'পরিষেবার শর্তাবলী', 'સેવાની શરતો'],
   'Privacy policy': ['प्राइवेसी पॉलिसी', 'தனியுரிமைக் கொள்கை', 'గోప్యతా విధానం', 'ಗೌಪ್ಯತಾ ನೀತಿ', 'സ്വകാര്യതാ നയം', 'गोपनीयता धोरण', 'গোপনীয়তা নীতি', 'ગોપનીયતા નીતિ'],
   'Delete store': ['स्टोर हटाएँ', 'ஸ்டோரை நீக்கு', 'స్టోర్ తొలగించండి', 'ಸ್ಟೋರ್ ಅಳಿಸಿ', 'സ്റ്റോർ ഇല്ലാതാക്കുക', 'स्टोअर हटवा', 'স্টোর মুছুন', 'સ્ટોર કાઢી નાખો'],
-  'StoreKit for merchants': ['व्यापारियों के लिए StoreKit', 'வணிகர்களுக்கான StoreKit', 'వ్యాపారుల కోసం StoreKit', 'ವ್ಯಾಪಾರಿಗಳಿಗಾಗಿ StoreKit', 'വ്യാപാരികൾക്കായി StoreKit', 'व्यापाऱ्यांसाठी StoreKit', 'ব্যবসায়ীদের জন্য StoreKit', 'વેપારીઓ માટે StoreKit'],
+  'StoreFlick for merchants': ['व्यापारियों के लिए StoreFlick', 'வணிகர்களுக்கான StoreFlick', 'వ్యాపారుల కోసం StoreFlick', 'ವ್ಯಾಪಾರಿಗಳಿಗಾಗಿ StoreFlick', 'വ്യാപാരികൾക്കായി StoreFlick', 'व्यापाऱ्यांसाठी StoreFlick', 'ব্যবসায়ীদের জন্য StoreFlick', 'વેપારીઓ માટે StoreFlick'],
 
   // Language screen
   'Some screens are still in English while we finish translating.': [

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "StoreKit",
+    "name": "StoreFlick",
     "slug": "storekit",
     "platforms": [
       "ios",
@@ -18,7 +18,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#e2511e"
+      "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true,
@@ -36,7 +36,7 @@
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#e2511e"
+        "backgroundColor": "#ffffff"
       }
     },
     "plugins": [
@@ -45,9 +45,9 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "StoreKit uses your photos so you can add pictures of your products.",
-          "cameraPermission": "StoreKit uses your camera so you can photograph your products.",
-          "microphonePermission": "StoreKit uses the microphone only when you tap the mic button, so you can type with your voice."
+          "photosPermission": "StoreFlick uses your photos so you can add pictures of your products.",
+          "cameraPermission": "StoreFlick uses your camera so you can photograph your products.",
+          "microphonePermission": "StoreFlick uses the microphone only when you tap the mic button, so you can type with your voice."
         }
       ],
       "@react-native-community/datetimepicker",
@@ -76,8 +76,8 @@
       [
         "expo-speech-recognition",
         {
-          "microphonePermission": "StoreKit uses the microphone only when you tap the mic button, so you can type with your voice.",
-          "speechRecognitionPermission": "StoreKit turns your speech into text when you tap the mic button.",
+          "microphonePermission": "StoreFlick uses the microphone only when you tap the mic button, so you can type with your voice.",
+          "speechRecognitionPermission": "StoreFlick turns your speech into text when you tap the mic button.",
           "androidSpeechServicePackages": [
             "com.google.android.googlequicksearchbox"
           ]

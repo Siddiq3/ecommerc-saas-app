@@ -1,28 +1,31 @@
-import { StyleSheet, Text, View } from 'react-native';
-import { colors, fonts, radius, space, type } from '../theme.js';
+import { Image, StyleSheet, View } from 'react-native';
+import { space } from '../theme.js';
+
+const MARK = require('../../assets/brand/storeflick-mark.png');
+const WORDMARK = require('../../assets/brand/storeflick-wordmark.png');
+
+// Intrinsic aspect ratios of the two artwork files (width / height).
+const MARK_RATIO = 225 / 240;
+const WORD_RATIO = 720 / 113;
 
 /**
- * The wordmark. A drawn glyph rather than an image asset, so it stays crisp at any size
- * and adds nothing to the bundle.
+ * The StoreFlick logo: the bag-and-bolt mark, optionally followed by the two-tone wordmark.
+ * `size` is the mark's height, so existing call sites keep their proportions.
  */
-export const Logo = ({ size = 32, showName = true, tone = 'accent', style }) => {
-  const fg = tone === 'light' ? '#ffffff' : colors.surface;
-  const bg = tone === 'light' ? 'rgba(255,255,255,0.18)' : colors.accent600;
-  const nameColor = tone === 'light' ? '#ffffff' : colors.ink900;
+export const Logo = ({ size = 32, showName = true, style }) => {
+  const markH = size * 1.15;
+  const wordH = size * 0.6;
 
   return (
-    <View style={[styles.row, style]}>
-      <View style={[styles.mark, { width: size, height: size, borderRadius: size * 0.3, backgroundColor: bg }]}>
-        <Text style={[styles.glyph, { fontSize: size * 0.5, color: fg }]}>S</Text>
-      </View>
-      {showName ? <Text style={[styles.name, { fontSize: size * 0.58, color: nameColor }]}>StoreKit</Text> : null}
+    <View style={[styles.row, style]} accessible accessibilityRole="image" accessibilityLabel="StoreFlick">
+      <Image source={MARK} style={{ height: markH, width: markH * MARK_RATIO }} resizeMode="contain" />
+      {showName ? (
+        <Image source={WORDMARK} style={{ height: wordH, width: wordH * WORD_RATIO }} resizeMode="contain" />
+      ) : null}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  mark: { alignItems: 'center', justifyContent: 'center', borderRadius: radius.md },
-  glyph: { fontFamily: fonts.display, letterSpacing: -0.5 },
-  name: { ...type.title, letterSpacing: -0.6 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
 });

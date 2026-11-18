@@ -20,7 +20,7 @@ import { colors, radius, shadow, space } from '../../src/theme.js';
 
 /**
  * Custom domain: connect a domain the merchant owns, so the store answers on it as well as on
- * its StoreKit address.
+ * its StoreFlick address.
  *
  * The app only presents and asks. Whether the plan allows a domain, whether the name is really
  * theirs (the DNS check) and whether it can serve are all decided by the server, and every state
@@ -167,7 +167,7 @@ const DomainCard = ({ domain, businessId, onChanged, serving }) => {
       {domain.status === 'active' ? (
         <Caption style={styles.line}>
           {verifiedText(domain.verifiedAt)}
-          {domain.isPrimary ? ' Your StoreKit address sends visitors here.' : ''}
+          {domain.isPrimary ? ' Your StoreFlick address sends visitors here.' : ''}
         </Caption>
       ) : null}
 
@@ -365,7 +365,7 @@ const NewDomainDialog = ({ visible, mode, onClose, onAddExisting }) => (
         <Heading style={styles.dialogTitle}>New domain</Heading>
         <Caption style={styles.dialogSub}>Choose how you want to add a domain</Caption>
 
-        {/* StoreKit does not sell domains, so this is always shown as not available. */}
+        {/* StoreFlick does not sell domains, so this is always shown as not available. */}
         <Choice icon="cart-outline" label="Buy a new domain" disabled />
         <Choice icon="link-outline" label="Add existing domain" disabled={mode !== 'add'} onPress={onAddExisting} />
 
@@ -408,7 +408,7 @@ export default function CustomDomain() {
   if (loading && !data) return <SkeletonScreen />;
 
   // The server answers 404 when custom domains are not switched on at all. That is not a fault: the
-  // screen still opens, with the StoreKit address, and the dialog says it is coming.
+  // screen still opens, with the StoreFlick address, and the dialog says it is coming.
   const featureOff = error?.status === 404;
   if (error && !data && !featureOff) return <ErrorState error={error} onRetry={reload} />;
 
@@ -447,7 +447,7 @@ export default function CustomDomain() {
         }}
       />
 
-      <Heading style={styles.section}>StoreKit address</Heading>
+      <Heading style={styles.section}>StoreFlick address</Heading>
       <Card style={styles.card}>
         <Row gap={space.md}>
           <Ionicons name="globe-outline" size={26} color={colors.ink600} />

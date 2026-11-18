@@ -23,7 +23,7 @@ const AuthContext = createContext(null);
  */
 const deviceInfo = async () => ({
   deviceId: await getDeviceId(),
-  deviceName: `${Platform.OS === 'ios' ? 'iPhone' : 'Android'} · StoreKit`,
+  deviceName: `${Platform.OS === 'ios' ? 'iPhone' : 'Android'} · StoreFlick`,
 });
 
 export const AuthProvider = ({ children }) => {

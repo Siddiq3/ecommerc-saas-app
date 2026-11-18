@@ -14,7 +14,7 @@ import { colors, fonts, panelTints, radius, shadow, space, type } from '../theme
 
 /**
  * The landing hero — a single storefront card that cycles through the kinds of business
- * StoreKit is for.
+ * StoreFlick is for.
  *
  * The message is carried by the motion, not the copy: a shop card settles into place, its
  * category and products quietly change every few seconds — fashion, then jewellery, then a
