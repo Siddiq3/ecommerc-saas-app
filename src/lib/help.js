@@ -10,7 +10,7 @@
  * `action.url` opens outside the app instead.
  */
 
-/** The StoreKit website (terms, privacy, account deletion) — not a store. No trailing slash. */
+/** The StoreFlick website (terms, privacy, account deletion) — not a store. No trailing slash. */
 export const WEB_URL = String(process.env.EXPO_PUBLIC_WEB_URL ?? 'https://ecommerc-saas-web-1yfy.vercel.app').replace(/\/$/, '');
 /** The website has no help page yet; support is by email, the same address its footer shows. */
 export const SUPPORT_URL = 'mailto:help@storekit.app';
@@ -72,7 +72,7 @@ export const HELP_CATEGORIES = [
           'Turn on **Feature on the home page** for your best products.',
           'Group products with **Categories** so they are easy to browse.',
         ],
-        note: 'Your store’s colours and style were chosen during setup. To change them, contact StoreKit support.',
+        note: 'Your store’s colours and style were chosen during setup. To change them, contact StoreFlick support.',
         action: { label: 'Open categories', href: '/categories' },
       },
     ],
@@ -399,7 +399,7 @@ export const HELP_CATEGORIES = [
       },
       {
         id: 'instagram-bio',
-        question: 'How do I add my StoreKit link to Instagram bio?',
+        question: 'How do I add my StoreFlick link to Instagram bio?',
         steps: [
           'Open **Account** and press and hold your store link to copy it.',
           'In Instagram, go to your profile and tap **Edit profile**.',
@@ -455,9 +455,9 @@ export const HELP_CATEGORIES = [
       },
       {
         id: 'contact-support',
-        question: 'How do I contact StoreKit support?',
+        question: 'How do I contact StoreFlick support?',
         steps: [
-          'Tap the button below to email StoreKit support.',
+          'Tap the button below to email StoreFlick support.',
         ],
         action: { label: 'Contact support', url: SUPPORT_URL },
       },

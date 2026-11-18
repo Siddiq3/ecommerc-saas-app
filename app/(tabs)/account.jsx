@@ -241,7 +241,7 @@ export default function Account() {
         <Body style={{ color: colors.danger }}>{t('Sign out')}</Body>
       </Touchable>
 
-      <Caption style={styles.version}>{t('StoreKit for merchants')} · v1.0.0</Caption>
+      <Caption style={styles.version}>{t('StoreFlick for merchants')} · v1.0.0</Caption>
     </Screen>
   );
 }

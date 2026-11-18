@@ -24,7 +24,7 @@ const contentTypeOf = (asset) => {
 export const pickImage = async ({ aspect = [1, 1], allowsEditing = true, multiple = false, selectionLimit = 12 } = {}) => {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!permission.granted) {
-    const error = new Error('StoreKit needs access to your photos to add images.');
+    const error = new Error('StoreFlick needs access to your photos to add images.');
     error.code = 'PERMISSION_DENIED';
     throw error;
   }
@@ -49,7 +49,7 @@ export const pickImage = async ({ aspect = [1, 1], allowsEditing = true, multipl
 export const takePhoto = async ({ allowsEditing = true } = {}) => {
   const permission = await ImagePicker.requestCameraPermissionsAsync();
   if (!permission.granted) {
-    const error = new Error('StoreKit needs access to your camera to photograph products.');
+    const error = new Error('StoreFlick needs access to your camera to photograph products.');
     error.code = 'PERMISSION_DENIED';
     throw error;
   }

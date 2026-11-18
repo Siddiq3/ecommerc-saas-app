@@ -114,7 +114,7 @@ export default function Login() {
         accessibilityLabel="Create a new account"
       >
         {/* One paragraph, not two boxes side by side, so it wraps on a narrow phone with large text. */}
-        <Body style={styles.altMuted}>New to StoreKit? <Body style={styles.altLink}>Create an account</Body></Body>
+        <Body style={styles.altMuted}>New to StoreFlick? <Body style={styles.altLink}>Create an account</Body></Body>
       </Touchable>
     </Screen>
   );

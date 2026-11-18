@@ -5,7 +5,7 @@ import { colors, fonts, panelTints, radius, shadow, space } from '../theme.js';
 /**
  * A fanned row of tilted category cards, each tagged with a coloured "bubble" — the
  * native equivalent of the storefront-preview hero xpress.site opens with. Built from
- * real StoreKit categories (BUSINESS_CATEGORIES in @storekit/shared) rather than
+ * real StoreFlick categories (BUSINESS_CATEGORIES in @storekit/shared) rather than
  * fabricated store names, so it is a preview of what this app actually does, not a
  * borrowed screenshot.
  *
@@ -31,7 +31,7 @@ const Bubble = ({ label, emoji }) => (
 
 export function CategoryFan() {
   return (
-    <View style={styles.row} accessibilityLabel="Example shops built with StoreKit — fashion, jewellery, home, beauty">
+    <View style={styles.row} accessibilityLabel="Example shops built with StoreFlick — fashion, jewellery, home, beauty">
       {CARDS.map((card, index) => (
         <View
           key={card.category}

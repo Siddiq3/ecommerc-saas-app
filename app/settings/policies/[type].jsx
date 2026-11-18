@@ -17,7 +17,7 @@ import { colors, fonts, space } from '../../../src/theme.js';
 /**
  * One policy document: whether customers see it, and its text.
  *
- * "Reset to standard template" only fills the editor with StoreKit's text for this store's
+ * "Reset to standard template" only fills the editor with StoreFlick's text for this store's
  * current settings; nothing is saved until Save is pressed, and leaving asks first.
  */
 export default function PolicyEditor() {
@@ -70,7 +70,7 @@ export default function PolicyEditor() {
   const confirmReset = () =>
     RNAlert.alert(
       'Reset to standard template?',
-      'The text in the editor will be replaced with StoreKit’s template, written from your store’s current settings. Nothing is saved until you press Save.',
+      'The text in the editor will be replaced with StoreFlick’s template, written from your store’s current settings. Nothing is saved until you press Save.',
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Reset', style: 'destructive', onPress: () => reset().catch((err) => toast.error(err?.message ?? 'Could not load the template')) },
