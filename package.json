@@ -1,5 +1,5 @@
 {
-  "name": "@storekit/mobile",
+  "name": "@storeflick/mobile",
   "version": "1.0.0",
   "private": true,
   "workspaces": [
@@ -28,8 +28,8 @@
     "@expo/vector-icons": "^15.0.3",
     "@react-native-community/datetimepicker": "8.4.4",
     "@react-navigation/elements": "2.9.43",
-    "@storekit/shared": "*",
-    "@storekit/validation": "*",
+    "@storeflick/shared": "*",
+    "@storeflick/validation": "*",
     "babel-preset-expo": "~54.0.10",
     "expo": "^54.0.37",
     "expo-asset": "~12.0.13",

@@ -2,7 +2,7 @@ import { Image, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
   ORDER_STATUS_LABELS, ORDER_STATUS_TONE, PAYMENT_STATUS_LABELS, PAYMENT_METHOD_LABELS,
-} from '@storekit/shared';
+} from '@storeflick/shared';
 import { Body, Caption, Pill, Row, Touchable } from './ui.jsx';
 import { colors, fonts, radius, space, type } from '../theme.js';
 import { formatMoney, formatDate, initials, shortAgo } from '../lib/format.js';

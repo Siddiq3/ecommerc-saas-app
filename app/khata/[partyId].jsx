@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert as RNAlert, Linking, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { bookPartySchema } from '@storekit/validation';
+import { bookPartySchema } from '@storeflick/validation';
 import { Screen } from '../../src/components/Screen.jsx';
 import { Alert, Body, Button, Caption, Card, Divider, Field, Row, Touchable } from '../../src/components/ui.jsx';
 import { Sheet } from '../../src/components/Sheet.jsx';

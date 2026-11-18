@@ -8,7 +8,7 @@
  * store behind it. The schema is the API's own, so this cannot drift from what the server
  * enforces.
  */
-import { themeSchema } from '@storekit/validation';
+import { themeSchema } from '@storeflick/validation';
 import { STORE_STYLES, styleById } from '../src/lib/storeStyles.js';
 
 const problems = [];

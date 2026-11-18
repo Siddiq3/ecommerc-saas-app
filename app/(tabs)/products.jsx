@@ -3,7 +3,7 @@ import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'r
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { searchQuery } from '@storekit/validation';
+import { searchQuery } from '@storeflick/validation';
 import { ListScreen, listColumn } from '../../src/components/Screen.jsx';
 import { Body, Button, Display, Divider, EmptyState, ErrorState, Row, Touchable } from '../../src/components/ui.jsx';
 import { ProductRow } from '../../src/components/domain.jsx';

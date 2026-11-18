@@ -8,7 +8,7 @@
  * notice.
  *
  * Run with `npm run verify:endpoints` (the sibling backend/api repository must be
- * installed; it does not need to be running). Set STOREKIT_API_DIR for another checkout.
+ * installed; it does not need to be running). Set STOREFLICK_API_DIR for another checkout.
  */
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -16,7 +16,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const apiRoot = process.env.STOREKIT_API_DIR ?? join(root, '..', 'backend', 'api');
+const apiRoot = process.env.STOREFLICK_API_DIR ?? join(root, '..', 'backend', 'api');
 
 /* ───────────── The backend's routes ───────────── */
 
@@ -32,7 +32,7 @@ for (const line of dump.split('\n')) {
 }
 
 if (backend.size === 0) {
-  console.error('Could not read the backend route table. Is @storekit/api installed?');
+  console.error('Could not read the backend route table. Is @storeflick/api installed?');
   process.exit(1);
 }
 
@@ -84,7 +84,7 @@ const unique = [...new Set(missing)];
 if (unique.length) {
   console.error(`\n✖ ${unique.length} call(s) in the app have no matching backend route:\n`);
   for (const route of unique) console.error(`  ${route}`);
-  console.error('\nCompare against `npm run routes -w @storekit/api`.\n');
+  console.error('\nCompare against `npm run routes -w @storeflick/api`.\n');
   process.exit(1);
 }
 

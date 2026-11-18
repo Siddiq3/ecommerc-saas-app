@@ -7,7 +7,7 @@ import { LANGUAGES, pickLocale, setActiveLocale, translate } from '../src/lib/i1
 import { shortAgo } from '../src/lib/format.js';
 import {
   CANCELLATION_REASON_LABELS, ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS,
-} from '@storekit/shared';
+} from '@storeflick/shared';
 
 // Every language in the picker has a column, and every row fills every column.
 assert.deepEqual(LANGUAGES.map((l) => l.code).filter((c) => c !== 'en'), ORDER);

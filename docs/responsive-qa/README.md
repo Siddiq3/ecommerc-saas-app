@@ -20,7 +20,7 @@ simulator, before calling any of it iOS-ready.
 | Customer detail | "₹6,49,9 / 99" and "Cancelle / d" broke mid-word | Stats wrap to a second row; order history puts the amount over the status |
 | Account | Store link showed half a second line; "Custom domain" broke letter by letter | Link truncates in the middle; row values sit under their label |
 | Welcome | Did not scroll: on a small phone with large text the hero covered the logo and **Sign in was unreachable** | Scrolls when taller than the screen; layout unchanged on tall screens |
-| Login and sign-up | "New to StoreKit? Create an account" could not wrap | One paragraph, so it wraps |
+| Login and sign-up | "New to StoreFlick? Create an account" could not wrap | One paragraph, so it wraps |
 | Onboarding categories | "Electroni / cs", "Cosm / etics" broke mid-word | One column of horizontal cards when two would not fit |
 | Onboarding typing | On a small phone with large text **the field being typed into was hidden** | While the keyboard is open on a short screen, the step header gives way |
 | Onboarding location, product price | State/pincode and price/MRP side by side were too narrow ("6", "Enter M") | Each pair wraps onto two rows when it does not fit |

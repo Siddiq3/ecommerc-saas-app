@@ -1,4 +1,4 @@
-import { API_VERSION } from '@storekit/shared';
+import { API_VERSION } from '@storeflick/shared';
 import { loadSession, saveTokens, clearSession } from './storage.js';
 
 /**

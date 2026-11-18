@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { forgotPasswordSchema, resetPasswordSchema } from '@storekit/validation';
+import { forgotPasswordSchema, resetPasswordSchema } from '@storeflick/validation';
 import { Screen } from '../../src/components/Screen.jsx';
 import { Alert, Body, Button, Display, Field, PasswordField } from '../../src/components/ui.jsx';
 import { Logo } from '../../src/components/Brand.jsx';

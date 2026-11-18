@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Alert as RNAlert, Linking, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import { ORDER_STATUS_LABELS, ORDER_STATUS_TONE, formatMoney } from '@storekit/shared';
+import { ORDER_STATUS_LABELS, ORDER_STATUS_TONE, formatMoney } from '@storeflick/shared';
 import { Screen } from '../../src/components/Screen.jsx';
 import {
   Body, Button, Caption, Card, Divider, ErrorState, Heading, Pill, Row, Touchable,

@@ -86,13 +86,13 @@ if (broken.length) {
 const { redirectSystemPath } = await import(join(appDir, '+native-intent.js'));
 const code = 'A'.repeat(21) + '_-' + 'b'.repeat(20);
 const deepLinks = [
-  [`storekit://instagram-complete?result=confirm&confirmation=${code}`, `/(tabs)/social?igConfirm=${code}`],
+  [`storeflick://instagram-complete?result=confirm&confirmation=${code}`, `/(tabs)/social?igConfirm=${code}`],
   [`/instagram-complete?result=confirm&confirmation=${code}`, `/(tabs)/social?igConfirm=${code}`],
-  ['storekit://instagram-complete?result=error', '/(tabs)/social'],
-  [`storekit://instagram-complete?confirmation=${code}x`, '/(tabs)/social'],
-  [`storekit://instagram-complete?confirmation=${code}&next=https://evil.example`, `/(tabs)/social?igConfirm=${code}`],
-  ['storekit://instagram-complete?confirmation=short', '/(tabs)/social'],
-  [`storekit://somewhere?confirmation=${code}`, '/'],
+  ['storeflick://instagram-complete?result=error', '/(tabs)/social'],
+  [`storeflick://instagram-complete?confirmation=${code}x`, '/(tabs)/social'],
+  [`storeflick://instagram-complete?confirmation=${code}&next=https://evil.example`, `/(tabs)/social?igConfirm=${code}`],
+  ['storeflick://instagram-complete?confirmation=short', '/(tabs)/social'],
+  [`storeflick://somewhere?confirmation=${code}`, '/'],
   [`exp://127.0.0.1:8081/--/instagram-complete?result=confirm&confirmation=${code}`, `/(tabs)/social?igConfirm=${code}`],
   [`exp://127.0.0.1:8081/--/somewhere?confirmation=${code}`, '/'],
 ];

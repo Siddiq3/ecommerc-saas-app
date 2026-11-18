@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert as RNAlert, Image, Linking, StyleSheet, Text, View } from 'react-native';
 import { useNavigation, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { updateStoreSettingsSchema } from '@storekit/validation';
+import { updateStoreSettingsSchema } from '@storeflick/validation';
 import { Screen } from '../../src/components/Screen.jsx';
 import { Sheet } from '../../src/components/Sheet.jsx';
 import { InstagramProductPicker } from '../../src/components/InstagramProductPicker.jsx';

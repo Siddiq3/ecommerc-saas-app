@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { slugify } from '@storekit/shared';
-import { storeSlug } from '@storekit/validation';
+import { slugify } from '@storeflick/shared';
+import { storeSlug } from '@storeflick/validation';
 import { StepScreen } from '../../src/components/StepScreen.jsx';
 import { Button, Caption, Field } from '../../src/components/ui.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
@@ -115,7 +115,7 @@ export default function Details() {
         label="Store link"
         value={business.slug}
         onChangeText={(value) => set({ slug: value, slugEdited: true })}
-        // One short word: the domain suffix beside it (".storekit.site") leaves about seven characters at 320dp with 1.3x
+        // One short word: the domain suffix beside it (".storeflick.in") leaves about seven characters at 320dp with 1.3x
         // text; "Store link" wrapped and "yourshop" clipped.
         placeholder="myshop"
         autoCapitalize="none"

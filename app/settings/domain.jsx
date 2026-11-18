@@ -3,7 +3,7 @@ import { Alert as RNAlert, Modal, Pressable, StyleSheet, View, useWindowDimensio
 import { Stack, useFocusEffect } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
-import { normalizeHostname } from '@storekit/shared';
+import { normalizeHostname } from '@storeflick/shared';
 import { Screen } from '../../src/components/Screen.jsx';
 import {
   Alert, Body, Button, Caption, Card, Divider, ErrorState, Field, Heading, Pill, Row, Touchable,
@@ -413,7 +413,7 @@ export default function CustomDomain() {
   if (error && !data && !featureOff) return <ErrorState error={error} onRetry={reload} />;
 
   const items = data?.items ?? [];
-  const storekit = items.find((item) => item.type === 'storekit');
+  const storeflick = items.find((item) => item.type === 'storeflick');
   const custom = items.filter((item) => item.type === 'custom');
   const capability = data?.capability ?? {};
 
@@ -452,13 +452,13 @@ export default function CustomDomain() {
         <Row gap={space.md}>
           <Ionicons name="globe-outline" size={26} color={colors.ink600} />
           <View style={{ flex: 1 }}>
-            <Body strong numberOfLines={1}>{storekit?.hostname ?? (business?.slug ? storeHostname(business.slug) : 'Your store')}</Body>
+            <Body strong numberOfLines={1}>{storeflick?.hostname ?? (business?.slug ? storeHostname(business.slug) : 'Your store')}</Body>
             <Row gap={space.xs} style={{ marginTop: 2 }}>
               <View style={styles.dot} />
               <Caption style={{ color: colors.success }}>Active</Caption>
             </Row>
           </View>
-          {storekit?.isPrimary ? <Pill label="Primary" tone="accent" /> : null}
+          {storeflick?.isPrimary ? <Pill label="Primary" tone="accent" /> : null}
         </Row>
         <Caption style={styles.line}>Always works, whatever else you connect.</Caption>
       </Card>

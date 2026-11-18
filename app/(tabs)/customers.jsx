@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { searchQuery } from '@storekit/validation';
+import { searchQuery } from '@storeflick/validation';
 import { ListScreen, listColumn } from '../../src/components/Screen.jsx';
 import { Display, Divider, EmptyState, ErrorState } from '../../src/components/ui.jsx';
 import { SkeletonList } from '../../src/components/Skeleton.jsx';

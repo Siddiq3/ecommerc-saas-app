@@ -28,6 +28,6 @@ const o = { orderNumber: 'SK-7', status: 'SHIPPED', paymentMethod: 'COD', courie
 assert.equal(waLink('12345', 'hi'), null, 'a short number opens nothing');
 assert.ok(waLink('+91 98765 12345', 'hi').startsWith('https://wa.me/919876512345?text='));
 assert.ok(codConfirmMessage(o, 'Asha Kurtis').includes('reply *YES*') && codConfirmMessage(o, 'Asha Kurtis').includes('₹1,198'));
-const shipped = orderUpdateMessage(o, 'Asha Kurtis', 'https://asha.storekit.site/track');
+const shipped = orderUpdateMessage(o, 'Asha Kurtis', 'https://asha.storeflick.in/track');
 assert.ok(shipped.includes('shipped') && shipped.includes('AWB123') && shipped.includes('/track'));
 console.log('✓ WhatsApp: valid numbers only; COD asks for YES with the total; shipped update carries courier and tracking.');

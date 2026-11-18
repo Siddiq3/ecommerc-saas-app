@@ -8,7 +8,7 @@
  * is one the API accepts.
  */
 import assert from 'node:assert/strict';
-import { deliverySettingsSchema } from '@storekit/validation';
+import { deliverySettingsSchema } from '@storeflick/validation';
 import {
   blankMethod, estimateSummary, fromForm, priceSummary, toForm, withArea, withMethod, withoutMethod,
 } from '../src/lib/delivery.js';

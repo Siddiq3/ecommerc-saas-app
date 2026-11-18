@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, statfsSync } from 'node:fs';
+import { existsSync, readdirSync, statfsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -73,8 +73,14 @@ if (existsSync(deviceHub) && !existsSync(path.join(developer, 'Applications/Simu
   run(process.execPath, [expo, 'prebuild', '--platform', 'ios', '--no-install']);
   run('pod', ['install'], { cwd: path.resolve('ios') });
   const derived = path.resolve('.local-qa/ios-derived');
+  // Prebuild names the project after app.json's name (StoreFlick); an older checkout keeps StoreFlick.
+  const project = readdirSync('ios').find((f) => f.endsWith('.xcworkspace'))?.replace(/\.xcworkspace$/, '');
+  if (!project) {
+    console.error('No Xcode workspace in ios/. Prebuild did not produce one.');
+    process.exit(1);
+  }
   run('xcodebuild', [
-    '-workspace', 'ios/StoreKit.xcworkspace', '-scheme', 'StoreKit', '-configuration', 'Release',
+    '-workspace', `ios/${project}.xcworkspace`, '-scheme', project, '-configuration', 'Release',
     '-destination', `platform=iOS Simulator,id=${target.udid}`, '-derivedDataPath', derived, '-jobs', '4',
     // Simulator ad hoc signing supplies the application identity SecureStore
     // needs for Keychain access, without an Apple development certificate.
@@ -83,7 +89,7 @@ if (existsSync(deviceHub) && !existsSync(path.join(developer, 'Applications/Simu
   ]);
   if (target.state !== 'Booted') run('xcrun', ['simctl', 'boot', target.udid]);
   run('xcrun', ['simctl', 'bootstatus', target.udid, '-b']);
-  run('xcrun', ['simctl', 'install', target.udid, path.join(derived, 'Build/Products/Release-iphonesimulator/StoreKit.app')]);
+  run('xcrun', ['simctl', 'install', target.udid, path.join(derived, `Build/Products/Release-iphonesimulator/${project}.app`)]);
   const { expo: config } = require('../app.json');
   run('xcrun', ['simctl', 'launch', '--terminate-running-process', target.udid, config.ios.bundleIdentifier]);
   run('open', ['-a', deviceHub, `devices://device/open?id=${target.udid}`]);

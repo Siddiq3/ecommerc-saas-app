@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
-import { isEntitled } from '@storekit/shared';
+import { isEntitled } from '@storeflick/shared';
 import { subscription } from '../api/endpoints.js';
 import { useAuth } from './auth.jsx';
 

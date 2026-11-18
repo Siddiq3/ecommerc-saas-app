@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Image, Alert as RNAlert, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
-import { paymentSettingsSchema, updateBusinessSchema, upiId as upiIdSchema } from '@storekit/validation';
+import { paymentSettingsSchema, updateBusinessSchema, upiId as upiIdSchema } from '@storeflick/validation';
 import { Screen } from '../../src/components/Screen.jsx';
 import {
   Alert, Body, Button, Caption, Card, ErrorState, Field, Heading, Row, StatusDot, Toggle,

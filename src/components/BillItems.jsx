@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BOOK_QTY_MAX, BOOK_UNITS, bookItemSchema, itemTotal, rupeesText } from '@storekit/validation';
-import { toMajor } from '@storekit/shared';
+import { BOOK_QTY_MAX, BOOK_UNITS, bookItemSchema, itemTotal, rupeesText } from '@storeflick/validation';
+import { toMajor } from '@storeflick/shared';
 import { Alert, Body, Button, Caption, Card, Divider, Field, Row, Touchable } from './ui.jsx';
 import { FilterChips, SearchBar } from './Filters.jsx';
 import { Sheet } from './Sheet.jsx';

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { cursor, objectId, pageSlug, productParam, storeSlug } from './primitives.js';
-import { PLAN_ORDER } from '@storekit/shared';
+import { PLAN_ORDER } from '@storeflick/shared';
 import { policyType } from './settings.js';
 
 /**

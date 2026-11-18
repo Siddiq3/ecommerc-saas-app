@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COMPARISON_ROWS, TRIAL_DAYS, describeEntitlement } from '@storekit/shared';
+import { COMPARISON_ROWS, TRIAL_DAYS, describeEntitlement } from '@storeflick/shared';
 import { Screen } from '../../src/components/Screen.jsx';
 import {
   Body, Caption, Card, Divider, Heading, Pill, Row,

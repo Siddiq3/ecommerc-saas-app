@@ -57,7 +57,7 @@ export const yearlySavingPercent = () => Math.round((1 - YEARLY_MONTHS_CHARGED /
 const FEATURE_LIST = Object.freeze([
   { label: 'Unlimited products', has: (e) => isUnlimited(e.maxProducts) },
   { label: 'Unlimited orders', has: (e) => isUnlimited(e.monthlyOrderLimit) },
-  { label: 'StoreKit storefront', has: () => true },
+  { label: 'StoreFlick storefront', has: () => true },
   { label: 'Standard templates', has: () => true },
   { label: 'Standard support', has: () => true },
   { label: 'Custom domain', has: (e) => e.maxCustomDomains > 0 },
@@ -100,7 +100,7 @@ export const BILLING_PLANS = Object.freeze([
     highlights: [
       'Unlimited products',
       'Unlimited orders',
-      'StoreKit storefront',
+      'StoreFlick storefront',
       'Standard templates',
       'Standard support',
     ],

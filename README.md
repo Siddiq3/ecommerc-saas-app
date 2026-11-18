@@ -1,4 +1,4 @@
-# StoreKit — merchant app
+# StoreFlick — merchant app
 
 The Expo app a store owner runs their business from: orders, payments, catalogue,
 customers and analytics.
@@ -21,7 +21,7 @@ screen when the plan is inactive) calls `DELETE /v1/me/account`, then clears the
 ```bash
 cp .env.example .env          # point EXPO_PUBLIC_API_URL at your API
 npm run dev:api               # from the repo root, in another terminal
-npm start -w @storekit/mobile
+npm start -w @storeflick/mobile
 ```
 
 On a physical device, `localhost` is the phone, not your machine. Use your LAN address:
@@ -36,10 +36,10 @@ For iOS Simulator setup and the shared-feature QA checklist, see [the iOS guide]
 For bills, expenses, customer dues and offline sync, see [Bill book and khata](docs/BILL_BOOK.md).
 
 ```bash
-npm run lint -w @storekit/mobile              # includes the banned-import rules
-npm test -w @storekit/mobile                  # the Play payment boundary
-npm run verify:endpoints -w @storekit/mobile  # every app call hits a real backend route
-npm run bundle:check -w @storekit/mobile      # both platforms bundle
+npm run lint -w @storeflick/mobile              # includes the banned-import rules
+npm test -w @storeflick/mobile                  # the Play payment boundary
+npm run verify:endpoints -w @storeflick/mobile  # every app call hits a real backend route
+npm run bundle:check -w @storeflick/mobile      # both platforms bundle
 ```
 
 `verify:endpoints` reads the backend's own route table, so a renamed route on the server

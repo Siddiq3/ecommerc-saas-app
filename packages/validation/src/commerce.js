@@ -4,7 +4,7 @@ import {
   money, objectId, objectKey, opaqueId, optionalProse, orderNumber, pageLimit, personName, pincode,
   placeName, searchQuery, trackingReference, trackingToken, utr,
 } from './primitives.js';
-import { CANCELLATION_REASONS, ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES } from '@storekit/shared';
+import { CANCELLATION_REASONS, ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES } from '@storeflick/shared';
 import { deliveryMethodId } from './settings.js';
 
 /**

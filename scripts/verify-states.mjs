@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /** Checks src/lib/states.js: every state saves under the API's own rule, and search finds them. */
 import assert from 'node:assert/strict';
-import { placeName } from '@storekit/validation';
+import { placeName } from '@storeflick/validation';
 import { INDIAN_STATES, canonicalState, matchStates } from '../src/lib/states.js';
 
 assert.equal(INDIAN_STATES.length, 36, '28 states and 8 union territories');

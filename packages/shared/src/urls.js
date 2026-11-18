@@ -8,9 +8,9 @@ import { parseStorefrontRoot } from './hosts.js';
 const trimEnd = (s) => String(s || '').replace(/\/+$/, '');
 
 /**
- * Storefront addresses. Every store lives on its own subdomain: `https://{slug}.storekit.site`.
+ * Storefront addresses. Every store lives on its own subdomain: `https://{slug}.storeflick.in`.
  *
- * `cfg.storefrontBaseUrl` is the storefront *root* — `https://storekit.site` in production,
+ * `cfg.storefrontBaseUrl` is the storefront *root* — `https://storeflick.in` in production,
  * `http://lvh.me:3000` on a developer machine (`*.localhost` does not resolve reliably;
  * lvh.me and its subdomains resolve to 127.0.0.1). The scheme and port are carried over as
  * written, so moving between environments is a configuration change and no caller knows the
@@ -33,10 +33,10 @@ const parseRoot = (cfg) => {
   return { scheme, domain: port === null ? domain : `${domain}:${port}` };
 };
 
-/** The storefront root's host, with any port: `storekit.site`, `lvh.me:3000`. */
+/** The storefront root's host, with any port: `storeflick.in`, `lvh.me:3000`. */
 export const storefrontDomain = (cfg) => parseRoot(cfg).domain;
 
-/** `{slug}.storekit.site` — the address without a scheme, for display. */
+/** `{slug}.storeflick.in` — the address without a scheme, for display. */
 export const storeHostname = (cfg, slug) => {
   const label = String(slug ?? '').toLowerCase();
   if (!DNS_LABEL.test(label)) throw new TypeError(`"${slug}" cannot be used as a store subdomain`);

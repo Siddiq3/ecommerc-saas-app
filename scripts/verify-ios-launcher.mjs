@@ -9,13 +9,14 @@ const simulate = ({ platform = 'darwin', freeGB = 10, args = [], booted = false,
   const calls = [], errors = [];
   const exit = Symbol('exit');
   let status;
-  const require = () => ({ expo: { ios: { bundleIdentifier: 'site.storekit.owner' } } });
+  const require = () => ({ expo: { ios: { bundleIdentifier: 'in.storeflick.owner' } } });
   require.resolve = () => '/project/node_modules/expo/bin/cli';
   const context = {
     path,
     createRequire: () => require,
     existsSync: file => file.includes('DeviceHub.app') || file.endsWith('/usr/bin/xcodebuild'),
     statfsSync: () => ({ bavail: freeGB * 1024 ** 3, bsize: 1 }),
+    readdirSync: () => ['Podfile', 'StoreFlick.xcworkspace'],
     console: { log: () => {}, error: message => errors.push(message) },
     process: {
       platform, env: {}, execPath: '/node', argv: ['/node', '/project/scripts/run-ios.mjs', ...args], cwd: () => '/project',
@@ -51,8 +52,11 @@ for (const args of [['--device', 'missing'], ['--device'], ['--configuration', '
 const success = simulate({ args: ['--device', 'tablet', '--configuration', 'Release', '--no-bundler'] });
 assert.equal(success.status, 0);
 assert(success.calls.some(c => c.command === 'xcrun' && c.args.join(' ') === 'simctl boot tablet'));
-assert(success.calls.some(c => c.command === 'xcrun' && c.args.join(' ') === 'simctl launch --terminate-running-process tablet site.storekit.owner'));
+assert(success.calls.some(c => c.command === 'xcrun' && c.args.join(' ') === 'simctl launch --terminate-running-process tablet in.storeflick.owner'));
 assert(success.calls.some(c => c.command === 'open' && c.args.includes('devices://device/open?id=tablet')));
+// The workspace, scheme and built app all follow the project prebuild produced.
+assert(success.calls.some(c => c.command === 'xcodebuild' && c.args.join(' ').includes('-workspace ios/StoreFlick.xcworkspace -scheme StoreFlick')));
+assert(success.calls.some(c => c.command === 'xcrun' && c.args[1] === 'install' && c.args[3].endsWith('/StoreFlick.app')));
 assert(success.calls.every(c => c.command !== 'xcode-select'));
 const booted = simulate({ booted: true });
 assert.equal(booted.status, 0);

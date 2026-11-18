@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { email as emailSchema } from '@storekit/validation';
+import { email as emailSchema } from '@storeflick/validation';
 import { StepScreen } from '../../src/components/StepScreen.jsx';
 import { LegalNote } from '../../src/components/LegalNote.jsx';
 import { Alert, Body, Button, Field, Touchable } from '../../src/components/ui.jsx';

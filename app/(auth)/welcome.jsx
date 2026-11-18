@@ -1,7 +1,7 @@
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TRIAL_DAYS } from '@storekit/shared';
+import { TRIAL_DAYS } from '@storeflick/shared';
 import { Ionicons } from '@expo/vector-icons';
 import { Logo } from '../../src/components/Brand.jsx';
 import { HeroShowcase } from '../../src/components/HeroShowcase.jsx';

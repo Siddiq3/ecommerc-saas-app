@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Alert as RNAlert, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { changePasswordSchema } from '@storekit/validation';
+import { changePasswordSchema } from '@storeflick/validation';
 import { Screen } from '../../src/components/Screen.jsx';
 import { Alert, Body, Button, Caption, Card, Divider, Heading, Loading, PasswordField, Pill, Row, Touchable } from '../../src/components/ui.jsx';
 import { useToast } from '../../src/components/Toast.jsx';

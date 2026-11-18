@@ -1,5 +1,5 @@
-import { formatMoney, toMajor } from '@storekit/shared';
-import { MAX_DELIVERY_METHODS, deliveryMethodSchema, rupeesText, wholeNumberText } from '@storekit/validation';
+import { formatMoney, toMajor } from '@storeflick/shared';
+import { MAX_DELIVERY_METHODS, deliveryMethodSchema, rupeesText, wholeNumberText } from '@storeflick/validation';
 import { fieldErrors } from './validation.js';
 
 /**

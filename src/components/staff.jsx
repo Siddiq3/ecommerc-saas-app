@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { toMajor } from '@storekit/shared';
-import { bookStaffSchema, rupeesText } from '@storekit/validation';
+import { toMajor } from '@storeflick/shared';
+import { bookStaffSchema, rupeesText } from '@storeflick/validation';
 import { Alert, Button, Caption, Field, Touchable } from './ui.jsx';
 import { Sheet } from './Sheet.jsx';
 import { FilterChips } from './Filters.jsx';

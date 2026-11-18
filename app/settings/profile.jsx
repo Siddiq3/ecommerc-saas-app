@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { StyleSheet } from 'react-native';
-import { updateProfileSchema } from '@storekit/validation';
+import { updateProfileSchema } from '@storeflick/validation';
 import { Screen } from '../../src/components/Screen.jsx';
 import { Alert, Body, Button, Caption, Card, Field, Toggle } from '../../src/components/ui.jsx';
 import { useAuth } from '../../src/state/auth.jsx';

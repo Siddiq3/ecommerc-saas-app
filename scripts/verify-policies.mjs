@@ -8,7 +8,7 @@
  * erase a policy or show customers the wrong return rule.
  */
 import assert from 'node:assert/strict';
-import { updatePoliciesSchema } from '@storekit/validation';
+import { updatePoliciesSchema } from '@storeflick/validation';
 import {
   POLICY_MAX_CHARS, POLICY_TYPES, documentRows, documentSave, returnsLabel, tradeFromForm, tradePreview, tradeToForm,
 } from '../src/lib/policies.js';

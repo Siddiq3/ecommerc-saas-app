@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { OTP_RESEND_COOLDOWN_SECONDS, maskEmail } from '@storekit/shared';
-import { otpCode } from '@storekit/validation';
+import { OTP_RESEND_COOLDOWN_SECONDS, maskEmail } from '@storeflick/shared';
+import { otpCode } from '@storeflick/validation';
 import { StepScreen } from '../../src/components/StepScreen.jsx';
 import { OtpInput } from '../../src/components/OtpInput.jsx';
 import { Alert, Body, Button, Caption, Touchable } from '../../src/components/ui.jsx';

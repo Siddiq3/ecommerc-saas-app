@@ -3,7 +3,7 @@ import {
   businessName, email, mobile, opaqueId, optionalProse, otpCode, password,
   personName, placeName, refreshToken, shortText, storeSlug,
 } from './primitives.js';
-import { BUSINESS_CATEGORIES } from '@storekit/shared';
+import { BUSINESS_CATEGORIES } from '@storeflick/shared';
 
 /**
  * Every object here is `.strict()`: a key the schema does not name is a 400, not a

@@ -1,6 +1,6 @@
 import {
   addressLine, businessName, mobile, pincode, placeName, storeSlug, z,
-} from '@storekit/validation';
+} from '@storeflick/validation';
 import { panelTints } from '../theme.js';
 
 export { STORE_STYLES, styleById } from './storeStyles.js';

@@ -1,11 +1,11 @@
 {
-  "name": "@storekit/validation",
+  "name": "@storeflick/validation",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "main": "./src/index.js",
   "exports": { ".": "./src/index.js", "./*": "./src/*.js" },
   "dependencies": { "zod": "^3.23.8" },
-  "peerDependencies": { "@storekit/shared": "*" },
+  "peerDependencies": { "@storeflick/shared": "*" },
   "files": ["src"]
 }

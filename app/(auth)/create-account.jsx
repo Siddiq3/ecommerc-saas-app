@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { signupSchema } from '@storekit/validation';
+import { signupSchema } from '@storeflick/validation';
 import { StepScreen } from '../../src/components/StepScreen.jsx';
 import { LegalNote } from '../../src/components/LegalNote.jsx';
 import { Alert, Body, Button, Field, Touchable } from '../../src/components/ui.jsx';

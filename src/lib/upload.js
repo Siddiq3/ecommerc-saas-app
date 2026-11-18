@@ -1,7 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { deleteAsync } from 'expo-file-system/legacy';
-import { MAX_UPLOAD_BYTES } from '@storekit/shared';
+import { MAX_UPLOAD_BYTES } from '@storeflick/shared';
 import { businesses, uploads } from '../api/endpoints.js';
 
 /**

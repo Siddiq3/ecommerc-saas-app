@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Alert as RNAlert, Platform, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { formatMoney } from '@storekit/shared';
-import { createCouponSchema, rupeesText, searchQuery, updateCouponSchema, wholeNumberText } from '@storekit/validation';
+import { formatMoney } from '@storeflick/shared';
+import { createCouponSchema, rupeesText, searchQuery, updateCouponSchema, wholeNumberText } from '@storeflick/validation';
 import { Screen } from '../../src/components/Screen.jsx';
 import {
   Alert, Body, Button, Caption, Card, Divider, EmptyState, ErrorState, Field, Loading, Pill, Row, Toggle, Touchable,

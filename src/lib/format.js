@@ -1,4 +1,4 @@
-import { formatMoney, formatDate as baseFormatDate } from '@storekit/shared';
+import { formatMoney, formatDate as baseFormatDate } from '@storeflick/shared';
 import { intlLocale, tr } from './i18n.js';
 
 export { formatMoney };

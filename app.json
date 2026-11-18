@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "StoreFlick",
-    "slug": "storekit",
+    "slug": "storeflick",
     "platforms": [
       "ios",
       "android"
@@ -11,7 +11,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "scheme": "storekit",
+    "scheme": "storeflick",
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -22,13 +22,13 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "site.storekit.owner",
+      "bundleIdentifier": "in.storeflick.owner",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "site.storekit.owner",
+      "package": "in.storeflick.owner",
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.USE_BIOMETRIC",

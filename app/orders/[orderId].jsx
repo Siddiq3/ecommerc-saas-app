@@ -5,10 +5,10 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   CANCELLATION_REASON_LABELS, CANCELLATION_REASONS, ORDER_STATUS_LABELS, ORDER_TRANSITIONS,
   PAYMENT_METHOD_LABELS, formatMoney,
-} from '@storekit/shared';
+} from '@storeflick/shared';
 import {
   ownerCancelOrderSchema, rejectPaymentSchema, updateOrderStatusSchema, verifyPaymentSchema,
-} from '@storekit/validation';
+} from '@storeflick/validation';
 import { Screen } from '../../src/components/Screen.jsx';
 import {
   Alert, Body, Button, Caption, Card, Divider, ErrorState, Field, Row, Touchable,

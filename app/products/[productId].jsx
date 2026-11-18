@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Alert as RNAlert, BackHandler, Image, Platform, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { formatMoney, discountPercent } from '@storekit/shared';
-import { updateStockSchema, wholeNumberText } from '@storekit/validation';
+import { formatMoney, discountPercent } from '@storeflick/shared';
+import { updateStockSchema, wholeNumberText } from '@storeflick/validation';
 import { Screen } from '../../src/components/Screen.jsx';
 import {
   Alert, Body, Button, Caption, Card, Divider, ErrorState, Field, Figure, Heading, Pill, Row, Touchable,

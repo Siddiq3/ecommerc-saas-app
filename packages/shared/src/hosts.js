@@ -15,7 +15,7 @@
  *                        a port, or a trailing dot, so those are tolerated (and only those).
  *
  * Whose a host is comes from `classifyHost`, which is the single place the two namespaces are
- * kept apart: every `{slug}.<root>` belongs to StoreKit and can only ever be a store's slug,
+ * kept apart: every `{slug}.<root>` belongs to StoreFlick and can only ever be a store's slug,
  * and a custom hostname may never sit under the root. That disjointness is what lets the two
  * kinds of address share one resolver without a shared lock.
  */
@@ -118,10 +118,10 @@ export const hostFromHeader = (value) => {
   return normalized.ok ? { hostname: normalized.hostname, port } : null;
 };
 
-/** `{scheme, domain, port}` of the storefront root, e.g. `https://storekit.site` or `http://lvh.me:3000`. */
+/** `{scheme, domain, port}` of the storefront root, e.g. `https://storeflick.in` or `http://lvh.me:3000`. */
 export const parseStorefrontRoot = (cfg) => {
   const match = /^(https?):\/\/([^/?#\s:]+)(?::(\d{1,5}))?/i.exec(String(cfg?.storefrontBaseUrl ?? ''));
-  if (!match) throw new TypeError('storefrontBaseUrl must be an http(s) URL such as https://storekit.site');
+  if (!match) throw new TypeError('storefrontBaseUrl must be an http(s) URL such as https://storeflick.in');
   return { scheme: match[1].toLowerCase(), domain: match[2].toLowerCase(), port: match[3] ? Number(match[3]) : null };
 };
 
@@ -135,11 +135,11 @@ export const isUnderRoot = (cfg, hostname) => {
  * Whose is this host?
  *
  *   { kind: 'platform', hostname }        the root itself — marketing site, not a store
- *   { kind: 'storekit', hostname, slug }  exactly one label beneath the root
+ *   { kind: 'storeflick', hostname, slug }  exactly one label beneath the root
  *   { kind: 'custom',   hostname }        anywhere else — a claimed custom domain
  *   { kind: 'invalid' }                   not a usable host, or a place we never serve
  *
- * The last case includes `a.b.<root>`: it is inside StoreKit's namespace but is not a store
+ * The last case includes `a.b.<root>`: it is inside StoreFlick's namespace but is not a store
  * address, so it must not be mistaken for a custom domain (custom hostnames can never live
  * under the root) and must not be looked up as one.
  *
@@ -163,7 +163,7 @@ export const classifyHost = (cfg, hostHeader) => {
   if (hostname.endsWith(`.${root.domain}`)) {
     const slug = hostname.slice(0, -(root.domain.length + 1));
     if (slug.includes('.')) return { kind: 'invalid' };
-    return { kind: 'storekit', hostname, slug };
+    return { kind: 'storeflick', hostname, slug };
   }
 
   return { kind: 'custom', hostname };
@@ -176,6 +176,6 @@ export const classifyHost = (cfg, hostHeader) => {
  * itself because a CNAME (which the domain needs, to route traffic) cannot coexist with
  * other records at the same name.
  */
-export const CHALLENGE_LABEL = '_storekit-challenge';
+export const CHALLENGE_LABEL = '_storeflick-challenge';
 export const challengeRecordName = (hostname) => `${CHALLENGE_LABEL}.${hostname}`;
-export const challengeRecordValue = (token) => `storekit-verify=${token}`;
+export const challengeRecordValue = (token) => `storeflick-verify=${token}`;

@@ -1,6 +1,6 @@
 import {
   POLICY_DOCUMENTS, POLICY_MAX_CHARS, POLICY_TYPES, RETURN_WINDOW_MAX_DAYS, policyDocumentPatchSchema, wholeNumberText,
-} from '@storekit/validation';
+} from '@storeflick/validation';
 
 /**
  * Store policies in the app: the return rule and the four documents. Every rule is the API's

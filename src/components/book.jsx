@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { bookPartySchema } from '@storekit/validation';
+import { bookPartySchema } from '@storeflick/validation';
 import { Alert, Body, Button, Caption, Card, Field, Row, Touchable } from './ui.jsx';
 import { Sheet } from './Sheet.jsx';
 import { SearchBar } from './Filters.jsx';

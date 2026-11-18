@@ -8,7 +8,7 @@
  * checkout live only on the website. That is a promise about the whole source tree, so it
  * is checked mechanically rather than by memory.
  *
- * Run with `npm run verify:compliance -w @storekit/mobile`.
+ * Run with `npm run verify:compliance -w @storeflick/mobile`.
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, dirname } from 'node:path';

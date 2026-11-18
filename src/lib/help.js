@@ -13,7 +13,7 @@
 /** The StoreFlick website (terms, privacy, account deletion) — not a store. No trailing slash. */
 export const WEB_URL = String(process.env.EXPO_PUBLIC_WEB_URL ?? 'https://ecommerc-saas-web-1yfy.vercel.app').replace(/\/$/, '');
 /** The website has no help page yet; support is by email, the same address its footer shows. */
-export const SUPPORT_URL = 'mailto:help@storekit.app';
+export const SUPPORT_URL = 'mailto:help@storeflick.in';
 
 export const HELP_CATEGORIES = [
   {

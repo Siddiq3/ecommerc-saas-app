@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Image, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { formatMoney, toMajor } from '@storekit/shared';
-import { GST_RATES, createCategorySchema, createProductSchema, rupeesText, updateProductSchema, wholeNumberText } from '@storekit/validation';
+import { formatMoney, toMajor } from '@storeflick/shared';
+import { GST_RATES, createCategorySchema, createProductSchema, rupeesText, updateProductSchema, wholeNumberText } from '@storeflick/validation';
 import {
   Alert, Body, Button, Caption, Card, Field, Heading, Row, SelectField, Toggle, Touchable,
 } from './ui.jsx';

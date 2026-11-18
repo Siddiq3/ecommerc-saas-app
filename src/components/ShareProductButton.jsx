@@ -5,7 +5,7 @@ import { SvgXml } from 'react-native-svg';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import * as Clipboard from 'expo-clipboard';
-import { formatMoney, discountPercent } from '@storekit/shared';
+import { formatMoney, discountPercent } from '@storeflick/shared';
 import { Button } from './ui.jsx';
 import { useToast } from './Toast.jsx';
 import { useT } from '../state/locale.jsx';

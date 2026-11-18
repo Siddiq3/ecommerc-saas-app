@@ -3,7 +3,7 @@ import { BackHandler, StyleSheet, useWindowDimensions, View } from 'react-native
 import { useRouter } from 'expo-router';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ERROR_CODES } from '@storekit/shared';
+import { ERROR_CODES } from '@storeflick/shared';
 import { CreationOrb } from '../../src/components/CreationOrb.jsx';
 import { CATEGORY_LOOK } from '../../src/components/StorePreview.jsx';
 import { Alert, Body, Button, Caption, Display } from '../../src/components/ui.jsx';

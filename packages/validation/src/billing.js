@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { BILLING_CYCLES } from '@storekit/shared';
+import { BILLING_CYCLES } from '@storeflick/shared';
 
 /**
  * Billing schemas, shared by the API and the website so the browser rejects exactly what

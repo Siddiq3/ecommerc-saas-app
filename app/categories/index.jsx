@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Alert as RNAlert, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { createCategorySchema } from '@storekit/validation';
+import { createCategorySchema } from '@storeflick/validation';
 import { Screen } from '../../src/components/Screen.jsx';
 import {
   Alert, Body, Button, Caption, Card, Divider, EmptyState, ErrorState, Field, Pill, Row, Touchable,

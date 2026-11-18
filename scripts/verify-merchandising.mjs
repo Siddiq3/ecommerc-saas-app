@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { updateStoreSettingsSchema } from '@storekit/validation';
+import { updateStoreSettingsSchema } from '@storeflick/validation';
 import { announcementIdeas, categoryLink, linkLabel, moveItem, productLink, storefrontDraft, storefrontPatch } from '../src/lib/merchandising.js';
 import { STORE_STYLES } from '../src/lib/storeStyles.js';
 const key = 'businesses/01ARZ3NDEKTSV4RRFFQ69G5FAV/banners/01ARZ3NDEKTSV4RRFFQ69G5FAW.webp';
