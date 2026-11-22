@@ -32,6 +32,14 @@
         "EXPO_PUBLIC_STOREFRONT_URL": "https://storeflick.in",
         "EXPO_PUBLIC_WEB_URL": "https://storeflick.in"
       }
+    },
+    "production-apk": {
+      "extends": "production",
+      "environment": "production",
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {
