@@ -7,6 +7,7 @@ import { attendanceId, ulid } from '../lib/book.js';
 import { useAuth } from './auth.jsx';
 import { pendingCount, syncBook } from '../lib/bookSync.js';
 import { ATTENDANCE_COLS, ENTRY_COLS, PARTY_COLS, SCHEMA, STAFF_COLS, migrate, saveLocal } from '../lib/bookStore.js';
+import { bookFile, noteBookClosing } from '../lib/localBooks.js';
 
 /**
  * The bill book's copy on this phone, and its sync with the server.
@@ -39,7 +40,7 @@ const BookSession = ({ children, businessId }) => {
     let cancelled = false;
     const opening = (async () => {
       if (!businessId) return;
-      opened = await SQLite.openDatabaseAsync(`book-${businessId}.db`);
+      opened = await SQLite.openDatabaseAsync(bookFile(businessId));
       await opened.execAsync(SCHEMA);
       await migrate(opened);
       if (!cancelled) { setDb(opened); setVersion((v) => v + 1); }
@@ -51,7 +52,9 @@ const BookSession = ({ children, businessId }) => {
       active.current = false;
       clearTimeout(timer.current);
       // A store change must not close a database under an in-flight transaction.
-      Promise.allSettled([opening, running.current]).then(() => opened?.closeAsync()).catch(() => undefined);
+      const closed = Promise.allSettled([opening, running.current]).then(() => opened?.closeAsync()).catch(() => undefined);
+      // Lets a deletion of this store's offline book wait until it is closed (src/lib/localBooks.js).
+      if (businessId) noteBookClosing(businessId, closed);
     };
   }, [businessId]);
 

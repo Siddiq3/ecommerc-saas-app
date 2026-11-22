@@ -8,6 +8,7 @@ import { useLocale } from '../../src/state/locale.jsx';
 import { useOrderCounts } from '../../src/state/counts.js';
 import { useRefreshOnFocus } from '../../src/lib/useAsync.js';
 import { colors, space, type } from '../../src/theme.js';
+import { SHOW_INSTAGRAM } from '../../src/lib/instagram-access.js';
 
 /**
  * The product's main destinations. Everything else in the app is pushed on top of one of
@@ -125,6 +126,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="social"
         options={{
+          // Hidden from the tab bar until Instagram automation is live (src/lib/instagram-access.js).
+          href: SHOW_INSTAGRAM ? undefined : null,
           title: t('Social'),
           // No outline variant exists for brand logos.
           tabBarIcon: ({ color, size }) => <Ionicons name="logo-instagram" size={size} color={color} />,

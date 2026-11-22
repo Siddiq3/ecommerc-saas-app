@@ -17,6 +17,7 @@ import { businesses as businessApi } from '../../src/api/endpoints.js';
 import { storeUrl as storeAddress, storeHostname } from '../../src/lib/storefront.js';
 import { WEB_URL } from '../../src/lib/help.js';
 import { colors, radius, space, type } from '../../src/theme.js';
+import { forgetLocalBooks } from '../../src/lib/localBooks.js';
 
 /**
  * Account: the store, the plan, and everything that is neither an order nor a product.
@@ -62,6 +63,9 @@ export default function Account() {
       // the user has no store, and the plan status is what tells it there is none.
       await refreshUser();
       await refresh({ silent: true });
+      // Deleted on the server, so the offline copy of its bill book and khata goes from this phone too (once the
+      // app has moved off the store and closed it).
+      forgetLocalBooks([businessId]).catch(() => undefined);
     } catch (error) {
       RNAlert.alert(t('Could not delete the store'), error?.message ?? t('Something went wrong. Try again.'));
     } finally {

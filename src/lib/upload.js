@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { deleteAsync } from 'expo-file-system/legacy';
@@ -22,7 +23,9 @@ const contentTypeOf = (asset) => {
 
 /** `aspect: null` lets the owner crop freely — a logo is rarely square. */
 export const pickImage = async ({ aspect = [1, 1], allowsEditing = true, multiple = false, selectionLimit = 12 } = {}) => {
-  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  // Android opens the system Photo Picker, which needs no permission: the app never asks for (or declares) storage or
+  // media access there, as Google Play's photo and video permissions policy expects. iOS still asks.
+  const permission = Platform.OS === 'android' ? { granted: true } : await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!permission.granted) {
     const error = new Error('StoreFlick needs access to your photos to add images.');
     error.code = 'PERMISSION_DENIED';

@@ -7,7 +7,7 @@ import { Alert, Body, Button, Caption, Row, Title } from './ui.jsx';
 import { useAuth } from '../state/auth.jsx';
 import { usePlan } from '../state/plan.jsx';
 import { useAction } from '../lib/useAsync.js';
-import { canManageInstagramPath } from '../lib/instagram-access.js';
+import { SHOW_INSTAGRAM, canManageInstagramPath } from '../lib/instagram-access.js';
 import { SUPPORT_URL } from '../lib/help.js';
 import { colors, radius, space } from '../theme.js';
 
@@ -91,7 +91,9 @@ export const PlanLock = () => {
               icon={<Ionicons name="log-out-outline" size={18} color={colors.ink700} />}
               onPress={() => logout().catch(() => undefined)}
             />
-            <Button title="Manage Instagram" variant="secondary" onPress={() => router.push('/(tabs)/social')} />
+            {SHOW_INSTAGRAM ? (
+              <Button title="Manage Instagram" variant="secondary" onPress={() => router.push('/(tabs)/social')} />
+            ) : null}
             <Button
               title="Delete account"
               variant="ghost"

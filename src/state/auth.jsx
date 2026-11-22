@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import * as client from '../api/client.js';
 import { account as accountApi, auth as authApi, businesses as businessApi } from '../api/endpoints.js';
 import { saveBusinessId, getDeviceId } from '../api/storage.js';
+import { forgetLocalBooks } from '../lib/localBooks.js';
 
 /**
  * Session state for the whole app.
@@ -29,6 +30,9 @@ const deviceInfo = async () => ({
 export const AuthProvider = ({ children }) => {
   // `notice` is a one-off message for the signed-out screens, e.g. that the account was deleted.
   const [state, setState] = useState({ status: 'loading', user: null, businessId: null, notice: null });
+  // The stores the signed-in account can see, for erasing their offline books when the account is deleted.
+  const userRef = useRef(null);
+  userRef.current = state.user;
   const mounted = useRef(true);
 
   useEffect(() => () => { mounted.current = false; }, []);
@@ -175,9 +179,12 @@ export const AuthProvider = ({ children }) => {
       if (error?.status !== 401) throw error;
       notice = 'account_delete_unconfirmed';
     }
+    const stores = (userRef.current?.businesses ?? []).map((b) => b.businessId);
     await client.forgetTokens();
     await saveBusinessId(null);
     apply({ status: 'unauthenticated', user: null, businessId: null, notice });
+    // The account's data is gone from the server; the offline copy of its books goes from this phone too.
+    if (notice === 'account_deleted') forgetLocalBooks(stores).catch(() => undefined);
     return notice;
   }, [apply]);
 
