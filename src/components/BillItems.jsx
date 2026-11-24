@@ -3,12 +3,16 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BOOK_QTY_MAX, BOOK_UNITS, bookItemSchema, itemTotal, rupeesText } from '@storeflick/validation';
 import { toMajor } from '@storeflick/shared';
-import { Alert, Body, Button, Caption, Card, Divider, Field, Row, Touchable } from './ui.jsx';
+import { Alert, Body, Button, Caption, Card, Divider, Field, Label, Row, Touchable } from './ui.jsx';
 import { FilterChips, SearchBar } from './Filters.jsx';
 import { Sheet } from './Sheet.jsx';
 import { msg } from '../lib/i18n.js';
 import { formatMoney } from '../lib/format.js';
 import { useProductSearch } from '../lib/useProductSearch.js';
+import { products } from '../api/endpoints.js';
+
+/** "M / Red" from a variant's attributes ({ Size: 'M', Colour: 'Red' }). */
+const variantLabel = (v) => Object.values(v.attributes ?? {}).join(' / ') || v.sku || '—';
 import { useAuth } from '../state/auth.jsx';
 import { useT } from '../state/locale.jsx';
 import { colors, space, type } from '../theme.js';
@@ -52,8 +56,8 @@ export const ItemList = ({ items, onEdit, onRemove, onAdd, error }) => {
   return (
     <View style={styles.block}>
       <Row style={styles.head}>
-        <Caption style={[styles.label, error && { color: colors.danger }]}>{error ?? t('Items')}</Caption>
-        {items.length ? <Caption style={styles.label}>{t('{n} items', { n: items.length })}</Caption> : null}
+        <Label style={[styles.label, error && { color: colors.danger }]}>{error ?? t('Items')}</Label>
+        {items.length ? <Caption style={styles.count}>{t(items.length === 1 ? '{n} item' : '{n} items', { n: items.length })}</Caption> : null}
       </Row>
       {items.length ? (
         <Card padded={false}>
@@ -76,7 +80,7 @@ export const ItemList = ({ items, onEdit, onRemove, onAdd, error }) => {
       ) : null}
       <Touchable onPress={onAdd} style={styles.add}>
         <Ionicons name="add-circle-outline" size={20} color={colors.accent700} />
-        <Body strong style={{ color: colors.accent700 }}>{items.length ? t('Add another item') : t('Add items (what was bought)')}</Body>
+        <Body strong style={{ color: colors.accent700, flex: 1 }}>{items.length ? t('Add another item') : t('Add items (what was bought)')}</Body>
       </Touchable>
     </View>
   );
@@ -95,6 +99,10 @@ export const ItemSheet = ({ visible, item, onClose, onSave }) => {
   const [unit, setUnit] = useState('pcs');
   const [price, setPrice] = useState('');
   const [productId, setProductId] = useState(null);
+  // A product sold in sizes or colours: the bill must say which, so its stock can come off.
+  const [variants, setVariants] = useState(null); // null: not a variant product; []: loading
+  const [variantId, setVariantId] = useState(null);
+  const [baseName, setBaseName] = useState('');
   const [errors, setErrors] = useState({});
   const search = useProductSearch(businessId, visible && source === 'products');
 
@@ -107,14 +115,31 @@ export const ItemSheet = ({ visible, item, onClose, onSave }) => {
     setUnit(item?.unit ?? 'pcs');
     setPrice(item ? String(toMajor(item.price)) : '');
     setProductId(item?.productId ?? null);
+    setVariantId(item?.variantId ?? null);
+    setVariants(null);
   }, [visible, item]);
 
   const pick = (product) => {
     setName(product.name ?? '');
+    setBaseName(product.name ?? '');
     setPrice(product.price ? String(toMajor(product.price)) : '');
     setProductId(product.productId);
+    setVariantId(null);
+    setVariants(product.hasVariants ? [] : null);
     setErrors({});
     setSource('type');
+    if (product.hasVariants) {
+      products.get(businessId, product.productId)
+        .then((full) => setVariants((full.variants ?? []).filter((v) => v.active !== false)))
+        .catch(() => setVariants(null));
+    }
+  };
+
+  const pickVariant = (v) => {
+    setVariantId(v.variantId);
+    setName(`${baseName} (${variantLabel(v)})`.slice(0, 80));
+    if (v.price) setPrice(String(toMajor(v.price)));
+    setErrors((e) => ({ ...e, variant: undefined }));
   };
 
   const parsedQty = QTY.test(qty.trim()) ? Number(qty.trim()) : null;
@@ -125,8 +150,9 @@ export const ItemSheet = ({ visible, item, onClose, onSave }) => {
     const next = {};
     if (!parsedQty || parsedQty > BOOK_QTY_MAX) next.qty = t('Enter a quantity, like 1 or 2.5');
     if (!parsedPrice.success) next.price = t('Enter a price, like 250 or 99.50');
+    if (variants?.length && !variantId) next.variant = t('Choose the size or colour');
     if (Object.keys(next).length) { setErrors(next); return; }
-    const line = { name, qty: parsedQty, unit, price: parsedPrice.data, ...(productId ? { productId } : {}) };
+    const line = { name, qty: parsedQty, unit, price: parsedPrice.data, ...(productId ? { productId } : {}), ...(productId && variantId ? { variantId } : {}) };
     const result = bookItemSchema.safeParse(line);
     if (!result.success) {
       const issues = Object.fromEntries(result.error.issues.map((i) => [i.path[0], i.message]));
@@ -173,12 +199,21 @@ export const ItemSheet = ({ visible, item, onClose, onSave }) => {
           <Field
             label={t('Item name')}
             value={name}
-            onChangeText={(v) => { setName(v); setProductId(null); setErrors((e) => ({ ...e, name: undefined })); }}
+            onChangeText={(v) => { setName(v); setProductId(null); setVariantId(null); setVariants(null); setErrors((e) => ({ ...e, name: undefined })); }}
             placeholder={t('Like Cotton saree, Shirt cloth')}
             maxLength={80}
             autoFocus={!item}
             error={errors.name}
           />
+          {variants ? (
+            <>
+              <Label style={[styles.variantLabel, errors.variant && { color: colors.danger }]}>{errors.variant ?? t('Size or colour')}</Label>
+              {variants.length ? (
+                <FilterChips options={variants.map((v) => ({ value: v.variantId, label: variantLabel(v) }))} value={variantId}
+                  onChange={(id) => pickVariant(variants.find((v) => v.variantId === id))} style={styles.units} />
+              ) : <ActivityIndicator color={colors.accent600} style={{ marginBottom: space.md }} />}
+            </>
+          ) : null}
           <Row gap={space.sm} align="flex-start">
             <Field
               label={t('Quantity')}
@@ -217,11 +252,14 @@ export const ItemSheet = ({ visible, item, onClose, onSave }) => {
 const styles = StyleSheet.create({
   block: { marginBottom: space.md },
   head: { justifyContent: 'space-between', marginBottom: space.xs },
-  label: { marginBottom: space.xs, color: colors.ink600 },
+  /** Matches the label above a text field (ui.jsx fieldLabel), like every group label in the form. */
+  label: { marginBottom: 10, color: colors.ink700 },
+  count: { marginBottom: 10, color: colors.ink600 },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingLeft: space.lg, paddingRight: space.sm, paddingVertical: space.md, minHeight: 56 },
   remove: { padding: space.xs },
   add: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: space.md, minHeight: 48 },
   source: { marginBottom: space.md },
+  variantLabel: { marginBottom: 10, color: colors.ink700 },
   units: { marginBottom: space.md },
   total: { justifyContent: 'space-between', paddingVertical: space.md, marginBottom: space.sm },
   pickRow: {

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { cursor, objectId, pageSlug, productParam, storeSlug } from './primitives.js';
 import { PLAN_ORDER } from '@storeflick/shared';
 import { policyType } from './settings.js';
+import { bookShareToken } from './book.js';
 
 /**
  * Path parameters.
@@ -47,6 +48,7 @@ export const PARAM_SCHEMAS = Object.freeze({
   pageSlug,
   productParam,
   policyType,
+  shareToken: bookShareToken,
 });
 
 export const changePlanSchema = z.object({ planId: z.enum(PLAN_ORDER) }).strict();

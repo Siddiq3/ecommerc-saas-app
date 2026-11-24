@@ -14,8 +14,40 @@ import { dateOnly, isoDateTime, mobile, money, objectId, optionalProse, pageLimi
  *   collection a customer paying their dues: money in, and their dues go down.
  *   opening    the cash in hand on the day the book was started: money in.
  *   due        dues carried over from the paper khata: owed by the customer, no money moves.
+ *              With a supplier: goods bought on credit, owed by the shop to the supplier.
+ *   purchase       stock bought: cash or UPI is money out; credit is owed to the supplier.
+ *   salesReturn    goods a customer brought back: cash or UPI refunded (money out), or on
+ *                  credit taken off what the customer owes.
+ *   purchaseReturn goods sent back to a supplier: cash or UPI refunded (money in), or on
+ *                  credit taken off what the shop owes the supplier.
+ * Bills, purchases and both returns can list items; those from the catalogue move stock.
+ *
+ * An expense can name a supplier (a party with partyType 'supplier'): that is paying the supplier,
+ * money out of the day and off what the shop owes them.
  */
-export const BOOK_ENTRY_KINDS = ['sale', 'expense', 'collection', 'opening', 'due'];
+export const BOOK_PARTY_TYPES = ['customer', 'supplier'];
+/** GST slabs a counter bill can carry. Bill prices include the tax; the bill only shows the split. */
+export const BOOK_GST_RATES = [0, 5, 12, 18, 28];
+
+/**
+ * What an entry does to its party's balance: +1 adds to it (credit bill, dues, goods from a
+ * supplier on credit), -1 takes off (a customer paying, paying a supplier), 0 leaves it.
+ * Shared by the phone and the customer's ledger page, so both read a balance the same way.
+ */
+export const partyEffect = (entry) => {
+  const credit = entry.mode === 'credit';
+  if (entry.kind === 'due' || (credit && (entry.kind === 'sale' || entry.kind === 'purchase'))) return 1;
+  if (entry.kind === 'collection' || entry.kind === 'expense') return -1;
+  if (credit && (entry.kind === 'salesReturn' || entry.kind === 'purchaseReturn')) return -1;
+  return 0;
+};
+
+/** Entry kinds that list goods (and can move stock). */
+export const BOOK_GOODS_KINDS = ['sale', 'purchase', 'salesReturn', 'purchaseReturn'];
+
+/** A customer's ledger link token: 26 random base32 characters (130 bits), made on the phone. */
+export const bookShareToken = z.string().regex(/^[0-9A-HJKMNP-TV-Z]{26}$/, 'Invalid link');
+export const BOOK_ENTRY_KINDS = ['sale', 'expense', 'collection', 'opening', 'due', 'purchase', 'salesReturn', 'purchaseReturn'];
 export const BOOK_PAY_MODES = ['cash', 'upi', 'credit'];
 export const BOOK_EXPENSE_CATEGORIES = ['chit', 'dealer', 'rent', 'salary', 'bills', 'other'];
 export const BOOK_SYNC_MAX = 100;
@@ -49,8 +81,11 @@ export const bookItemSchema = z
     unit: z.enum(BOOK_UNITS),
     price: money,
     productId: objectId.optional(),
+    // The size/colour picked, for a product sold in variants: its stock is the variant's.
+    variantId: objectId.optional(),
   })
-  .strict();
+  .strict()
+  .refine((i) => !i.variantId || i.productId, { path: ['variantId'], message: 'A variant needs its product' });
 
 export const bookEntrySchema = z
   .object({
@@ -62,24 +97,38 @@ export const bookEntrySchema = z
     partyId: objectId.optional(),
     category: z.enum(BOOK_EXPENSE_CATEGORIES).optional(),
     items: z.array(bookItemSchema).min(1, 'Add at least one item').max(BOOK_ITEMS_MAX, `A bill can have at most ${BOOK_ITEMS_MAX} items`).optional(),
+    // Bills only: a number for the printed bill, a discount off the items, the GST slab.
+    billNo: z.string().trim().min(1).max(20).regex(/^[A-Za-z0-9/-]+$/, 'Invalid bill number').optional(),
+    discount: money.optional(),
+    gstRate: z.number().refine((r) => BOOK_GST_RATES.includes(r), 'Choose a GST rate').optional(),
+    // Expenses only: the owner's own name for an "other" expense (Tea, Petrol).
+    label: shortText(1, 30, 'Expense name').optional(),
     note,
     updatedAt: isoDateTime,
     deleted: z.boolean().default(false),
   })
   .strict()
   .superRefine((entry, ctx) => {
-    if (entry.items && entry.kind !== 'sale') ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['items'], message: 'Only a bill has items' });
-    if (entry.items && entry.kind === 'sale' && itemsTotal(entry.items) !== entry.amount) {
+    const goods = BOOK_GOODS_KINDS.includes(entry.kind);
+    if (entry.items && !goods) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['items'], message: 'Only a bill, purchase or return has items' });
+    if (entry.items && goods && itemsTotal(entry.items) - (entry.discount ?? 0) !== entry.amount) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['amount'], message: 'The amount must match the items total' });
     }
+    if (entry.discount !== undefined && !entry.items) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['discount'], message: 'Only a bill with items has a discount' });
+    // A purchase's bill number is the supplier's own invoice number, kept for GST input credit.
+    for (const field of ['billNo', 'gstRate']) {
+      if (entry[field] !== undefined && !goods) ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: 'Only a bill, purchase or return has this' });
+    }
+    if (entry.label !== undefined && entry.kind !== 'expense') ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['label'], message: 'Only an expense has a name' });
   })
   .superRefine((entry, ctx) => {
     const issue = (path, message) => ctx.addIssue({ code: z.ZodIssueCode.custom, path: [path], message });
-    const needsParty = entry.kind === 'collection' || entry.kind === 'due' || (entry.kind === 'sale' && entry.mode === 'credit');
+    const goods = BOOK_GOODS_KINDS.includes(entry.kind);
+    const needsParty = entry.kind === 'collection' || entry.kind === 'due' || (goods && entry.mode === 'credit');
     if (needsParty && !entry.partyId) issue('partyId', 'Choose the customer');
-    if (!needsParty && entry.partyId && entry.kind !== 'sale') issue('partyId', 'Only bills, payments and dues have a customer');
-    if ((entry.kind === 'sale' || entry.kind === 'collection' || entry.kind === 'expense') && !entry.mode) issue('mode', 'Choose cash, UPI or credit');
-    if (entry.kind !== 'sale' && entry.mode === 'credit') issue('mode', 'Only a bill can be on credit');
+    if (!needsParty && entry.partyId && !goods && entry.kind !== 'expense') issue('partyId', 'Only bills, purchases, returns, payments, dues and supplier payments have a party');
+    if ((goods || entry.kind === 'collection' || entry.kind === 'expense') && !entry.mode) issue('mode', 'Choose cash, UPI or credit');
+    if (!goods && entry.mode === 'credit') issue('mode', 'Only a bill, purchase or return can be on credit');
     if ((entry.kind === 'opening' || entry.kind === 'due') && entry.mode) issue('mode', 'This entry has no payment mode');
     if (entry.kind === 'expense' && !entry.category) issue('category', 'Choose what the expense was for');
     if (entry.kind !== 'expense' && entry.category) issue('category', 'Only an expense has a category');
@@ -90,6 +139,13 @@ export const bookPartySchema = z
     partyId: objectId,
     name: shortText(1, 80, 'Name'),
     mobile: mobile.optional(),
+    // Absent on parties made before suppliers existed: those are customers. Not `type`: the change
+    // feed tags every record with its own `type` (entry, party…), which a party field would overwrite.
+    partyType: z.enum(BOOK_PARTY_TYPES).optional(),
+    // When the dues should be paid; the phone that set it reminds the owner that morning.
+    dueDate: dateOnly.optional(),
+    // Present while the customer's ledger link is on; removing it turns the link off.
+    shareToken: bookShareToken.optional(),
     note,
     updatedAt: isoDateTime,
     deleted: z.boolean().default(false),

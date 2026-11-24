@@ -71,7 +71,7 @@ export const FilterChips = ({ options, value, onChange, style }) => {
   );
 };
 
-export const SearchBar = ({ value, onChange, placeholder = 'Search', error }) => {
+export const SearchBar = ({ value, onChange, placeholder = 'Search', error, autoFocus = false }) => {
   const t = useT();
   return (
   <View style={styles.search}>
@@ -82,6 +82,7 @@ export const SearchBar = ({ value, onChange, placeholder = 'Search', error }) =>
       autoCapitalize="none"
       autoCorrect={false}
       returnKeyType="search"
+      autoFocus={autoFocus}
       // A search box is one line; a long placeholder must never make it two.
       numberOfLines={1}
       clearButtonMode="while-editing"

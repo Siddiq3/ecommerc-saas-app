@@ -3,10 +3,13 @@ import { AppState } from 'react-native';
 import * as SQLite from 'expo-sqlite';
 import * as Crypto from 'expo-crypto';
 import { book as bookApi } from '../api/endpoints.js';
-import { attendanceId, ulid } from '../lib/book.js';
+import { attendanceId, shareToken, ulid } from '../lib/book.js';
 import { useAuth } from './auth.jsx';
 import { pendingCount, syncBook } from '../lib/bookSync.js';
-import { ATTENDANCE_COLS, ENTRY_COLS, PARTY_COLS, SCHEMA, STAFF_COLS, migrate, saveLocal } from '../lib/bookStore.js';
+import { ATTENDANCE_COLS, ENTRY_COLS, PARTY_COLS, SCHEMA, STAFF_COLS, migrate, runRepeats, saveLocal } from '../lib/bookStore.js';
+import { dropReceipt, keepReceipt } from '../lib/receipts.js';
+import { readParty } from '../lib/bookQueries.js';
+import { scheduleDueReminder } from '../lib/dueReminders.js';
 import { bookFile, noteBookClosing } from '../lib/localBooks.js';
 
 /**
@@ -18,6 +21,7 @@ import { bookFile, noteBookClosing } from '../lib/localBooks.js';
  */
 
 export const newBookId = () => ulid((n) => Crypto.getRandomBytes(n));
+export const newShareToken = () => shareToken((n) => Crypto.getRandomBytes(n));
 
 const BookContext = createContext(null);
 
@@ -43,6 +47,7 @@ const BookSession = ({ children, businessId }) => {
       opened = await SQLite.openDatabaseAsync(bookFile(businessId));
       await opened.execAsync(SCHEMA);
       await migrate(opened);
+      await runRepeats(opened).catch(() => undefined);
       if (!cancelled) { setDb(opened); setVersion((v) => v + 1); }
     })().catch((error) => {
       if (!cancelled) setSync({ state: 'error', pending: 0, lastSyncedAt: null, error });
@@ -100,11 +105,43 @@ const BookSession = ({ children, businessId }) => {
     syncNow,
     saveEntry: async (entry) => {
       await saveLocal(db, 'entries', ENTRY_COLS, entry);
+      // Paid up: the due date and its reminder have done their job.
+      if (entry.partyId) {
+        const party = await readParty(db, entry.partyId);
+        if (party?.dueDate && party.balance <= 0) {
+          await saveLocal(db, 'parties', PARTY_COLS, { ...party, dueDate: null });
+          await scheduleDueReminder({ ...party, dueDate: null }, {}).catch(() => undefined);
+        }
+      }
       await changed();
     },
     deleteEntry: async (entry) => {
       await saveLocal(db, 'entries', ENTRY_COLS, { ...entry, deleted: true });
+      const photo = await db.getFirstAsync('SELECT uri FROM receipts WHERE entryId = ?', [entry.entryId]);
+      if (photo) {
+        await db.runAsync('DELETE FROM receipts WHERE entryId = ?', [entry.entryId]);
+        await dropReceipt(photo.uri);
+      }
       await changed();
+    },
+    /** Copies a picked photo into the app's own folder and ties it to the entry (this phone only). */
+    saveReceipt: async (entryId, pickedUri) => {
+      const old = await db.getFirstAsync('SELECT uri FROM receipts WHERE entryId = ?', [entryId]);
+      const uri = await keepReceipt(pickedUri, entryId, businessId);
+      await db.runAsync('INSERT OR REPLACE INTO receipts (entryId, uri) VALUES (?, ?)', [entryId, uri]);
+      if (old) await dropReceipt(old.uri);
+      setVersion((v) => v + 1);
+    },
+    /** Repeats an expense every month on `day`, starting next month. */
+    saveRepeat: async (templateId, entry, day, startMonth) => {
+      const { entryId, date, updatedAt, deleted, ...template } = entry;
+      await db.runAsync('INSERT OR REPLACE INTO repeats (templateId, entry, day, startMonth) VALUES (?, ?, ?, ?)',
+        [templateId, JSON.stringify(template), day, startMonth]);
+      setVersion((v) => v + 1);
+    },
+    stopRepeat: async (templateId) => {
+      await db.runAsync('DELETE FROM repeats WHERE templateId = ?', [templateId]);
+      setVersion((v) => v + 1);
     },
     saveParty: async (party) => {
       await saveLocal(db, 'parties', PARTY_COLS, party);
@@ -121,7 +158,7 @@ const BookSession = ({ children, businessId }) => {
       });
       await changed();
     },
-  }), [db, version, sync, syncNow, changed]);
+  }), [db, businessId, version, sync, syncNow, changed]);
 
   return <BookContext.Provider value={value}>{children}</BookContext.Provider>;
 };

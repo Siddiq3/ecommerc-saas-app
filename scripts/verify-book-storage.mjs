@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { ATTENDANCE_COLS, ENTRY_COLS, PARTY_COLS, SCHEMA, STAFF_COLS, migrate, saveLocal, toWire, upsert } from '../src/lib/bookStore.js';
+import { ATTENDANCE_COLS, ENTRY_COLS, PARTY_COLS, SCHEMA, STAFF_COLS, migrate, runRepeats, saveLocal, toWire, upsert } from '../src/lib/bookStore.js';
 import { acknowledge, pendingCount, syncBook } from '../src/lib/bookSync.js';
-import { readDay, readParties, readParty, readRegister, readStaffMonth } from '../src/lib/bookQueries.js';
+import { nextBillNumber, readPaidWithBill, searchEntries, readRange, readDay, readParties, readParty, readRegister, readStaffMonth } from '../src/lib/bookQueries.js';
 
 // Exercise production SQL and sync with two independent real SQLite databases.
 function database() {
@@ -96,7 +96,9 @@ try {
     ['paid', 'collection', 'upi', 5000], ['due', 'due', undefined, 15000],
   ];
   for (const [entryId, kind, mode, amount, date = '2026-11-08'] of rows) {
-    await upsert(b, 'entries', ENTRY_COLS, { entryId, kind, mode, amount, date, partyId: party.partyId, updatedAt: at(10) }, true);
+    // Rent names no party: an expense naming one is a supplier payment and comes off that balance.
+    const partyId = kind === 'expense' ? undefined : party.partyId;
+    await upsert(b, 'entries', ENTRY_COLS, { entryId, kind, mode, amount, date, partyId, updatedAt: at(10) }, true);
   }
   const day = await readDay(b, '2026-11-08');
   assert.equal(day.openingBalance, 100000);
@@ -104,7 +106,16 @@ try {
   assert.equal(day.sales.total, 100000);
   assert.equal((await readDay(b, '2026-11-09')).openingBalance, 165000);
   assert.equal((await readParties(b))[0].balance, 40000);
+  assert.equal((await readParties(b))[0].lastDate, '2026-11-08', 'the khata list shows each party\'s latest entry date');
   assert(counter >= 4);
+  const range = await readRange(b, '2026-11-01', '2026-11-30');
+  assert.equal(range.opening, 0, 'the starting cash is inside this range');
+  assert.equal(range.closing, 165000);
+  assert.deepEqual(range.days.map((d) => [d.date, d.closingBalance]), [['2026-11-07', 100000], ['2026-11-08', 165000]]);
+  assert.equal((await readRange(b, '2026-11-08', '2026-11-08')).opening, 100000, 'a later range opens on the cash carried into it');
+  assert.equal(range.totals.sales.total, 100000);
+  assert.deepEqual(range.expensesBy.map((e) => [e.category, e.total]), [[null, 10000]], 'grouped by category (this test row has none)');
+  assert.equal(range.purchases, 0, 'no supplier goods in this range');
 
   // Bill items are stored as a list, travel to the second phone intact, and show in the khata.
   const items = [{ name: 'Silk saree', qty: 1, unit: 'pcs', price: 125000 }, { name: 'Cotton cloth', qty: 2.5, unit: 'm', price: 18000 }];
@@ -121,13 +132,51 @@ try {
 
   // A book created by the previous app version gains the column without losing bills.
   const old = new DatabaseSync(':memory:');
-  old.exec(SCHEMA.replace('category TEXT, items TEXT,', 'category TEXT,'));
+  old.exec(SCHEMA
+    .replace('category TEXT, items TEXT, billNo TEXT, discount INTEGER, gstRate INTEGER, label TEXT,', 'category TEXT,')
+    .replace('mobile TEXT, partyType TEXT, dueDate TEXT, shareToken TEXT,', 'mobile TEXT,'));
   old.exec("INSERT INTO entries (entryId, kind, date, amount, mode, updatedAt) VALUES ('legacy', 'sale', '2026-11-01', 500, 'cash', '2026-11-01T00:00:00.000Z')");
+  old.exec("INSERT INTO parties (partyId, name, updatedAt) VALUES ('oldparty', 'Ravi', '2026-11-01T00:00:00.000Z')");
   const oldDb = { getAllAsync: async (sql, args = []) => old.prepare(sql).all(...args), runAsync: async (sql, args = []) => old.prepare(sql).run(...args) };
   await migrate(oldDb);
   await migrate(oldDb);
   assert.equal(old.prepare("SELECT amount, items FROM entries WHERE entryId = 'legacy'").get().amount, 500);
+  assert.equal(old.prepare("SELECT partyType FROM parties WHERE partyId = 'oldparty'").get().partyType, null, 'old parties read as customers');
+  assert.equal(old.prepare("SELECT billNo, label FROM entries WHERE entryId = 'legacy'").get().billNo, null, 'old bills gain the new columns');
   old.close();
+
+  // Bill numbers: each phone has its own code and count, so two phones never print the same number.
+  assert.equal(await nextBillNumber(a, '2026-11-30', () => 'AAA'), '301126-AAA-1');
+  await saveLocal(a, 'entries', ENTRY_COLS, { entryId: 'nb1', kind: 'sale', mode: 'cash', date: '2026-11-30', amount: 100, billNo: '301126-AAA-1' });
+  await saveLocal(a, 'entries', ENTRY_COLS, { entryId: 'nb2', kind: 'sale', mode: 'cash', date: '2026-11-30', amount: 100, billNo: '301126-BBB-7' });
+  assert.equal(await nextBillNumber(a, '2026-11-30', () => 'ZZZ'), '301126-AAA-2', 'the code is kept, and another phone’s bills are not counted');
+  await saveLocal(a, 'entries', ENTRY_COLS, { entryId: 'nb1', kind: 'sale', mode: 'cash', date: '2026-11-30', amount: 100, billNo: '301126-AAA-1', deleted: true });
+  assert.equal(await nextBillNumber(a, '2026-11-30'), '301126-AAA-2', 'a deleted bill’s number is not used again');
+
+  // A part-paid credit bill finds the payment saved with it.
+  const credit = { entryId: 'pp1', kind: 'sale', mode: 'credit', partyId: 'P9', date: '2026-11-30', amount: 30000, billNo: '301126-AAA-9' };
+  await saveLocal(a, 'entries', ENTRY_COLS, credit);
+  assert.equal(await readPaidWithBill(a, credit), null, 'nothing paid yet');
+  await saveLocal(a, 'entries', ENTRY_COLS, { entryId: 'pp2', kind: 'collection', mode: 'upi', partyId: 'P9', date: '2026-11-30', amount: 10000, note: 'Bill 301126-AAA-9' });
+  assert.deepEqual(await readPaidWithBill(a, credit), { amount: 10000, mode: 'upi' });
+
+  // Search finds entries by party, bill number, item, note and exact amount; LIKE wildcards are literal.
+  const found = async (q) => (await searchEntries(b, q)).map((e) => e.entryId).sort();
+  assert.ok((await found('ramu')).includes('credit'), 'by party name, any case');
+  assert.deepEqual(await found('Silk saree'), ['itembill'], 'by item name');
+  assert.ok((await found('300')).includes('credit'), 'by amount in rupees');
+  assert.deepEqual(await found('%'), [], 'a % is searched for, not a wildcard');
+  assert.deepEqual(await found('   '), []);
+
+  // A monthly expense: one copy a month from the next month on, never twice, and a deleted copy stays deleted.
+  const rent = { kind: 'expense', category: 'rent', mode: 'cash', amount: 800000 };
+  await a.runAsync('INSERT INTO repeats (templateId, entry, day, startMonth) VALUES (?, ?, ?, ?)', ['01JC000000AAAAAAAAAAAAAAAA', JSON.stringify(rent), 5, '2026-09']);
+  assert.equal(await runRepeats(a, '2026-11-20'), 2, 'October and November');
+  assert.equal(await runRepeats(a, '2026-11-21'), 0, 'not twice');
+  const copies = await a.getAllAsync("SELECT entryId, date FROM entries WHERE category = 'rent' AND amount = 800000 ORDER BY date");
+  assert.deepEqual(copies.map((c) => c.date), ['2026-10-05', '2026-11-05']);
+  await saveLocal(a, 'entries', ENTRY_COLS, { ...rent, entryId: copies[0].entryId, date: copies[0].date, deleted: true });
+  assert.equal(await runRepeats(a, '2026-11-22'), 0, 'a deleted copy is not made again');
 
   // Staff and attendance: saved on one phone, restored on another; a cleared mark stays cleared.
   const worker = { staffId: 'lakshmi', name: 'Lakshmi', wageType: 'monthly', wage: 3000000 };

@@ -27,16 +27,22 @@ export const forgetLocalBooks = async (businessIds = [], deps = {}) => {
   const remove = deps.remove ?? (async (file) => (await import('expo-sqlite')).deleteDatabaseAsync(file));
   const wait = deps.wait ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
   const attempts = deps.attempts ?? 10;
+  // The store's receipt photos (src/lib/receipts.js) go with its book. Never blocks the erase.
+  const removePhotos = deps.removePhotos ?? (async (id) => {
+    const fs = await import('expo-file-system/legacy').catch(() => null);
+    await fs?.deleteAsync(`${fs.documentDirectory}receipts/${id}/`, { idempotent: true }).catch(() => undefined);
+  });
   const gone = [];
   for (const id of new Set(businessIds.filter(Boolean))) {
     for (let attempt = 1; attempt <= attempts; attempt++) {
       await closing.get(id)?.catch(() => undefined);
       try {
         await remove(bookFile(id));
+        await removePhotos(id);
         gone.push(id);
         break;
       } catch (error) {
-        if (missing(error)) { gone.push(id); break; }
+        if (missing(error)) { await removePhotos(id); gone.push(id); break; }
         if (attempt < attempts) await wait(300); // still open: book.jsx is closing it
       }
     }

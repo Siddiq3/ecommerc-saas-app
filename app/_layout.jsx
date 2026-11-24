@@ -158,6 +158,9 @@ const Navigation = () => {
         <Stack.Screen name="book/index" options={{ title: t('Bill book') }} />
         <Stack.Screen name="book/entry" options={{ title: t('New bill'), presentation: 'modal' }} />
         <Stack.Screen name="khata/index" options={{ title: t('Khata') }} />
+        <Stack.Screen name="book/report" options={{ title: t('Reports') }} />
+        <Stack.Screen name="book/search" options={{ title: t('Search') }} />
+        <Stack.Screen name="book/saved" options={{ title: t('Transaction saved'), presentation: 'modal' }} />
         <Stack.Screen name="khata/[partyId]" options={{ title: t('Customer') }} />
         <Stack.Screen name="staff/index" options={{ title: t('Staff attendance') }} />
         <Stack.Screen name="staff/[staffId]" options={{ title: t('Staff') }} />

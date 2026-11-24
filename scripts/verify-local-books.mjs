@@ -13,6 +13,9 @@ const fake = (script) => {
 { const f = fake([new Error('Unable to delete database that is currently open'), new Error('still open')]);
   assert.deepEqual(await forgetLocalBooks(['b1'], f), ['b1']); assert.equal(f.calls.length, 3); }
 { const f = fake([new Error('Database file not found')]); assert.deepEqual(await forgetLocalBooks(['b1'], f), ['b1']); assert.equal(f.calls.length, 1); }
+// Receipt photos go with the book, also when the book file was already gone.
+{ const photos = []; const f = { ...fake([null, new Error('Database file not found')]), removePhotos: async (id) => { photos.push(id); } };
+  assert.deepEqual(await forgetLocalBooks(['b1', 'b2'], f), ['b1', 'b2']); assert.deepEqual(photos, ['b1', 'b2']); }
 { const f = fake(Array.from({ length: 50 }, () => new Error('open'))); assert.deepEqual(await forgetLocalBooks(['b1'], { ...f, attempts: 4 }), []); assert.equal(f.calls.length, 4); }
 { // Waits for the close book.jsx reported before deleting.
   let closed = false; let release; noteBookClosing('b9', new Promise((r) => { release = () => { closed = true; r(); }; }));
