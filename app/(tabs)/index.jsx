@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Linking, Share, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Alert as RNAlert, Linking, Share, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +14,9 @@ import { SkeletonList, SkeletonStats } from '../../src/components/Skeleton.jsx';
 import { FadeIn, Stagger, haptic } from '../../src/components/motion.jsx';
 import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
+import { usePlan } from '../../src/state/plan.jsx';
+import { useT } from '../../src/state/locale.jsx';
+import { msg } from '../../src/lib/i18n.js';
 import { BookCard } from '../../src/components/book.jsx';
 import { useAction, useAsync, useRefreshOnFocus } from '../../src/lib/useAsync.js';
 import { pickAndSaveLogo } from '../../src/lib/upload.js';
@@ -49,7 +52,83 @@ const SHORTCUTS = [
   { label: 'Analytics', icon: 'bar-chart-outline', href: '/analytics' },
 ];
 
-export default function Dashboard() {
+export default function Home() {
+  const { books } = usePlan();
+  return books ? <BooksHome /> : <Dashboard />;
+}
+
+const BOOK_TILES = [
+  { label: msg('Search'), icon: 'search-outline', href: '/book/search' },
+  { label: msg('Day book'), icon: 'book-outline', href: '/book' },
+  { label: msg('Expense'), icon: 'wallet-outline', href: { pathname: '/book/entry', params: { kind: 'expense' } } },
+  { label: msg('Reports'), icon: 'bar-chart-outline', href: '/book/report' },
+];
+
+/**
+ * Home for a khata-only shop: bills, khata and expenses, nothing about an online store but one card that offers it.
+ * The card turns the store on in the app only: no plan, price or link (see src/state/plan.jsx).
+ */
+function BooksHome() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { width, fontScale } = useWindowDimensions();
+  const across = width / fontScale < 300 ? 2 : 4;
+  const toast = useToast();
+  const { business, user } = useAuth();
+  const { status, setUsage } = usePlan();
+  const t = useT();
+  const { run: turnOn, pending: turning } = useAction(() => setUsage('store'));
+
+  const offerStore = () => RNAlert.alert(
+    t('Start your online store?'),
+    status?.trialAvailable
+      ? t('You get a 3-day free trial of the website. Your khata stays free.')
+      : t('Your free trial has been used, so the website stays locked until you have a plan. You can come back to khata only at any time.'),
+    [
+      { text: t('Not now'), style: 'cancel' },
+      { text: t('Start'), onPress: () => turnOn().catch((error) => toast.error(error?.message ?? t('Could not start the online store'))) },
+    ],
+  );
+
+  return (
+    <Screen contentStyle={{ paddingTop: insets.top + space.md }}>
+      <View style={styles.header}>
+        <Caption>{t(greeting())}, {firstName(user?.name)}</Caption>
+        <Display style={styles.storeName} numberOfLines={1}>{business?.name ?? t('Your shop')}</Display>
+      </View>
+
+      <BookCard
+        onOpen={() => router.push('/book')}
+        onBill={() => router.push({ pathname: '/book/entry', params: { kind: 'sale' } })}
+        onKhata={() => router.push('/khata')}
+        onStaff={() => router.push('/staff')}
+      />
+
+      <View style={styles.grid}>
+        {BOOK_TILES.map((item) => (
+          <Touchable key={item.label} onPress={() => router.push(item.href)} accessibilityLabel={t(item.label)}
+            style={[styles.gridTile, across === 2 && styles.gridTileWide]}>
+            <View style={styles.gridIcon}><Ionicons name={item.icon} size={22} color={colors.accent700} /></View>
+            <Caption numberOfLines={1} style={styles.gridLabel}>{t(item.label)}</Caption>
+          </Touchable>
+        ))}
+      </View>
+
+      <Card style={[styles.emptyOrders, { marginTop: space.lg }]}>
+        <View style={styles.emptyIcon}><Ionicons name="storefront-outline" size={22} color={colors.accent700} /></View>
+        <View style={{ flex: 1 }}>
+          <Body strong>{t('Sell online too')}</Body>
+          <Caption>{t('Your own website with your products, and orders on WhatsApp.')}</Caption>
+        </View>
+        <Touchable onPress={offerStore} disabled={turning} accessibilityLabel={t('Start online store')} style={styles.viewButton}>
+          <Body strong style={styles.viewText}>{turning ? '…' : t('Start')}</Body>
+        </Touchable>
+      </Card>
+    </Screen>
+  );
+}
+
+function Dashboard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   // Width in units of text: a narrow phone with large text fits two shortcuts across, not four ("Catego…").
@@ -484,9 +563,9 @@ const Sparkline = ({ points }) => {
 
 const greeting = () => {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 17) return 'Good afternoon';
-  return 'Good evening';
+  if (hour < 12) return msg('Good morning');
+  if (hour < 17) return msg('Good afternoon');
+  return msg('Good evening');
 };
 
 const firstName = (name) => String(name ?? '').trim().split(/\s+/)[0] || 'there';

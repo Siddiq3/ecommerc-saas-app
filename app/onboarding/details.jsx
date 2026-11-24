@@ -8,6 +8,7 @@ import { StepScreen } from '../../src/components/StepScreen.jsx';
 import { Button, Caption, Field } from '../../src/components/ui.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { useOnboarding } from '../../src/state/onboarding.jsx';
+import { useT } from '../../src/state/locale.jsx';
 import { businesses } from '../../src/api/endpoints.js';
 import { detailsSchema } from '../../src/lib/onboarding.js';
 import { STOREFRONT_DOMAIN } from '../../src/lib/storefront.js';
@@ -28,6 +29,11 @@ export default function Details() {
   const { user } = useAuth();
   const { draft, update } = useOnboarding();
   const { business } = draft;
+  const t = useT();
+  // Khata only: no website, so no store link to choose. One is still needed to save the shop; it is made from the
+  // name plus a random tail (a clash is near impossible) and stays hidden until the owner starts a store.
+  const books = draft.usage === 'books';
+  const [tail] = useState(() => Math.random().toString(36).slice(2, 7));
 
   const [touched, setTouched] = useState({});
   const [availability, setAvailability] = useState({ state: 'idle' });
@@ -46,9 +52,10 @@ export default function Details() {
   }, []);
 
   const onName = (value) => {
+    if (books) return set({ name: value, slug: `${slugify(value).slice(0, 30).replace(/-+$/, '') || 'shop'}-${tail}` });
     // Suggest a link from the name until the merchant writes their own.
     // Cut to length, a long name could end the link on a hyphen, which the link rule refuses.
-    set(business.slugEdited ? { name: value } : { name: value, slug: slugify(value).slice(0, 40).replace(/-+$/, '') });
+    return set(business.slugEdited ? { name: value } : { name: value, slug: slugify(value).slice(0, 40).replace(/-+$/, '') });
   };
 
   const checkSlug = useCallback(async (candidate) => {
@@ -69,12 +76,13 @@ export default function Details() {
   // Debounced: a request per keystroke would flood the endpoint and trip its rate limit.
   useEffect(() => {
     clearTimeout(timer.current);
+    if (books) return undefined;
     timer.current = setTimeout(() => checkSlug(business.slug), 450);
     return () => clearTimeout(timer.current);
-  }, [business.slug, checkSlug]);
+  }, [business.slug, checkSlug, books]);
 
   const result = check(detailsSchema, { name: business.name, slug: business.slug, phone: business.phone });
-  const canContinue = result.ok && availability.state === 'free';
+  const canContinue = result.ok && (books || availability.state === 'free');
 
   const slugProblem = availability.state === 'taken'
     ? 'That link is taken. Try another.'
@@ -86,7 +94,7 @@ export default function Details() {
       from={0.42}
       progress={0.58}
       title="Tell us about your business"
-      subtitle="This is how your store will appear to customers."
+      subtitle={books ? t('This is printed on your bills.') : 'This is how your store will appear to customers.'}
       onBack={() => router.back()}
       footer={
         <Button
@@ -105,12 +113,12 @@ export default function Details() {
         placeholder="Business name"
         autoCapitalize="words"
         returnKeyType="next"
-        onSubmitEditing={() => slugRef.current?.focus()}
+        onSubmitEditing={() => (books ? phoneRef : slugRef).current?.focus()}
         maxLength={80}
         error={touched.name ? result.errors.name : undefined}
       />
 
-      <Field
+      {books ? null : <Field
         ref={slugRef}
         label="Store link"
         value={business.slug}
@@ -131,7 +139,7 @@ export default function Details() {
         )}
         hint={availability.state === 'free' ? 'That link is yours.' : 'The address customers will type. Hard to change later.'}
         error={slugProblem}
-      />
+      />}
 
       <Field
         ref={phoneRef}
@@ -144,7 +152,7 @@ export default function Details() {
         autoComplete="tel"
         prefix="+91"
         maxLength={17}
-        hint="Customers can call or WhatsApp you on this number."
+        hint={books ? t('Printed on your bills and reminders.') : 'Customers can call or WhatsApp you on this number.'}
         error={touched.phone ? result.errors.phone : undefined}
       />
     </StepScreen>

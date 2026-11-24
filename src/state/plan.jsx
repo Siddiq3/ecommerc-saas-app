@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { isEntitled } from '@storeflick/shared';
-import { subscription } from '../api/endpoints.js';
+import { businesses, subscription } from '../api/endpoints.js';
+import { readUsage, saveUsage } from '../api/storage.js';
 import { useAuth } from './auth.jsx';
 
 /**
@@ -28,10 +29,22 @@ const PlanContext = createContext(null);
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
 
 export const PlanProvider = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, businessId } = useAuth();
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Last known use of this shop, from the phone: right from the first frame, and offline.
+  const [savedUsage, setSavedUsage] = useState(null);
+  useEffect(() => {
+    let live = true;
+    setSavedUsage(null);
+    readUsage(businessId).then((u) => { if (live) setSavedUsage(u); });
+    return () => { live = false; };
+  }, [businessId]);
+  useEffect(() => {
+    if (status?.usage && status.businessId === businessId) saveUsage(businessId, status.usage);
+  }, [status?.usage, status?.businessId, businessId]);
 
   const mounted = useRef(true);
   const lastFetch = useRef(0);
@@ -95,6 +108,14 @@ export const PlanProvider = ({ children }) => {
     return () => clearInterval(timer);
   }, [isAuthenticated, refresh]);
 
+  /** Turns the online store off ('books') or on ('store'); the answer is the new status, shown at once. */
+  const setUsage = useCallback(async (usage) => {
+    const next = await businesses.setUsage(businessId, usage);
+    if (mounted.current) setStatus((prev) => ({ ...prev, ...next }));
+    refresh();
+    return next;
+  }, [businessId, refresh]);
+
   const value = useMemo(() => {
     const planStatus = status?.plan_status ?? null;
     return {
@@ -105,9 +126,12 @@ export const PlanProvider = ({ children }) => {
       /** Null until the first successful load, so screens can hold rather than flash the lock. */
       entitled: planStatus === null ? null : isEntitled(planStatus),
       needsOnboarding: Boolean(status?.needsOnboarding),
+      /** Khata only: bills, khata and expenses, free and never locked; the online store is off. */
+      books: (status?.usage ?? savedUsage) === 'books',
       refresh,
+      setUsage,
     };
-  }, [status, loading, error, refresh]);
+  }, [status, loading, error, refresh, setUsage, savedUsage]);
 
   return <PlanContext.Provider value={value}>{children}</PlanContext.Provider>;
 };

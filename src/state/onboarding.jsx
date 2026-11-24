@@ -22,6 +22,8 @@ const initial = {
    * would answer "email already registered" to a request that only needed to move forward.
    */
   submittedAccount: null,
+  /** 'store' (website + khata, trial then a plan) or 'books' (bills, khata and expenses only, free). */
+  usage: null,
   categoryId: null,
   /** Which of STORE_STYLES the storefront is built in. Pre-picked so step 4 opens on a
    *  living preview rather than an empty screen; Continue is still the merchant's. */

@@ -22,6 +22,7 @@ export default function OnboardingLayout() {
       }}
     >
       <Stack.Screen name="index" options={{ gestureEnabled: false }} />
+      <Stack.Screen name="category" />
       <Stack.Screen name="details" />
       <Stack.Screen name="location" />
       <Stack.Screen name="design" />

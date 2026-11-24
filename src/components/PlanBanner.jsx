@@ -12,9 +12,10 @@ import { colors, radius, space } from '../theme.js';
  * purchase link here, and there must not be one.
  */
 export const PlanBanner = () => {
-  const { status, planStatus } = usePlan();
+  const { status, planStatus, books } = usePlan();
 
-  if (!status || planStatus === 'subscribed') return null;
+  // Khata only is free: no trial or plan to talk about.
+  if (!status || books || planStatus === 'subscribed') return null;
 
   const days = status.trialDaysRemaining ?? 0;
   const accessDays = status.accessDaysRemaining ?? 0;

@@ -5,6 +5,7 @@ import { StepScreen } from '../../src/components/StepScreen.jsx';
 import { Button, Field } from '../../src/components/ui.jsx';
 import { StateField } from '../../src/components/StateField.jsx';
 import { useOnboarding } from '../../src/state/onboarding.jsx';
+import { useT } from '../../src/state/locale.jsx';
 import { locationSchema } from '../../src/lib/onboarding.js';
 import { check } from '../../src/lib/validation.js';
 import { space } from '../../src/theme.js';
@@ -20,6 +21,7 @@ export default function Location() {
   const router = useRouter();
   const { draft, update } = useOnboarding();
   const { business } = draft;
+  const t = useT();
 
   const [touched, setTouched] = useState({});
   const cityRef = useRef(null);
@@ -42,14 +44,14 @@ export default function Location() {
       from={0.58}
       progress={0.7}
       title="Where are you based?"
-      subtitle="Add your business address so customers know who they're buying from."
+      subtitle={draft.usage === 'books' ? t('Printed on your bills.') : "Add your business address so customers know who they're buying from."}
       onBack={() => router.back()}
       footer={
         <Button
           title="Continue"
           size="lg"
           disabled={!result.ok}
-          onPress={() => router.push('/onboarding/design')}
+          onPress={() => router.push(draft.usage === 'books' ? '/onboarding/building' : '/onboarding/design')}
         />
       }
     >

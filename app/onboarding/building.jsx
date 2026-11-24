@@ -9,6 +9,10 @@ import { CATEGORY_LOOK } from '../../src/components/StorePreview.jsx';
 import { Alert, Body, Button, Caption, Display } from '../../src/components/ui.jsx';
 import { FadeIn, ProgressBar, haptic } from '../../src/components/motion.jsx';
 import { useOnboarding } from '../../src/state/onboarding.jsx';
+import { useAuth } from '../../src/state/auth.jsx';
+import { usePlan } from '../../src/state/plan.jsx';
+import { useT } from '../../src/state/locale.jsx';
+import { msg } from '../../src/lib/i18n.js';
 import { businesses, storeSettings } from '../../src/api/endpoints.js';
 import { check } from '../../src/lib/validation.js';
 import { categoryById, detailsSchema, locationSchema, styleById } from '../../src/lib/onboarding.js';
@@ -38,6 +42,14 @@ const MESSAGES = [
   'Almost ready...',
 ];
 
+/** Khata only: no website is built, so the lines say what is. */
+const BOOK_MESSAGES = [
+  msg('Creating your shop...'),
+  msg('Adding your business details...'),
+  msg('Setting up bills and khata...'),
+  msg('Almost ready...'),
+];
+
 /**
  * How long the sequence runs at minimum: long enough to register, short enough not to feel
  * like waiting. Four messages at about a second each.
@@ -51,7 +63,12 @@ export default function Building() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
-  const { draft, update } = useOnboarding();
+  const { draft, update, reset } = useOnboarding();
+  const { refreshUser } = useAuth();
+  const { refresh: refreshPlan } = usePlan();
+  const t = useT();
+  const books = draft.usage === 'books';
+  const messages = books ? BOOK_MESSAGES.map((m) => t(m)) : MESSAGES;
 
   const [elapsed, setElapsed] = useState(0);
   const [done, setDone] = useState(false);
@@ -88,6 +105,7 @@ export default function Building() {
         whatsapp: details.data.phone,
         city: place.data.city,
         state: place.data.state,
+        usage: draftRef.current.usage ?? 'store',
       });
       created = { ...created, business };
       update('created', { business });
@@ -151,15 +169,19 @@ export default function Building() {
 
   const finished = done && elapsed >= DURATION;
   const progress = finished ? 1 : Math.min(elapsed / DURATION, 1) * HOLD;
-  const stage = Math.min(MESSAGES.length - 1, Math.floor((elapsed / DURATION) * MESSAGES.length));
+  const stage = Math.min(messages.length - 1, Math.floor((elapsed / DURATION) * messages.length));
 
   useEffect(() => {
     if (!finished) return undefined;
     haptic.success();
     // A beat on a full bar, so the moment of completion is seen before the screen changes.
-    const id = setTimeout(() => router.replace('/onboarding/ready'), 900);
+    // Khata only has no store to show off: straight to Home, which is the khata.
+    const id = setTimeout(() => {
+      if (!books) return router.replace('/onboarding/ready');
+      return Promise.all([refreshUser(), refreshPlan()]).finally(() => { reset(); router.replace('/(tabs)'); });
+    }, 900);
     return () => clearTimeout(id);
-  }, [finished, router]);
+  }, [finished, router, books, refreshUser, refreshPlan, reset]);
 
   const category = categoryById(draft.categoryId)?.category ?? 'other';
   const tiles = (CATEGORY_LOOK[category] ?? CATEGORY_LOOK.other).icons;
@@ -178,7 +200,7 @@ export default function Building() {
         </FadeIn>
 
         <FadeIn delay={300}>
-          <Display style={styles.title}>Shaping your{'\n'}online store...</Display>
+          <Display style={styles.title}>{books ? t('Setting up your bills & khata...') : 'Shaping your\nonline store...'}</Display>
           <Body muted style={styles.subtitle}>We&apos;re putting everything together for you.</Body>
         </FadeIn>
       </View>
@@ -196,7 +218,7 @@ export default function Building() {
           </FadeIn>
         ) : (
           <FadeIn delay={500}>
-            <StatusLines stage={stage} />
+            <StatusLines stage={stage} messages={messages} />
             <View style={styles.barRow}>
               <ProgressBar
                 value={progress}
@@ -223,7 +245,7 @@ export default function Building() {
  * drifts in from below. It runs entirely on the UI thread from one shared value, so the
  * text never stutters when the JS thread is busy with the network.
  */
-const StatusLines = ({ stage }) => {
+const StatusLines = ({ stage, messages }) => {
   const position = useSharedValue(0);
 
   useEffect(() => {
@@ -232,7 +254,7 @@ const StatusLines = ({ stage }) => {
 
   return (
     <View style={styles.lines}>
-      {MESSAGES.map((message, index) => (
+      {messages.map((message, index) => (
         <Line key={message} index={index} position={position} text={message} />
       ))}
     </View>

@@ -56,6 +56,8 @@ export const businesses = {
   publish: (businessId) => api.post(`/businesses/${businessId}/publish`, {}),
   /** Takes the storefront offline again; nothing is deleted. */
   unpublish: (businessId) => api.post(`/businesses/${businessId}/unpublish`, {}),
+  /** 'books' turns the online store off (khata, bills and expenses stay, free); 'store' turns it back on. */
+  setUsage: (businessId, usage) => api.post(`/businesses/${businessId}/usage`, { usage }),
   slugAvailable: (slug) => api.get(`/businesses/slug-available${qs({ slug })}`),
   /**
    * Deletes the store and everything in it, permanently. The slug is sent back so the

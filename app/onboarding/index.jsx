@@ -1,162 +1,97 @@
-import { useEffect } from 'react';
-import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import { StepScreen } from '../../src/components/StepScreen.jsx';
 import { Body, Button, Caption, Touchable } from '../../src/components/ui.jsx';
 import { Press, haptic } from '../../src/components/motion.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { useOnboarding } from '../../src/state/onboarding.jsx';
-import { CATEGORY_OPTIONS } from '../../src/lib/onboarding.js';
-import { colors, contentMaxWidth, fonts, motion, radius, space, type } from '../../src/theme.js';
+import { useT } from '../../src/state/locale.jsx';
+import { msg } from '../../src/lib/i18n.js';
+import { colors, radius, space } from '../../src/theme.js';
 
 /**
- * Step 2 — what do you sell?
- *
- * One tap, no typing. The answer picks the products the store previews are stocked with for
- * the rest of setup, so the merchant sees their choice reflected almost immediately.
+ * Step 2 — what the app is for. The online store (a free trial, then a plan) or bills, khata and expenses only,
+ * which are free and never lock. Khata only skips the store link, what-you-sell and design steps.
  */
+const CHOICES = [
+  {
+    id: 'store',
+    icon: 'storefront-outline',
+    title: msg('Online store + bills & khata'),
+    text: msg('Your own website to sell online, plus bills, khata and expenses. 3-day free trial.'),
+  },
+  {
+    id: 'books',
+    icon: 'book-outline',
+    title: msg('Only bills, khata & expenses'),
+    text: msg('No website. Bills, customer khata and expenses: free. Add a website later if you want.'),
+  },
+];
 
-const GAP = space.md;
-
-export default function Category() {
+export default function Usage() {
   const router = useRouter();
-  const { width, fontScale } = useWindowDimensions();
   const { signOut } = useAuth();
   const { draft, update } = useOnboarding();
+  const t = useT();
 
-  // Two columns inside the screen's 24pt gutters, measured from the tablet column when the window is wider. One column
-  // when two would leave a label too little room at the reader's text size ("Electroni / cs" broke mid-word).
-  const inner = Math.min(width, contentMaxWidth) - space.xl * 2;
-  const cardWidth = inner / fontScale < 260 ? inner : (inner - GAP) / 2;
+  const next = () => router.push(draft.usage === 'books' ? '/onboarding/details' : '/onboarding/category');
 
   return (
     <StepScreen
       step={2}
       from={0.2}
-      progress={0.42}
-      title="Let's set up your business"
-      subtitle="Tell us what you sell so we can personalise your store."
-      footer={
-        <Button
-          title="Continue"
-          size="lg"
-          disabled={!draft.categoryId}
-          onPress={() => router.push('/onboarding/details')}
-        />
-      }
+      progress={0.3}
+      title={t('How will you use StoreFlick?')}
+      subtitle={t('You can change this later from Account.')}
+      footer={<Button title={t('Continue')} size="lg" disabled={!draft.usage} onPress={next} />}
     >
-      <View style={styles.grid}>
-        {CATEGORY_OPTIONS.map((option, index) => (
-          <CategoryCard
-            key={option.id}
-            option={option}
-            index={index}
-            width={cardWidth}
-            wide={cardWidth === inner}
-            selected={draft.categoryId === option.id}
-            onPress={() => update('categoryId', option.id)}
-          />
-        ))}
+      <View style={styles.list}>
+        {CHOICES.map((c) => {
+          const selected = draft.usage === c.id;
+          return (
+            <Press
+              key={c.id}
+              onPress={() => { haptic.select(); update('usage', c.id); }}
+              haptics={null}
+              scaleTo={0.98}
+              style={[styles.card, selected && styles.cardSelected]}
+              accessibilityRole="radio"
+              accessibilityState={{ selected }}
+              accessibilityLabel={`${t(c.title)}. ${t(c.text)}`}
+            >
+              <View style={styles.icon}><Ionicons name={c.icon} size={26} color={colors.accent700} /></View>
+              <View style={{ flex: 1, gap: 4 }}>
+                <Body strong>{t(c.title)}</Body>
+                <Caption>{t(c.text)}</Caption>
+              </View>
+              <Ionicons name={selected ? 'radio-button-on' : 'radio-button-off'} size={22} color={selected ? colors.accent600 : colors.ink400} />
+            </Press>
+          );
+        })}
       </View>
 
-      <Touchable onPress={signOut} haptics={null} scaleTo={1} style={styles.signOut} accessibilityLabel="Sign out">
-        <Caption style={styles.signOutText}>Not you? Sign out</Caption>
+      <Touchable onPress={signOut} haptics={null} scaleTo={1} style={styles.signOut} accessibilityLabel={t('Sign out')}>
+        <Caption style={styles.signOutText}>{t('Not you? Sign out')}</Caption>
       </Touchable>
     </StepScreen>
   );
 }
 
-const CategoryCard = ({ option, index, width, wide, selected, onPress }) => {
-  const enter = useSharedValue(0);
-  const pick = useSharedValue(selected ? 1 : 0);
-
-  useEffect(() => {
-    enter.value = withDelay(220 + index * 45, withTiming(1, { duration: motion.duration.slow, easing: motion.easing.out }));
-  }, [enter, index]);
-
-  useEffect(() => {
-    pick.value = withSpring(selected ? 1 : 0, motion.spring.snap);
-  }, [selected, pick]);
-
-  const cardStyle = useAnimatedStyle(() => ({
-    opacity: enter.value,
-    transform: [{ translateY: (1 - enter.value) * 16 }, { scale: 1 + pick.value * 0.025 }],
-  }));
-  // The selection ring is a separate layer so the border can fade in without shifting the
-  // card's layout by a pixel between the resting and selected borders.
-  const ringStyle = useAnimatedStyle(() => ({ opacity: pick.value }));
-  const badgeStyle = useAnimatedStyle(() => ({ opacity: pick.value, transform: [{ scale: 0.3 + pick.value * 0.7 }] }));
-  const iconStyle = useAnimatedStyle(() => ({ transform: [{ scale: 1 + pick.value * 0.12 }, { rotate: `${pick.value * -6}deg` }] }));
-
-  return (
-    <Animated.View style={[{ width }, cardStyle]}>
-      <Press
-        onPress={() => { haptic.select(); onPress(); }}
-        haptics={null}
-        scaleTo={0.96}
-        // One column: icon beside the label, so a full-width card is not a tall, mostly empty box.
-        style={[styles.card, wide && styles.cardWide]}
-        accessibilityRole="radio"
-        accessibilityState={{ selected }}
-        accessibilityLabel={option.label}
-      >
-        <Animated.View pointerEvents="none" style={[styles.ring, ringStyle]} />
-        <Animated.View style={[styles.badge, badgeStyle]}>
-          <Ionicons name="checkmark" size={14} color="#ffffff" />
-        </Animated.View>
-        <Animated.View style={[styles.medallion, { backgroundColor: option.tint }, iconStyle]}>
-          <Ionicons name={option.icon} size={28} color={colors.ink900} />
-        </Animated.View>
-        <Body strong style={[styles.label, wide && styles.labelWide]}>{option.label}</Body>
-      </Press>
-    </Animated.View>
-  );
-};
-
 const styles = StyleSheet.create({
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP },
+  list: { gap: space.md },
   card: {
-    // Tall enough for a two-line label, so a wrapped name doesn't make its row uneven.
-    minHeight: 150,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.lg,
+    padding: space.lg,
     borderRadius: radius.lg,
-    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line,
-    padding: space.lg,
-    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
   },
-  ring: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: radius.lg,
-    borderWidth: 2,
-    borderColor: colors.accent600,
-    backgroundColor: colors.accent50,
-    opacity: 0,
-  },
-  badge: {
-    position: 'absolute',
-    top: space.md,
-    right: space.md,
-    width: 24,
-    height: 24,
-    borderRadius: radius.pill,
-    backgroundColor: colors.accent600,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  medallion: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardWide: { minHeight: 0, flexDirection: 'row', alignItems: 'center', gap: space.lg },
-  labelWide: { flex: 1, marginTop: 0, paddingRight: space.xl },
-  label: { ...type.heading, fontFamily: fonts.semibold, fontSize: 16, lineHeight: 21, marginTop: space.lg },
-
+  cardSelected: { borderWidth: 2, borderColor: colors.accent600, backgroundColor: colors.accent50, padding: space.lg - 1 },
+  icon: { width: 52, height: 52, borderRadius: radius.md, backgroundColor: colors.accent50, alignItems: 'center', justifyContent: 'center' },
   signOut: { alignSelf: 'center', marginTop: space.xl, minHeight: 44, justifyContent: 'center', paddingHorizontal: space.lg },
   signOutText: { color: colors.ink500 },
 });

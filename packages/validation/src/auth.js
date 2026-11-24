@@ -5,6 +5,9 @@ import {
 } from './primitives.js';
 import { BUSINESS_CATEGORIES } from '@storeflick/shared';
 
+/** 'store': the online store and everything (plan after the trial). 'books': bills, khata and expenses only, free. */
+export const BUSINESS_USAGES = ['store', 'books'];
+
 /**
  * Every object here is `.strict()`: a key the schema does not name is a 400, not a
  * silently dropped field. A client sending `role: "owner"` on signup is either buggy or
@@ -119,8 +122,12 @@ export const createBusinessSchema = z
     whatsapp: mobile.optional(),
     city: placeName.optional(),
     state: placeName.optional(),
+    usage: z.enum(BUSINESS_USAGES).default('store'),
   })
   .strict();
+
+/** Switches a shop between the online store and khata only (bills, khata, expenses: free). */
+export const businessUsageSchema = z.object({ usage: z.enum(BUSINESS_USAGES) }).strict();
 
 /** The sign-up email step's pre-flight check. */
 export const emailAvailabilitySchema = z.object({ email }).strict();

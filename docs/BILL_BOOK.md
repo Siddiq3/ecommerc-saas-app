@@ -230,3 +230,22 @@ counted for a day that has not happened. The bill number follows the chosen day
 - **GST summary** (Reports, PDF, CSV): GST collected on sales less sales returns, GST paid on
   purchases less returns, by rate, and the net to pay (or credit to carry forward). A summary
   from the book, not a GSTR-1: no HSN codes or customer GSTINs.
+
+## Khata only (25 November 2026)
+
+Each shop has a `usage`: `store` (the online store plus bills and khata: a 3-day trial, then a plan) or `books`
+(bills, khata and expenses only: free, never locked, no trial spent).
+
+- **Setup** asks first ("How will you use StoreFlick?"). Khata only skips what-you-sell, the store link (one is made
+  from the name with a random tail and kept hidden) and the design step, and lands on a khata Home.
+- **Khata only in the app**: Home, Products and Account tabs; no plan banner or lock. Account has "Start online
+  store", which starts the email's one free trial if unused, otherwise turns the store on locked until a plan is
+  bought on the website. The last known usage is kept on the phone (`sk.usage.<businessId>`) so the right Home shows
+  offline.
+- **Lock screen** (trial or plan ended) has "Continue free with khata only". Account has "Turn off online store".
+  Either closes the public store at once; products, orders and settings are kept.
+- **Server**: `POST /v1/businesses/:id/usage` (owner only, works while locked). A khata-only shop may write only
+  `/book`, `/products`, `/categories`, `/uploads`, `/notifications`, `/members`, the shop profile and settings
+  (`isBooksWrite` in `middleware/entitlement.js`). The public store answers "not open right now" for a khata-only
+  shop and, new with this change, for a store whose trial or plan has run out. Paying for a plan on the website
+  sets `usage` back to `store`.

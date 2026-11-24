@@ -124,6 +124,10 @@ export const saveTokens = async (tokens) => {
 
 export const saveBusinessId = async (businessId) => write(BUSINESS, businessId ?? null);
 
+/** The shop's last known use ('store' or 'books'), so a khata-only shop opens as one before (or without) the network. */
+export const readUsage = async (businessId) => (businessId ? read(`sk.usage.${businessId}`).catch(() => null) : null);
+export const saveUsage = async (businessId, usage) => (businessId ? write(`sk.usage.${businessId}`, usage ?? null).catch(() => undefined) : undefined);
+
 export const clearSession = async () =>
   Promise.all([write(ACCESS, null), write(ACCESS_EXPIRY, null), write(REFRESH, null), write(BUSINESS, null)]);
 

@@ -36,11 +36,30 @@ export default function Account() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, business, businessId, signOut, refreshUser } = useAuth();
-  const { status, refresh } = usePlan();
+  const { status, refresh, books, setUsage } = usePlan();
   const [busy, setBusy] = useState(false);
   const { locale, t } = useLocale();
 
-  const storeUrl = business?.slug ? storeAddress(business.slug) : null;
+  // Khata only: no store link to show or share.
+  const storeUrl = business?.slug && !books ? storeAddress(business.slug) : null;
+
+  /** The online store on or off. Off closes it to customers at once; products, orders and settings are kept. */
+  const switchStore = () => {
+    const on = books;
+    const run = () => {
+      setBusy(true);
+      setUsage(on ? 'store' : 'books').catch((error) => RNAlert.alert(t('Could not change this'), error?.message ?? '')).finally(() => setBusy(false));
+    };
+    RNAlert.alert(
+      on ? t('Start your online store?') : t('Turn off your online store?'),
+      on
+        ? (status?.trialAvailable
+          ? t('You get a 3-day free trial of the website. Your khata stays free.')
+          : t('Your free trial has been used, so the website stays locked until you have a plan. You can come back to khata only at any time.'))
+        : t('Your website closes to customers right away. Bills, khata and expenses stay free. Your products and orders are kept, so you can turn it back on later.'),
+      [{ text: t('Cancel'), style: 'cancel' }, { text: on ? t('Start') : t('Turn off'), style: on ? 'default' : 'destructive', onPress: run }],
+    );
+  };
 
   const openStore = () => storeUrl && Linking.openURL(storeUrl).catch(() => undefined);
 
@@ -123,7 +142,8 @@ export default function Account() {
             <Body strong numberOfLines={1}>{business?.name ?? t('Your store')}</Body>
             {/* Selectable: Help tells owners to press and hold it to copy for Instagram. */}
             {/* Not selectable: on Android that disables truncation (the link showed half a second line). */}
-            <Caption numberOfLines={1} ellipsizeMode="middle">{business?.slug ? storeHostname(business.slug) : t('No store link yet')}</Caption>
+            {/* Khata only: the shop has a link only because one is needed to save it; it is not a store to show. */}
+            {books ? null : <Caption numberOfLines={1} ellipsizeMode="middle">{business?.slug ? storeHostname(business.slug) : t('No store link yet')}</Caption>}
           </View>
         </Row>
         {storeUrl ? (
@@ -143,6 +163,16 @@ export default function Account() {
         ) : null}
       </Card>
 
+      {books ? (
+        <Group title={t('Shop')}>
+          <Item icon="storefront-outline" label={t('Shop details & payments')} onPress={() => router.push('/settings/store')} />
+          <Item icon="book-outline" label={t('Bill book')} onPress={() => router.push('/book')} />
+          <Item icon="people-outline" label={t('Khata')} onPress={() => router.push('/khata')} />
+          <Item icon="calendar-outline" label={t('Staff attendance')} onPress={() => router.push('/staff')} />
+          <Item icon="folder-outline" label={t('Categories')} onPress={() => router.push('/categories')} />
+          <Item icon="globe-outline" label={t('Start online store')} disabled={busy} onPress={switchStore} last />
+        </Group>
+      ) : (
       <Group title={t('Store')}>
         <Item icon="storefront-outline" label={t('Store details & payments')} onPress={() => router.push('/settings/store')} />
         <Item icon="color-palette-outline" label={t('Storefront')} onPress={() => router.push('/settings/storefront')} />
@@ -171,9 +201,10 @@ export default function Account() {
           // "not included" is the one thing worth saying before they tap.
           value={status?.entitlements && !status.entitlements.maxCustomDomains ? <Pill label={t('Not included')} tone="slate" /> : null}
           onPress={() => router.push('/settings/domain')}
-          last
         />
+        <Item icon="power-outline" label={t('Turn off online store')} disabled={busy} onPress={switchStore} last />
       </Group>
+      )}
 
       <Group title={t('You')}>
         <Item

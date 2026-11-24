@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Alert, Body, Button, Caption, Row, Title } from './ui.jsx';
 import { useAuth } from '../state/auth.jsx';
 import { usePlan } from '../state/plan.jsx';
+import { useT } from '../state/locale.jsx';
 import { useAction } from '../lib/useAsync.js';
 import { SHOW_INSTAGRAM, canManageInstagramPath } from '../lib/instagram-access.js';
 import { SUPPORT_URL } from '../lib/help.js';
@@ -34,16 +35,19 @@ export const PlanLock = () => {
   const router = useRouter();
   const pathname = usePathname();
   const { status: authStatus, user, signOut } = useAuth();
-  const { entitled, planStatus, needsOnboarding, refresh } = usePlan();
+  const { entitled, planStatus, needsOnboarding, refresh, books, setUsage } = usePlan();
   const insets = useSafeAreaInsets();
+  const t = useT();
   const { run: check, pending: checking, error } = useAction(() => refresh({ silent: true }));
   const { run: logout, pending: leaving } = useAction(signOut);
+  const { run: keepBooks, pending: switching, error: switchError } = useAction(() => setUsage('books'));
 
   // `entitled` is null until the first status load, so a slow network never flashes the lock.
   const locked = authStatus === 'authenticated'
     && Boolean(user?.businesses?.length)
     && !needsOnboarding
     && entitled === false
+    && !books
     && pathname !== DELETE_ACCOUNT_ROUTE
     && !canManageInstagramPath(pathname);
   const copy = COPY[planStatus] ?? COPY.trial_expired;
@@ -76,7 +80,14 @@ export const PlanLock = () => {
           </ScrollView>
 
           <View style={styles.footer}>
-            <Alert message={error?.message} />
+            <Alert message={(error ?? switchError)?.message} />
+            <Body style={styles.center}>{t('Don’t need the website? Keep using bills, khata and expenses for free.')}</Body>
+            <Button
+              title={t('Continue free with khata only')}
+              loading={switching}
+              icon={<Ionicons name="book-outline" size={18} color="#ffffff" />}
+              onPress={() => keepBooks().catch(() => undefined)}
+            />
             <Button
               title="Check status again"
               variant="secondary"
