@@ -82,7 +82,7 @@ export const OrderRow = ({ order, onPress }) => {
   );
 };
 
-export const ProductRow = ({ product, onPress }) => {
+export const ProductRow = ({ product, onPress, counterOnly = false }) => {
   const t = useT();
   const stockDot = { in_stock: colors.success, low_stock: colors.warning, out_of_stock: colors.danger }[product.stockLabel] ?? colors.ink400;
   const stockText = {
@@ -104,6 +104,13 @@ export const ProductRow = ({ product, onPress }) => {
       </View>
       <View style={styles.rowBody}>
         <Body strong numberOfLines={2}>{product.name}</Body>
+        {/* The item code, so a shopkeeper learns the codes they type at the counter. */}
+        {product.sku ? (
+          <Row gap={4}>
+            <Ionicons name="barcode-outline" size={13} color={colors.ink500} />
+            <Caption style={styles.code}>{product.sku}</Caption>
+          </Row>
+        ) : null}
         <Row gap={space.sm}>
           <Body style={styles.money}>{formatMoney(product.price)}</Body>
           {off > 0 ? <Caption style={styles.strike}>{formatMoney(product.mrp)}</Caption> : null}
@@ -118,7 +125,7 @@ export const ProductRow = ({ product, onPress }) => {
           ) : (
             <Caption>{t('Made to order')}</Caption>
           )}
-          {!product.active ? <Pill label={t('Hidden')} tone="slate" style={{ marginLeft: space.xs }} /> : null}
+          {!product.active && !counterOnly ? <Pill label={t('Hidden')} tone="slate" style={{ marginLeft: space.xs }} /> : null}
         </Row>
       </View>
       <Ionicons name="chevron-forward" size={18} color={colors.ink400} />
@@ -281,6 +288,7 @@ const TimelineStep = ({ row, last }) => {
 };
 
 const styles = StyleSheet.create({
+  code: { color: colors.ink500, letterSpacing: 0.3 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -13,8 +13,11 @@ import { Sheet } from '../../src/components/Sheet.jsx';
 import { SkeletonCard } from '../../src/components/Skeleton.jsx';
 import { ProductForm } from '../../src/components/ProductForm.jsx';
 import { ShareProductButton } from '../../src/components/ShareProductButton.jsx';
+import { LabelSheet } from '../../src/components/Labels.jsx';
 import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
+import { useBook } from '../../src/state/book.jsx';
+import { usePlan } from '../../src/state/plan.jsx';
 import { useT } from '../../src/state/locale.jsx';
 import { useAction, useAsync } from '../../src/lib/useAsync.js';
 import { categories as categoriesApi, products as productsApi } from '../../src/api/endpoints.js';
@@ -34,9 +37,13 @@ export default function ProductDetail() {
   const toast = useToast();
   const { businessId, business } = useAuth();
   const t = useT();
+  const book = useBook();
+  // No website: nothing here is about being seen online (hide/live, featured, sharing, the photo area).
+  const { books } = usePlan();
 
   const [editing, setEditing] = useState(false);
   const [stockSheet, setStockSheet] = useState(false);
+  const [labelSheet, setLabelSheet] = useState(false);
   const [stockValue, setStockValue] = useState('');
   const [stockError, setStockError] = useState(null);
   const [stockMode, setStockMode] = useState('set');
@@ -54,6 +61,7 @@ export default function ProductDetail() {
   const { run: save, pending: saving, error: saveError } = useAction(async (input) => {
     const updated = await productsApi.update(businessId, String(productId), input);
     setData(updated);
+    book?.cacheProduct(updated);
     setEditing(false);
     toast.success(t('Changes saved'));
   });
@@ -100,6 +108,7 @@ export default function ProductDetail() {
   const { run: toggleVisibility, pending: toggling } = useAction(async () => {
     const updated = await productsApi.update(businessId, String(productId), { active: !product.active });
     setData(updated);
+    book?.cacheProduct(updated);
     toast.success(updated.active ? t('Product is live') : t('Product hidden'));
   });
 
@@ -107,6 +116,7 @@ export default function ProductDetail() {
   // server error) says so and leaves the merchant on the product, which still exists.
   const { run: removeProduct, pending: removing } = useAction(async () => {
     await productsApi.remove(businessId, String(productId));
+    book?.uncacheProduct(String(productId));
     toast.info(t('Product deleted'));
     router.back();
   });
@@ -184,21 +194,21 @@ export default function ProductDetail() {
       onRefresh={onRefresh}
       footer={
         <Row gap={space.sm}>
-          <Button
+          {books ? null : <Button
             title={product.active ? t('Hide') : t('Make live')}
             variant="secondary"
             full={false}
             style={{ flex: 1 }}
             loading={toggling}
             onPress={() => toggleVisibility().catch((err) => toast.error(err?.message ?? t('Could not update this product. Please try again.')))}
-          />
+          />}
           <Button title={t('Edit')} full={false} style={{ flex: 1.4 }} onPress={() => setEditing(true)} />
         </Row>
       }
     >
       {/* A full-bleed hero image, with the rest of the gallery as a thumbnail strip beneath.
           A product a customer will judge on its photo deserves better than an 78px chip. */}
-      <View style={styles.hero}>
+      {books && !product.images?.length ? null : <View style={styles.hero}>
         {product.images?.length ? (
           <Image source={{ uri: product.images[0].url ?? product.images[0].publicUrl }} style={styles.heroImage} resizeMode="cover" />
         ) : (
@@ -206,12 +216,12 @@ export default function ProductDetail() {
             <Ionicons name="image-outline" size={40} color={colors.ink400} />
           </View>
         )}
-        {!product.active ? (
+        {!product.active && !books ? (
           <View style={styles.heroHidden}>
             <Pill label={t('Hidden from store')} tone="slate" />
           </View>
         ) : null}
-      </View>
+      </View>}
 
       {product.images?.length > 1 ? (
         <Row gap={space.sm} style={styles.thumbs}>
@@ -232,13 +242,13 @@ export default function ProductDetail() {
         ) : null}
       </Row>
 
-      {product.active && business?.slug ? (
+      {product.active && business?.slug && !books ? (
         <View style={{ marginBottom: space.md }}><ShareProductButton product={product} business={business} /></View>
       ) : null}
 
       <Row gap={space.sm} style={styles.pills}>
-        <Pill label={product.active ? t('Live') : t('Hidden')} tone={product.active ? 'green' : 'slate'} />
-        {product.featured ? <Pill label={t('Featured')} tone="accent" /> : null}
+        {books ? null : <Pill label={product.active ? t('Live') : t('Hidden')} tone={product.active ? 'green' : 'slate'} />}
+        {product.featured && !books ? <Pill label={t('Featured')} tone="accent" /> : null}
         {product.categoryName ? <Pill label={product.categoryName} tone="slate" /> : null}
       </Row>
 
@@ -267,12 +277,17 @@ export default function ProductDetail() {
             </Touchable>
           ) : <Caption>{t('Not tracked')}</Caption>}
         </View>
-        <View style={styles.statSplit} />
-        <View style={styles.statCell}>
-          <Caption>{t('Orders')}</Caption>
-          <Figure style={styles.statValue}>{product.orderCount ?? 0}</Figure>
-          <Caption>{t('all time')}</Caption>
-        </View>
+        {/* Online orders only: a shop without a website has none to count. */}
+        {books ? null : (
+          <>
+            <View style={styles.statSplit} />
+            <View style={styles.statCell}>
+              <Caption>{t('Orders')}</Caption>
+              <Figure style={styles.statValue}>{product.orderCount ?? 0}</Figure>
+              <Caption>{t('all time')}</Caption>
+            </View>
+          </>
+        )}
       </Card>
 
       {product.description ? (
@@ -290,9 +305,10 @@ export default function ProductDetail() {
             <View key={variant.variantId}>
               {index > 0 ? <Divider /> : null}
               <Row style={styles.variantRow}>
-                <Body style={{ flex: 1 }}>
-                  {Object.values(variant.attributes ?? {}).join(' · ')}
-                </Body>
+                <View style={{ flex: 1 }}>
+                  <Body>{Object.values(variant.attributes ?? {}).join(' · ')}</Body>
+                  {variant.sku ? <Caption selectable style={styles.code}>{variant.sku}</Caption> : null}
+                </View>
                 <Body style={type.money}>{formatMoney(variant.price)}</Body>
                 <Caption>{t('{n} left', { n: variant.stock })}</Caption>
               </Row>
@@ -304,11 +320,16 @@ export default function ProductDetail() {
       {product.sku ? (
         <Card style={styles.card}>
           <Row style={{ justifyContent: 'space-between' }}>
-            <Caption>SKU</Caption>
+            <Caption>{t('Item code (SKU)')}</Caption>
             <Body selectable style={type.money}>{product.sku}</Body>
           </Row>
         </Card>
       ) : null}
+
+      {/* Barcode stickers for items that have none, to scan at the counter. */}
+      <Button title={t('Print labels')} variant="secondary" style={{ marginTop: space.md }} onPress={() => setLabelSheet(true)}
+        icon={<Ionicons name="pricetags-outline" size={18} color={colors.ink900} />} />
+      <LabelSheet visible={labelSheet} product={product} onClose={() => setLabelSheet(false)} />
 
       <Touchable onPress={confirmDelete} disabled={removing} style={styles.deleteRow} accessibilityLabel={t('Delete product')}>
         <Ionicons name="trash-outline" size={18} color={colors.danger} />
@@ -354,6 +375,7 @@ export default function ProductDetail() {
 }
 
 const styles = StyleSheet.create({
+  code: { color: colors.ink500, letterSpacing: 0.3 },
   hero: {
     height: 280,
     borderRadius: radius.lg,

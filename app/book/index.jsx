@@ -119,6 +119,12 @@ export default function DayBook() {
         <Body strong style={{ color: colors.accent700, flex: 1 }}>{t('Staff attendance')}</Body>
         <Ionicons name="chevron-forward" size={18} color={colors.accent700} />
       </Touchable>
+      {/* Products are made and coded in the Products tab; this is the way there for a shop that only uses the book. */}
+      <Touchable onPress={() => router.push('/(tabs)/products')} style={[styles.khataLink, { paddingTop: 0 }]}>
+        <Ionicons name="barcode-outline" size={18} color={colors.accent700} />
+        <Body strong style={{ color: colors.accent700, flex: 1 }}>{t('Products & barcodes')}</Body>
+        <Ionicons name="chevron-forward" size={18} color={colors.accent700} />
+      </Touchable>
       <Touchable onPress={() => router.push('/book/report')} style={[styles.khataLink, { paddingTop: 0 }]}>
         <Ionicons name="bar-chart-outline" size={18} color={colors.accent700} />
         <Body strong style={{ color: colors.accent700, flex: 1 }}>{t('Reports and export')}</Body>

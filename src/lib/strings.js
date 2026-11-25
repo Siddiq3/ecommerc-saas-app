@@ -9,6 +9,7 @@ import { PRODUCTS } from './strings-products.js';
 import { BOOK } from './strings-book.js';
 import { STAFF } from './strings-staff.js';
 import { IMPORT } from './strings-import.js';
+import { SCAN } from './strings-scan.js';
 
 export const ORDER = ['hi', 'ta', 'te', 'kn', 'ml', 'mr', 'bn', 'gu'];
 
@@ -18,6 +19,7 @@ export const STRINGS = {
   ...BOOK,
   ...STAFF,
   ...IMPORT,
+  ...SCAN,
   // Tabs
   'Home': ['होम', 'முகப்பு', 'హోమ్', 'ಮುಖಪುಟ', 'ഹോം', 'होम', 'হোম', 'હોમ'],
   'Social': ['सोशल', 'சமூகம்', 'సోషల్', 'ಸೋಶಿಯಲ್', 'സോഷ്യൽ', 'सोशल', 'সোশ্যাল', 'સોશિયલ'],

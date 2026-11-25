@@ -1,8 +1,9 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Screen } from '../../src/components/Screen.jsx';
 import { ProductForm } from '../../src/components/ProductForm.jsx';
 import { useToast } from '../../src/components/Toast.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
+import { useBook } from '../../src/state/book.jsx';
 import { useT } from '../../src/state/locale.jsx';
 import { useAction, useAsync } from '../../src/lib/useAsync.js';
 import { categories as categoriesApi, products as productsApi } from '../../src/api/endpoints.js';
@@ -10,9 +11,12 @@ import { categories as categoriesApi, products as productsApi } from '../../src/
 /** New product. Replaces itself with the detail screen so Back returns to the list. */
 export default function NewProduct() {
   const router = useRouter();
+  // Opened from a bill whose scanned or typed code no product has: the code is filled in.
+  const { sku } = useLocalSearchParams();
   const toast = useToast();
   const { businessId } = useAuth();
   const t = useT();
+  const book = useBook();
 
   const { data: categories } = useAsync(
     () => (businessId ? categoriesApi.list(businessId) : Promise.resolve(null)),
@@ -21,6 +25,7 @@ export default function NewProduct() {
 
   const { run, pending, error } = useAction(async (input) => {
     const product = await productsApi.create(businessId, input);
+    book?.cacheProduct(product);
     toast.success(t('Product added'));
     router.replace(`/products/${product.productId}`);
   });
@@ -28,6 +33,7 @@ export default function NewProduct() {
   return (
     <Screen>
       <ProductForm
+        initial={sku ? { sku: String(sku) } : undefined}
         businessId={businessId}
         categories={categories?.items ?? []}
         submitting={pending}

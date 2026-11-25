@@ -135,6 +135,7 @@ const Navigation = () => {
         <Stack.Screen name="products/[productId]" options={{ title: t('Product') }} />
         <Stack.Screen name="products/new" options={{ title: t('New product'), presentation: 'modal' }} />
         <Stack.Screen name="products/import" options={{ title: t('Import products') }} />
+        <Stack.Screen name="products/scan-card" options={{ title: t('Counter scan card') }} />
         <Stack.Screen name="customers/[customerId]" options={{ title: t('Customer') }} />
         <Stack.Screen name="instagram/new" options={{ title: t('New automation'), presentation: 'modal' }} />
         <Stack.Screen name="instagram/[ruleId]" options={{ title: t('Automation') }} />

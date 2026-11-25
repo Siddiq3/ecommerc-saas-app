@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AppState } from 'react-native';
 import * as SQLite from 'expo-sqlite';
 import * as Crypto from 'expo-crypto';
-import { book as bookApi } from '../api/endpoints.js';
+import { book as bookApi, products as productsApi } from '../api/endpoints.js';
 import { attendanceId, shareToken, ulid } from '../lib/book.js';
 import { useAuth } from './auth.jsx';
 import { pendingCount, syncBook } from '../lib/bookSync.js';
@@ -11,6 +11,7 @@ import { dropReceipt, keepReceipt } from '../lib/receipts.js';
 import { readParty } from '../lib/bookQueries.js';
 import { scheduleDueReminder } from '../lib/dueReminders.js';
 import { bookFile, noteBookClosing } from '../lib/localBooks.js';
+import { cacheProduct, refreshCatalog, uncacheProduct } from '../lib/productCache.js';
 
 /**
  * The bill book's copy on this phone, and its sync with the server.
@@ -44,7 +45,10 @@ const BookSession = ({ children, businessId }) => {
     let cancelled = false;
     const opening = (async () => {
       if (!businessId) return;
-      opened = await SQLite.openDatabaseAsync(bookFile(businessId));
+      // Its own connection: expo-sqlite shares one per file name, so a session for the same store that is still
+      // closing (the screens remounting after sign-in) closed the connection this one had been handed, and every
+      // read and save failed until the app restarted.
+      opened = await SQLite.openDatabaseAsync(bookFile(businessId), { useNewConnection: true });
       await opened.execAsync(SCHEMA);
       await migrate(opened);
       await runRepeats(opened).catch(() => undefined);
@@ -69,6 +73,8 @@ const BookSession = ({ children, businessId }) => {
     const task = (async () => {
       try {
         await syncBook(db, bookApi, businessId, () => active.current);
+        // The products copy for scan and item-code billing; at most every 10 minutes, and never failing the sync.
+        if (active.current) await refreshCatalog(db, productsApi, businessId).catch(() => undefined);
         if (active.current) setSync({ state: 'idle', pending: await pendingCount(db), lastSyncedAt: new Date().toISOString() });
       } catch (error) {
         if (active.current) setSync((s) => ({ ...s, state: error?.status === 0 ? 'offline' : 'error', error }));
@@ -139,6 +145,11 @@ const BookSession = ({ children, businessId }) => {
         [templateId, JSON.stringify(template), day, startMonth]);
       setVersion((v) => v + 1);
     },
+    /** After a product is saved or deleted on this phone, its rows in the offline products copy follow at once. */
+    cacheProduct: (product) => (db && product ? cacheProduct(db, product).catch(() => undefined) : undefined),
+    uncacheProduct: (productId) => (db ? uncacheProduct(db, productId).catch(() => undefined) : undefined),
+    /** The whole products copy again (after an import). */
+    refreshCatalog: () => (db && businessId ? refreshCatalog(db, productsApi, businessId, { force: true }).catch(() => undefined) : undefined),
     stopRepeat: async (templateId) => {
       await db.runAsync('DELETE FROM repeats WHERE templateId = ?', [templateId]);
       setVersion((v) => v + 1);

@@ -16,6 +16,11 @@ import { toLatinTitle } from '../lib/transliterate.js';
 import { VariantEditor, optionsFromVariants, parseValues } from './VariantEditor.jsx';
 import { FadeIn } from './motion.jsx';
 import { ProductPhotos } from './ProductPhotos.jsx';
+import { ScanOnce } from './Scanner.jsx';
+import { nextCode } from '../lib/productCache.js';
+import { useBook } from '../state/book.jsx';
+import { usePlan } from '../state/plan.jsx';
+import { visibilityFields } from '../lib/productSettings.js';
 import { check, mergeErrors } from '../lib/validation.js';
 import { colors, radius, shadow, space, type } from '../theme.js';
 import { useT } from '../state/locale.jsx';
@@ -126,6 +131,10 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
   const [price, setPrice] = useState(initial?.price ? String(toMajor(initial.price)) : '');
   const [mrp, setMrp] = useState(initial?.mrp ? String(toMajor(initial.mrp)) : '');
   const [sku, setSku] = useState(initial?.sku ?? '');
+  const [scanningSku, setScanningSku] = useState(false);
+  // A counter-only shop (no website): no photos, visibility or featured.
+  const { books } = usePlan();
+  const { db: bookDb } = useBook() ?? {};
   const [gstRate, setGstRate] = useState(initial?.gstRate ?? null);
   const [hsn, setHsn] = useState(initial?.hsn ?? '');
   const [stock, setStock] = useState(String(initial?.stock ?? 0));
@@ -176,8 +185,7 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
       name,
       price: parseInto(priceField, price, 'price', textErrors),
       trackInventory,
-      active,
-      featured,
+      ...visibilityFields({ books, active, featured }),
       categoryId: categoryId ?? null,
       images: images.map(({ imageKey, sortOrder }) => ({ imageKey, sortOrder })),
     };
@@ -284,13 +292,15 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
 
   return (
     <>
-      <ProductPhotos
-        businessId={businessId}
-        productId={initial?.productId}
-        images={images}
-        onChange={setImages}
-        onBusyChange={setUploading}
-      />
+      {books ? null : (
+        <ProductPhotos
+          businessId={businessId}
+          productId={initial?.productId}
+          images={images}
+          onChange={setImages}
+          onBusyChange={setUploading}
+        />
+      )}
 
       <FormSection title={t('Details')} delay={40}>
         <VoiceButton
@@ -329,20 +339,24 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
         />
       </FormSection>
 
-      <ProductPreview
-        name={name} image={heroImage} price={price} mrp={mrp}
-        stock={stock} trackInventory={trackInventory} active={active}
-      />
+      {/* How it looks in the online store: nothing to preview without one. */}
+      {books ? null : (
+        <ProductPreview
+          name={name} image={heroImage} price={price} mrp={mrp}
+          stock={stock} trackInventory={trackInventory} active={active}
+        />
+      )}
 
       <FormSection title={t('Price')} delay={80}>
-        {/* Side by side when both fit at the reader's text size; stacked on a narrow phone with large text, where the
-            MRP placeholder was cut to "Enter M". */}
+        {/* Side by side when both fit at the reader's text size; stacked on a narrow phone with large text. The
+            placeholder is "0", like every money field in the bill book: "Enter price" (longer still in Hindi or Tamil)
+            could not fit beside ₹ and the mic on a small phone and showed as "Enter pri". The label names the field. */}
         <Row gap={space.md} align="flex-start" style={{ flexWrap: 'wrap', rowGap: space.md }}>
           <Field
             label={t('Selling price')}
             value={price}
             onChangeText={edit(setPrice, 'price')}
-            placeholder={t('Enter price')}
+            placeholder="0"
             keyboardType="decimal-pad"
             prefix="₹"
             containerStyle={{ flexGrow: 1, flexBasis: 130 * fontScale, marginBottom: 0 }}
@@ -352,7 +366,7 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
             label={t('MRP')}
             value={mrp}
             onChangeText={edit(setMrp, 'mrp')}
-            placeholder={t('Enter MRP')}
+            placeholder="0"
             keyboardType="decimal-pad"
             prefix="₹"
             containerStyle={{ flexGrow: 1, flexBasis: 130 * fontScale, marginBottom: 0 }}
@@ -443,17 +457,30 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
         </Card>
         )}
 
-        <Field
-          label={t('SKU')}
+        {/* The item code: typed or scanned at the counter to bill this product. Left empty, one is made on save. */}
+        <Field latin voice={false}
+          label={t('Item code (SKU)')}
           value={sku}
           onChangeText={edit(setSku, 'sku')}
           maxLength={64}
-          placeholder={t('Optional')}
+          placeholder={t('Made for you when you save')}
           autoCapitalize="characters"
           autoCorrect={false}
           containerStyle={{ marginTop: space.lg, marginBottom: 0 }}
           error={fieldErrors.sku}
+          right={(
+            <Touchable onPress={() => setScanningSku(true)} accessibilityLabel={t('Scan the barcode')} hitSlop={8} scaleTo={0.92}>
+              <Ionicons name="barcode-outline" size={24} color={colors.accent700} />
+            </Touchable>
+          )}
         />
+        <Row gap={space.sm} style={{ marginTop: space.sm }}>
+          <Caption style={{ flex: 1, color: colors.ink500 }}>{t('Scan the barcode of a branded item, or make a short code.')}</Caption>
+          <Button title={t('Generate')} variant="secondary" size="sm" full={false} disabled={!name.trim()}
+            onPress={() => nextCode(bookDb, name).then((code) => edit(setSku, 'sku')(code)).catch(() => undefined)} />
+        </Row>
+        <ScanOnce visible={scanningSku} onClose={() => setScanningSku(false)}
+          onCode={(code) => { edit(setSku, 'sku')(code); setScanningSku(false); }} />
 
         <Caption style={{ marginTop: space.lg, marginBottom: space.xs }}>{t('GST rate (included in price)')}</Caption>
         <FilterChips
@@ -474,6 +501,7 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
         />
       </FormSection>
 
+      {books ? null : (
       <FormSection title={t('Visibility')} delay={160}>
         <Card style={styles.card}>
           <Toggle label={t('Visible in store')} hint={t('Turn off to hide without deleting.')} value={active} onChange={setActive} />
@@ -481,6 +509,7 @@ export const ProductForm = ({ businessId, initial, categories = [], onSubmit, su
           <Toggle label={t('Feature on the home page')} hint={t('Highlights it at the top of your storefront.')} value={featured} onChange={setFeatured} />
         </Card>
       </FormSection>
+      )}
 
       {/* Next to the button that was just pressed: at the top of a long form, a failed save
           (offline, a server error) or a rejected field above would go unseen. */}

@@ -129,6 +129,10 @@ export const products = {
   createBatch: (businessId, products) => api.post(`${scope(businessId)}/products/batch`, { products }),
   update: (businessId, productId, input) => api.patch(`${scope(businessId)}/products/${productId}`, input),
   remove: (businessId, productId) => api.del(`${scope(businessId)}/products/${productId}`),
+  /** Every product and size, small, a page at a time: the bill book's offline copy (src/lib/productCache.js). */
+  catalog: (businessId, params) => api.get(`${scope(businessId)}/products/catalog${qs(params)}`),
+  /** The product (and size) with this item code: { product, variant }. */
+  byCode: (businessId, code) => api.get(`${scope(businessId)}/products/by-code/${encodeURIComponent(code)}`),
   setStock: (businessId, productId, input) =>
     api.patch(`${scope(businessId)}/products/${productId}/stock`, input, withKey()),
 };

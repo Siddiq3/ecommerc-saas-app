@@ -12,6 +12,8 @@ import {
   CATEGORY_LABELS, GroupLabel, KIND_LABELS, KhataStatusBar, MODE_LABELS, PartyPicker, entryLabel, isSupplier, useBillPrinting, useShop,
 } from '../../src/components/book.jsx';
 import { ItemList, ItemSheet } from '../../src/components/BillItems.jsx';
+import { Scanner } from '../../src/components/Scanner.jsx';
+import { addOrIncrement } from '../../src/lib/productCache.js';
 import { Sheet } from '../../src/components/Sheet.jsx';
 import { dayKey, ledgerSide } from '../../src/lib/book.js';
 import { msg } from '../../src/lib/i18n.js';
@@ -79,6 +81,7 @@ export default function BookEntry() {
   const [picking, setPicking] = useState(false);
   const [items, setItems] = useState([]);
   const [itemIndex, setItemIndex] = useState(null); // null: closed, -1: new line, n: editing line n
+  const [scanning, setScanning] = useState(false);
   const [discount, setDiscount] = useState('');
   const [gstRate, setGstRate] = useState(null);
   const [label, setLabel] = useState('');
@@ -160,6 +163,13 @@ export default function BookEntry() {
     const wantsSupplier = ['expense', 'purchase', 'purchaseReturn'].includes(k);
     if (party && isSupplier(party) !== wantsSupplier) setParty(null);
   };
+
+  // Scan and item-code billing change the list directly: a new line, or one more of a product already on the bill.
+  const changeItems = (update) => {
+    setItems(update);
+    setErrors((e) => ({ ...e, amount: undefined, items: undefined }));
+  };
+  const quickAdd = (line) => changeItems((list) => addOrIncrement(list, line));
 
   const saveItem = (line) => {
     setItems((list) => (itemIndex >= 0 ? list.map((it, i) => (i === itemIndex ? line : it)) : [...list, line]));
@@ -300,6 +310,8 @@ export default function BookEntry() {
 
       {goods && !simple ? (
         <>
+          <Button title={t('Scan')} variant="secondary" style={styles.scan} onPress={() => setScanning(true)}
+            icon={<Ionicons name="barcode-outline" size={22} color={colors.ink900} />} />
           <ItemList
             items={items}
             error={errors.items}
@@ -425,6 +437,16 @@ export default function BookEntry() {
         item={itemIndex >= 0 ? items[itemIndex] : null}
         onClose={() => setItemIndex(null)}
         onSave={saveItem}
+        onQuickAdd={quickAdd}
+        onScan={() => { setItemIndex(null); setScanning(true); }}
+      />
+      <Scanner
+        visible={scanning}
+        items={items}
+        onItems={changeItems}
+        onClose={() => setScanning(false)}
+        onTypeItem={() => { setScanning(false); setItemIndex(-1); }}
+        onNewProduct={(sku) => { setScanning(false); router.push({ pathname: '/products/new', params: { sku } }); }}
       />
       <Sheet visible={pickingDate && Platform.OS === 'ios'} onClose={() => setPickingDate(false)} title={t('Date')}>
         <DateTimePicker value={toDate(date)} mode="date" display="inline" themeVariant="light" maximumDate={new Date()}
@@ -448,5 +470,6 @@ const styles = StyleSheet.create({
   creditHint: { color: colors.warning, marginTop: -space.sm, marginBottom: space.md },
   receipt: { marginBottom: space.md },
   thumb: { width: 72, height: 72, borderRadius: 8, backgroundColor: colors.line },
+  scan: { marginBottom: space.md },
   delete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm, paddingVertical: space.xl },
 });

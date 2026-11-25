@@ -45,6 +45,14 @@ export const SCHEMA = `
   CREATE TABLE IF NOT EXISTS repeats (
     templateId TEXT PRIMARY KEY NOT NULL, entry TEXT NOT NULL, day INTEGER NOT NULL, startMonth TEXT NOT NULL
   );
+  -- This phone's copy of the store's products, for billing by scan or item code offline (productCache.js).
+  CREATE TABLE IF NOT EXISTS catalog (
+    productId TEXT NOT NULL, variantId TEXT NOT NULL DEFAULT '', name TEXT NOT NULL, label TEXT, sku TEXT,
+    price INTEGER NOT NULL, unit TEXT NOT NULL DEFAULT 'pcs', stockTracked INTEGER NOT NULL DEFAULT 1,
+    sortOrder INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (productId, variantId)
+  );
+  CREATE INDEX IF NOT EXISTS catalog_sku ON catalog (sku);
 `;
 
 /** Columns added after the first release, by table. */

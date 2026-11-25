@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { products } from '../api/endpoints.js';
 
-/** Debounced server search, one page at a time. Old searches cannot overwrite a newer one. */
+/**
+ * Debounced server search, one page at a time. Old searches cannot overwrite a newer one. Every product, shown in the
+ * store or not: being hidden online never stops a product being sold at the counter.
+ */
 export function useProductSearch(businessId, enabled = true) {
   const [query, setQuery] = useState('');
   const [page, setPage] = useState({ items: [], nextCursor: null, loading: false, error: null });
@@ -12,7 +15,7 @@ export function useProductSearch(businessId, enabled = true) {
     pending.current = true;
     setPage(p => ({ ...p, loading: true, error: null }));
     try {
-      const result = await products.list(businessId, { active: 'true', limit: 20, q: query.trim(), cursor });
+      const result = await products.list(businessId, { limit: 20, q: query.trim(), cursor });
       if (id !== generation.current) return;
       setPage(p => ({ items: cursor ? [...p.items, ...result.items.filter(x => !p.items.some(y => y.productId === x.productId))] : result.items,
         nextCursor: result.nextCursor, loading: false, error: null }));

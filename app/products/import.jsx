@@ -11,6 +11,7 @@ import { Alert, Body, Button, Caption, Card, Divider, Heading } from '../../src/
 import { ProgressBar } from '../../src/components/motion.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
 import { usePlan } from '../../src/state/plan.jsx';
+import { useBook } from '../../src/state/book.jsx';
 import { useT } from '../../src/state/locale.jsx';
 import { categories as categoriesApi, products as productsApi, uploads as uploadsApi } from '../../src/api/endpoints.js';
 import { prepareImage, putToStorage } from '../../src/lib/upload.js';
@@ -40,6 +41,7 @@ const inPool = async (items, limit, task) => {
 
 export default function ImportProducts() {
   const t = useT();
+  const book = useBook();
   const navigation = useNavigation();
   const { businessId } = useAuth();
   const { status } = usePlan();
@@ -225,6 +227,7 @@ export default function ImportProducts() {
     setProgress((p) => ({ ...p, done: added + failed.length }));
     setReport({ added, photosMissed, failed, stopped: stop.current });
     setStage('done');
+    book?.refreshCatalog();
   };
 
   // No swipe or header back while products are being added: leaving would stop the import half way.

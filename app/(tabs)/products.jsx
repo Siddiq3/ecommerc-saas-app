@@ -7,6 +7,7 @@ import { searchQuery } from '@storeflick/validation';
 import { ListScreen, listColumn } from '../../src/components/Screen.jsx';
 import { Body, Button, Display, Divider, EmptyState, ErrorState, Row, Touchable } from '../../src/components/ui.jsx';
 import { ProductRow } from '../../src/components/domain.jsx';
+import { usePlan } from '../../src/state/plan.jsx';
 import { FilterChips, SearchBar } from '../../src/components/Filters.jsx';
 import { SkeletonList } from '../../src/components/Skeleton.jsx';
 import { useAuth } from '../../src/state/auth.jsx';
@@ -45,6 +46,8 @@ export default function Products() {
   const { businessId } = useAuth();
   const params = useLocalSearchParams();
   const t = useT();
+  // No website: "Hidden" (from the store) means nothing, so it is not offered as a filter or shown on rows.
+  const { books } = usePlan();
 
   const [filter, setFilter] = useState(String(params.stock ?? 'all'));
   const [search, setSearch] = useState('');
@@ -100,6 +103,13 @@ export default function Products() {
             <Body style={styles.iconButtonText}>{t('Categories')}</Body>
           </Touchable>
           <Touchable
+            onPress={() => router.push('/products/scan-card')}
+            accessibilityLabel={t('Counter scan card')}
+            style={styles.iconOnly}
+          >
+            <Ionicons name="barcode-outline" size={20} color={colors.ink700} />
+          </Touchable>
+          <Touchable
             onPress={() => router.push('/products/import')}
             accessibilityLabel={t('Import products')}
             style={styles.iconButton}
@@ -110,7 +120,7 @@ export default function Products() {
         </Row>
       </Row>
       <SearchBar value={search} onChange={setSearch} error={searchError} placeholder={msg('Search products')} />
-      <FilterChips options={FILTERS} value={filter} onChange={setFilter} />
+      <FilterChips options={books ? FILTERS.filter((f) => f.value !== 'hidden') : FILTERS} value={filter} onChange={setFilter} />
     </View>
   );
 
@@ -129,7 +139,7 @@ export default function Products() {
         data={list.items}
         keyExtractor={(item) => item.productId}
         renderItem={({ item }) => (
-          <ProductRow product={item} onPress={() => router.push(`/products/${item.productId}`)} />
+          <ProductRow product={item} counterOnly={books} onPress={() => router.push(`/products/${item.productId}`)} />
         )}
         ItemSeparatorComponent={Divider}
         ListHeaderComponent={header}
@@ -155,13 +165,14 @@ export default function Products() {
               message={
                 filtered
                   ? t('Try a different filter or search term.')
+                  : books ? t('Add what you sell. Each product gets a code to type or scan on a bill.')
                   : t('Add your first product and your store is ready to take orders.')
               }
               action={
                 filtered ? null : (
                   <View style={{ gap: space.sm, alignSelf: 'stretch' }}>
                     <Button title={t('Add your first product')} onPress={() => router.push('/products/new')} />
-                    <Button title={t('Import from another website')} variant="secondary" onPress={() => router.push('/products/import')} />
+                    <Button title={books ? t('Import from a file') : t('Import from another website')} variant="secondary" onPress={() => router.push('/products/import')} />
                   </View>
                 )
               }
@@ -174,6 +185,7 @@ export default function Products() {
 }
 
 const styles = StyleSheet.create({
+  iconOnly: { width: 44, height: 44, borderRadius: 999, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.line },
   list: { backgroundColor: colors.canvas },
   content: { backgroundColor: colors.canvas, flexGrow: 1 },
   header: { paddingBottom: space.sm, backgroundColor: colors.canvas },

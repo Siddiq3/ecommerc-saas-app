@@ -53,7 +53,7 @@
         "expo-image-picker",
         {
           "photosPermission": "StoreFlick uses your photos so you can add pictures of your products.",
-          "cameraPermission": "StoreFlick uses your camera so you can photograph your products.",
+          "cameraPermission": "StoreFlick uses your camera to photograph your products and to scan barcodes and QR codes when you make a bill.",
           "microphonePermission": "StoreFlick uses the microphone only when you tap the mic button, so you can type with your voice."
         }
       ],
@@ -94,6 +94,21 @@
           "androidSpeechServicePackages": [
             "com.google.android.googlequicksearchbox"
           ]
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "StoreFlick uses your camera to photograph your products and to scan barcodes and QR codes when you make a bill.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false
         }
       ]
     ],

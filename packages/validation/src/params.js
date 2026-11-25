@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { cursor, objectId, pageSlug, productParam, storeSlug } from './primitives.js';
+import { cursor, objectId, pageSlug, productParam, sku, storeSlug } from './primitives.js';
 import { PLAN_ORDER } from '@storeflick/shared';
 import { policyType } from './settings.js';
 import { bookShareToken } from './book.js';
@@ -49,6 +49,8 @@ export const PARAM_SCHEMAS = Object.freeze({
   productParam,
   policyType,
   shareToken: bookShareToken,
+  /** An item code (a product's or variant's sku), typed or scanned at the counter. */
+  itemCode: sku,
 });
 
 export const changePlanSchema = z.object({ planId: z.enum(PLAN_ORDER) }).strict();

@@ -249,3 +249,77 @@ Each shop has a `usage`: `store` (the online store plus bills and khata: a 3-day
   (`isBooksWrite` in `middleware/entitlement.js`). The public store answers "not open right now" for a khata-only
   shop and, new with this change, for a store whose trial or plan has run out. Paying for a plan on the website
   sets `usage` back to `store`.
+
+## Scan and item code billing (25 November 2026)
+
+Two fast ways to put items on a bill, next to **Type item** and **From my products**. Both work offline.
+
+**Item codes.** A product's or size's `sku` is its item code (no new field). Saved without one, the server makes a
+short code: three letters of the name, the size/colour, a number — `COT-M-001`, upper-case A–Z, 0–9 and `-`, at most
+20 characters (`packages/shared/src/itemCodes.js`). A product sold in sizes gets codes per size, not on the product.
+Codes are unique per store across products and sizes: each has a claim record `SKU#<code>` in the store's partition,
+written with a condition, so a duplicate is refused with "Item code X is already used by another product" (409). A
+changed code, a removed size or a deleted product frees its codes. A size saved without its code keeps the one it had
+(the web dashboard does not send codes). Products made before this get codes the next time they are saved; until then
+their typed SKUs are found through the phone's copy only (below), not by the server lookup.
+
+- `GET /v1/businesses/:businessId/products/by-code/:itemCode` → `{ product, variant }`, exact match, any case.
+  Permission `product:read`.
+- `GET /v1/businesses/:businessId/products/catalog?cursor=` → every product and size row, small, 500 a page: what the
+  phone copies.
+
+In the product form, the item code field has a **barcode** button (scan a branded item's existing barcode into it) and
+**Generate** (the next free code for the name, from the phone's copy; the server still checks it on save). The code is
+shown on each row in Products, on each size in product detail, and in the My products picker on a bill.
+
+**The phone's copy.** A `catalog` table in the book's SQLite database (local only, never synced): one row per thing
+that can go on a bill — productId, variantId (`''` for none), name, size label, sku, price, unit, stockTracked — with
+an index on `sku`. It is refreshed after a book sync at most every 10 minutes, row by row when a product is saved or
+deleted on this phone, and in full after an import (`src/lib/productCache.js`). A code is looked up in the copy first;
+when it is missing and the phone is online, the by-code API is asked once and the answer kept.
+
+**Item code box.** At the top of **Add item**: type a code and press Enter (or let a USB/Bluetooth scanner type it);
+the item goes on the bill, the box clears and the keyboard stays up for the next code. A whole code that no other code
+starts with is added without Enter. Up to 5 suggestions show while typing: code prefix or name. The same product and
+size again adds 1 to its quantity.
+
+**Scan billing.** The big **Scan** button on a bill with items (sale, purchase, returns), or **Scan** in Add item,
+opens the camera (expo-camera). It stays open: each code adds its item or 1 more; the same code is taken once per 1.2 s.
+Success beeps and taps; an unknown code buzzes and offers **Add as new product** (the form opens with the code filled
+in) or **Type item**. Below the camera: the bill's list with −/+ and the running count and total; **Done** returns to the
+bill. Torch toggle. Reads EAN-13, EAN-8, UPC-A, UPC-E, Code128, Code39 and QR. Scanned items are bill lines exactly like
+My products (name with the size, price, unit, productId, variantId), so stock, GST, discount and PDFs work unchanged.
+
+**Labels and the counter scan card** (for items with no barcode). Product detail → **Print labels**: choose sizes and
+copies, then an A4 sheet of 65 stickers (38.1 × 21.2 mm, 5 × 13) or a 50 × 25 mm thermal label per copy. Each label has
+the store name, product, size, price, a Code128 barcode and the code. Products → barcode button → **Counter scan card**:
+an A4 page of chosen products with price and barcode to scan from at the counter. Built with `src/lib/labels.js`
+(jsbarcode's DOM-free encoder, bars drawn as SVG) and printed with expo-print.
+
+Khata-only shops (usage `books`) can still add products and use all of this: product reads and writes are allowed there.
+
+**Build and deploy order.** 1) Deploy the backend (by-code, catalog, code uniqueness). An older backend has no
+by-code or catalog route: the app then finds nothing offline and every lookup reports "not found". 2) Ship a **new
+native app build**: `expo-camera` and `expo-audio` are native modules (camera permission added in app.json, no
+microphone), so an existing binary cannot get them through an over-the-air update. Google Play's Data safety form
+should list the camera (used on the device only, nothing uploaded).
+
+**Fixed while testing this.** (1) The book opens its own SQLite connection (`useNewConnection`). expo-sqlite shares
+one connection per file name, so when the screens remounted right after sign-in, the session that was closing closed
+the connection the new one had been handed: every book read and save then failed until the app restarted. This is the
+likely cause of the one-off "Something went wrong" bill save and stuck sync seen in earlier QA. (2) A bill that takes
+a size's stock now also updates the product's total (it is the sum of its sizes): `adjustStock` recomputes it for every
+caller, so the bulk stock route is fixed too.
+
+Checked on the Android emulator with a new debug build: item codes (suggestions, auto-add, +1, unknown code → new
+product with the code filled in), the scanner screen (permission, camera, torch, −/+, Done back to the bill), saving a
+scanned bill, codes in Products and product detail, and label printing to the print preview. Not checked: reading a
+real barcode with the camera (the emulator camera shows a virtual room), a thermal label printer, and iOS.
+
+**Counter-only shops and hidden products.** A shop without a website (usage `books`) sees no website settings on
+products: no photos, no store preview, no "Visible in store" or "Feature on the home page", no WhatsApp Status
+sharing, no Live/Hidden pill, Hide button or Orders count, and no "Hidden" filter. A save from such a shop sends no
+`active`/`featured`, so turning the website on later shows products exactly as they were (`src/lib/productSettings.js`).
+Online visibility never decides what the counter can sell: a product or size hidden from the store is still in My
+products, item codes, the scanner, labels and the scan card, and its stock still comes off the shared count. The
+storefront keeps hiding it. The bill book has a **Products & barcodes** link to the Products tab.

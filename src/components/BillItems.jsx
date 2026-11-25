@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { BOOK_QTY_MAX, BOOK_UNITS, bookItemSchema, itemTotal, rupeesText } from '@storeflick/validation';
-import { toMajor } from '@storeflick/shared';
+import { normalizeItemCode, toMajor } from '@storeflick/shared';
 import { Alert, Body, Button, Caption, Card, Divider, Field, Label, Row, Touchable } from './ui.jsx';
 import { FilterChips, SearchBar } from './Filters.jsx';
 import { Sheet } from './Sheet.jsx';
@@ -10,6 +12,8 @@ import { msg } from '../lib/i18n.js';
 import { formatMoney } from '../lib/format.js';
 import { useProductSearch } from '../lib/useProductSearch.js';
 import { products } from '../api/endpoints.js';
+import { findByCode, lineFor, lookupCode, suggest } from '../lib/productCache.js';
+import { useBook } from '../state/book.jsx';
 
 /** "M / Red" from a variant's attributes ({ Size: 'M', Colour: 'Red' }). */
 const variantLabel = (v) => Object.values(v.attributes ?? {}).join(' / ') || v.sku || '—';
@@ -90,9 +94,11 @@ export const ItemList = ({ items, onEdit, onRemove, onAdd, error }) => {
  * Adds or changes one line. The item can be picked from the store's products (needs the
  * internet) or typed in, which always works: a counter bill must never wait on a network.
  */
-export const ItemSheet = ({ visible, item, onClose, onSave }) => {
+export const ItemSheet = ({ visible, item, onClose, onSave, onQuickAdd, onScan }) => {
   const t = useT();
+  const router = useRouter();
   const { businessId } = useAuth();
+  const { db } = useBook() ?? {};
   const [source, setSource] = useState('type');
   const [name, setName] = useState('');
   const [qty, setQty] = useState('1');
@@ -106,6 +112,56 @@ export const ItemSheet = ({ visible, item, onClose, onSave }) => {
   const [errors, setErrors] = useState({});
   const search = useProductSearch(businessId, visible && source === 'products');
 
+  // Billing by item code: each code typed (or sent by a USB/Bluetooth scanner, which types and presses Enter) puts
+  // its item on the bill at once, or one more of it, and the box clears for the next. The keyboard stays up.
+  const quick = Boolean(onQuickAdd) && !item && Boolean(db);
+  const [code, setCode] = useState('');
+  const [hints, setHints] = useState([]);
+  const [codeNote, setCodeNote] = useState(null); // { added } | { missing, offline }
+  const typing = useRef(0);
+
+  const addRow = (row) => {
+    const line = lineFor(row);
+    onQuickAdd(line);
+    setCode('');
+    setHints([]);
+    setCodeNote({ added: line.name });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+  };
+
+  const onCode = (text) => {
+    setCode(text);
+    setCodeNote(null);
+    const id = ++typing.current;
+    if (!text.trim()) { setHints([]); return; }
+    suggest(db, text).then(async (list) => {
+      if (id !== typing.current) return;
+      setHints(list);
+      // A whole code that no other code starts with is added without pressing Enter.
+      const exact = await findByCode(db, text);
+      const key = normalizeItemCode(text);
+      if (id === typing.current && exact && list.filter((r) => r.sku?.startsWith(key)).length === 1) addRow(exact);
+    }).catch(() => undefined);
+  };
+
+  const submitCode = async () => {
+    const text = code.trim();
+    if (!text) return;
+    const id = ++typing.current;
+    const found = await lookupCode(db, products, businessId, text);
+    if (id !== typing.current) return;
+    if (found.row) { addRow(found.row); return; }
+    setHints([]);
+    if (found.needsSize) {
+      // A code on the whole product of something sold in sizes: the size has to be chosen.
+      setCode('');
+      pick(found.needsSize);
+      return;
+    }
+    setCodeNote({ missing: normalizeItemCode(text), offline: Boolean(found.offline) });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => undefined);
+  };
+
   useEffect(() => {
     if (!visible) return;
     setErrors({});
@@ -117,6 +173,9 @@ export const ItemSheet = ({ visible, item, onClose, onSave }) => {
     setProductId(item?.productId ?? null);
     setVariantId(item?.variantId ?? null);
     setVariants(null);
+    setCode('');
+    setHints([]);
+    setCodeNote(null);
   }, [visible, item]);
 
   const pick = (product) => {
@@ -130,7 +189,7 @@ export const ItemSheet = ({ visible, item, onClose, onSave }) => {
     setSource('type');
     if (product.hasVariants) {
       products.get(businessId, product.productId)
-        .then((full) => setVariants((full.variants ?? []).filter((v) => v.active !== false)))
+        .then((full) => setVariants(full.variants ?? []))
         .catch(() => setVariants(null));
     }
   };
@@ -169,10 +228,53 @@ export const ItemSheet = ({ visible, item, onClose, onSave }) => {
 
   return (
     <Sheet visible={visible} onClose={onClose} title={item ? t('Edit item') : t('Add item')}>
+      {quick ? (
+        <>
+          <Field latin voice={false}
+            label={t('Item code')}
+            value={code}
+            onChangeText={onCode}
+            onSubmitEditing={submitCode}
+            submitBehavior="submit"
+            returnKeyType="done"
+            autoCapitalize="characters"
+            autoCorrect={false}
+            autoFocus
+            maxLength={64}
+            placeholder={t('Like KUR-M-001')}
+            containerStyle={styles.codeField}
+          />
+          {hints.map((row) => (
+            <Touchable key={`${row.productId}#${row.variantId}`} onPress={() => addRow(row)} style={styles.pickRow}
+              accessibilityLabel={lineFor(row).name}>
+              <View style={{ flex: 1 }}>
+                <Body numberOfLines={1}>{lineFor(row).name}</Body>
+                {row.sku ? <Caption style={styles.code}>{row.sku}</Caption> : null}
+              </View>
+              <Caption>{formatMoney(row.price)}</Caption>
+            </Touchable>
+          ))}
+          {codeNote?.added ? (
+            <Row gap={space.sm} style={styles.added}>
+              <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+              <Caption style={{ color: colors.success, flex: 1 }} numberOfLines={1}>{t('Added: {name}', { name: codeNote.added })}</Caption>
+            </Row>
+          ) : null}
+          {codeNote?.missing ? (
+            <CodeNotFound code={codeNote.missing} offline={codeNote.offline}
+              onNewProduct={() => { onClose(); router.push({ pathname: '/products/new', params: { sku: codeNote.missing } }); }}
+              onType={() => { setCodeNote(null); setCode(''); setSource('type'); }} />
+          ) : null}
+        </>
+      ) : null}
       <FilterChips
-        options={[{ value: 'type', label: msg('Type item') }, { value: 'products', label: msg('From my products') }]}
+        options={[
+          { value: 'type', label: msg('Type item') },
+          { value: 'products', label: msg('From my products') },
+          ...(onScan && !item ? [{ value: 'scan', label: msg('Scan') }] : []),
+        ]}
         value={source}
-        onChange={setSource}
+        onChange={(v) => (v === 'scan' ? onScan() : setSource(v))}
         style={styles.source}
       />
       {source === 'products' ? (
@@ -180,7 +282,10 @@ export const ItemSheet = ({ visible, item, onClose, onSave }) => {
           <SearchBar value={search.query} onChange={search.setQuery} placeholder={msg('Search products')} />
           {search.items.map((p) => (
             <Touchable key={p.productId} onPress={() => pick(p)} style={styles.pickRow}>
-              <Body style={{ flex: 1 }} numberOfLines={2}>{p.name}</Body>
+              <View style={{ flex: 1 }}>
+                <Body numberOfLines={2}>{p.name}</Body>
+                {p.sku ? <Caption style={styles.code}>{p.sku}</Caption> : null}
+              </View>
               <Caption>{formatMoney(p.price)}</Caption>
             </Touchable>
           ))}
@@ -202,7 +307,7 @@ export const ItemSheet = ({ visible, item, onClose, onSave }) => {
             onChangeText={(v) => { setName(v); setProductId(null); setVariantId(null); setVariants(null); setErrors((e) => ({ ...e, name: undefined })); }}
             placeholder={t('Like Cotton saree, Shirt cloth')}
             maxLength={80}
-            autoFocus={!item}
+            autoFocus={!item && !quick}
             error={errors.name}
           />
           {variants ? (
@@ -249,7 +354,35 @@ export const ItemSheet = ({ visible, item, onClose, onSave }) => {
   );
 };
 
+/**
+ * A code no product has: add it as a new product (the code already filled in), or type the item onto this bill. Offline,
+ * only this phone's copy was searched, so it says so.
+ */
+export const CodeNotFound = ({ code, offline, onNewProduct, onType, dark = false }) => {
+  const t = useT();
+  return (
+    <View style={[styles.missing, dark && styles.missingDark]}>
+      <Body strong style={dark ? { color: '#ffffff' } : null}>{t('Code not found: {code}', { code })}</Body>
+      {offline ? (
+        <Caption style={[styles.missingNote, dark && { color: '#e4e4e7' }]}>
+          {t('Not on this phone yet. Connect to the internet to look it up, or type the item.')}
+        </Caption>
+      ) : null}
+      <Row gap={space.sm} style={{ marginTop: space.md }}>
+        <Button title={t('Add as new product')} size="sm" full={false} style={{ flex: 1 }} onPress={onNewProduct} />
+        <Button title={t('Type item')} size="sm" variant="secondary" full={false} style={{ flex: 1 }} onPress={onType} />
+      </Row>
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
+  codeField: { marginBottom: space.sm },
+  code: { color: colors.ink500, fontVariant: ['tabular-nums'], letterSpacing: 0.3 },
+  added: { paddingVertical: space.sm, marginBottom: space.sm },
+  missing: { padding: space.lg, borderRadius: 18, backgroundColor: colors.warningTint, marginBottom: space.md },
+  missingDark: { backgroundColor: 'rgba(24,24,27,0.92)' },
+  missingNote: { marginTop: space.xs, color: colors.ink600 },
   block: { marginBottom: space.md },
   head: { justifyContent: 'space-between', marginBottom: space.xs },
   /** Matches the label above a text field (ui.jsx fieldLabel), like every group label in the form. */
