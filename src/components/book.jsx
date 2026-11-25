@@ -9,14 +9,14 @@ import { Alert, Body, Button, Caption, Card, Field, Label, Row, Touchable } from
 import { Sheet } from './Sheet.jsx';
 import { SearchBar } from './Filters.jsx';
 import { msg } from '../lib/i18n.js';
-import { formatMoney, initials } from '../lib/format.js';
+import { formatDate, formatMoney, initials } from '../lib/format.js';
 import { readDay, readPaidWithBill, readParties } from '../lib/bookQueries.js';
 import { billHeader, billHtml, dueOnBill, receiptHtml, upiLink } from '../lib/bookPrint.js';
 import { qrSvg } from '../lib/qr.js';
 import { useToast } from './Toast.jsx';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { contactMobile, dayAge, dayKey } from '../lib/book.js';
+import { contactMobile, dayAge, dayKey, ledgerSide } from '../lib/book.js';
 import { scheduleWeeklySummary } from '../lib/dueReminders.js';
 import { newBookId, useBook, useBookQuery } from '../state/book.jsx';
 import { useAuth } from '../state/auth.jsx';
@@ -60,6 +60,55 @@ export const SyncBadge = () => {
       <Ionicons name={icon} size={15} color={color} />
       <Caption style={{ color, flex: 1 }}>{text}</Caption>
     </Touchable>
+  );
+};
+
+/**
+ * The message for the customer or supplier about one entry, with their balance (`balance`: the party's balance to
+ * quote). Every message starts "{store}: "; with no shop name loaded (offline, first start) the prefix is dropped.
+ */
+export const entryMessage = (t, { entry, party, store, balance }) => {
+  const supplier = isSupplier(party);
+  const side = ledgerSide(entry, party.partyType);
+  const vars = {
+    store: store ?? '',
+    amount: formatMoney(entry.amount),
+    date: formatDate(`${entry.date}T00:00:00`, undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
+    balance: balance < 0 ? t('Advance {amount}', { amount: formatMoney(-balance) }) : formatMoney(balance),
+  };
+  const raw = supplier
+    ? side === 'gave'
+      ? t('{store}: paid {amount} on {date}. Balance: {balance}.', vars)
+      : t('{store}: goods worth {amount} received on {date}. Balance: {balance}.', vars)
+    : side === 'got'
+      ? t('{store}: payment of {amount} received on {date}. Thank you! Balance due: {balance}.', vars)
+      : t('{store}: {amount} added to your khata on {date}. Balance due: {balance}.', vars);
+  return raw.replace(/^:\s*/, '');
+};
+
+/**
+ * Under a saved entry: whether it has reached the cloud backup (a sync turns "on this phone" into "backed up" by
+ * itself), and the shop's reassurance that the book is kept safe. Backed by what is true: every entry is saved on
+ * the phone first, sent over an encrypted connection, and kept in an encrypted cloud database.
+ */
+export const EntrySafety = ({ entryId }) => {
+  const t = useT();
+  const row = useBookQuery((db) => db.getFirstAsync('SELECT dirty FROM entries WHERE entryId = ?', [String(entryId)]), [entryId]);
+  if (!row) return null;
+  const backedUp = !row.dirty;
+  return (
+    <View style={styles.safety}>
+      <Card style={styles.safetyCard}>
+        <Ionicons name={backedUp ? 'cloud-done-outline' : 'phone-portrait-outline'} size={20} color={backedUp ? colors.success : colors.warning} />
+        <Body style={{ flex: 1, color: colors.ink700 }}>
+          {backedUp ? t('Entry is backed up') : t('Saved on this phone. Will back up when online.')}
+        </Body>
+      </Card>
+      <View style={styles.safeLine} accessibilityRole="text">
+        <Ionicons name="shield-checkmark" size={22} color={colors.success} />
+        <Body strong style={{ color: colors.success }}>{t('100% Safe and Secure')}</Body>
+      </View>
+    </View>
   );
 };
 
@@ -252,6 +301,9 @@ export const SectionTitle = ({ title, total }) => (
 
 const styles = StyleSheet.create({
   badge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: space.sm },
+  safety: { marginTop: space.lg, gap: space.md },
+  safetyCard: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  safeLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm },
   line: { paddingVertical: 6, gap: 2 },
   lineRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   groupLabel: { marginBottom: 10, color: colors.ink700 },

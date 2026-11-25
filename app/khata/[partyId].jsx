@@ -248,7 +248,7 @@ export default function KhataParty() {
                   return (
                     <Touchable
                       key={e.entryId}
-                      onPress={() => router.push({ pathname: '/book/entry', params: { entryId: e.entryId } })}
+                      onPress={() => router.push({ pathname: '/book/detail', params: { entryId: e.entryId } })}
                       style={styles.entry}
                       accessibilityLabel={[
                         kindLine, dateText(e.date), timeText(e),

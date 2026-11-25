@@ -91,6 +91,12 @@ export const createProductSchema = z.object(productFields).strict().superRefine(
 
 export const updateProductSchema = z.object(productFields).strict().partial().superRefine(checkPricing);
 
+/**
+ * Up to 25 new products in one call (a product import). Each is checked against createProductSchema on its own on
+ * the server, so one bad product is reported by itself instead of failing the other 24.
+ */
+export const batchCreateProductsSchema = z.object({ products: z.array(z.record(z.string(), z.unknown())).min(1).max(25) }).strict();
+
 export const productQuerySchema = z
   .object({
     q: searchQuery,

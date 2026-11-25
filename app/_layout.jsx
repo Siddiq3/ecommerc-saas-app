@@ -134,6 +134,7 @@ const Navigation = () => {
         <Stack.Screen name="orders/[orderId]" options={{ title: t('Order') }} />
         <Stack.Screen name="products/[productId]" options={{ title: t('Product') }} />
         <Stack.Screen name="products/new" options={{ title: t('New product'), presentation: 'modal' }} />
+        <Stack.Screen name="products/import" options={{ title: t('Import products') }} />
         <Stack.Screen name="customers/[customerId]" options={{ title: t('Customer') }} />
         <Stack.Screen name="instagram/new" options={{ title: t('New automation'), presentation: 'modal' }} />
         <Stack.Screen name="instagram/[ruleId]" options={{ title: t('Automation') }} />
@@ -160,6 +161,7 @@ const Navigation = () => {
         <Stack.Screen name="khata/index" options={{ title: t('Khata') }} />
         <Stack.Screen name="book/report" options={{ title: t('Reports') }} />
         <Stack.Screen name="book/search" options={{ title: t('Search') }} />
+        <Stack.Screen name="book/detail" options={{ title: t('Entry details') }} />
         <Stack.Screen name="book/saved" options={{ title: t('Transaction saved'), presentation: 'modal' }} />
         <Stack.Screen name="khata/[partyId]" options={{ title: t('Customer') }} />
         <Stack.Screen name="staff/index" options={{ title: t('Staff attendance') }} />

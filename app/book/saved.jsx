@@ -3,10 +3,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Screen } from '../../src/components/Screen.jsx';
 import { Body, Button, Caption, Card, Figure, Loading, Row } from '../../src/components/ui.jsx';
-import { GaveGotButtons, entryLabel, isSupplier, useBillPrinting } from '../../src/components/book.jsx';
+import { EntrySafety, GaveGotButtons, entryLabel, entryMessage, isSupplier, useBillPrinting } from '../../src/components/book.jsx';
 import { readEntry, readPaidWithBill, readParty } from '../../src/lib/bookQueries.js';
-import { ledgerSide } from '../../src/lib/book.js';
-import { formatDate, formatMoney } from '../../src/lib/format.js';
+import { formatMoney } from '../../src/lib/format.js';
 import { useAuth } from '../../src/state/auth.jsx';
 import { useBookQuery } from '../../src/state/book.jsx';
 import { useT } from '../../src/state/locale.jsx';
@@ -55,29 +54,13 @@ export default function EntrySaved() {
             icon={<Ionicons name="print-outline" size={18} color={colors.ink900} />} onPress={printReceipt} />
         </Row>
         <Button title={t('New bill')} variant="ghost" onPress={() => router.replace({ pathname: '/book/entry', params: { kind: 'sale', date: entry.date } })} />
+        <EntrySafety entryId={entryId} />
       </Screen>
     );
   }
   const supplier = isSupplier(party);
-  const side = ledgerSide(entry, party.partyType);
   // The party's balance now, after anything saved with this entry (a part payment on a credit bill).
-  const balance = party.balance;
-  const vars = {
-    store: business?.name ?? '',
-    amount: formatMoney(entry.amount),
-    date: formatDate(`${entry.date}T00:00:00`, undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
-    balance: balance < 0 ? t('Advance {amount}', { amount: formatMoney(-balance) }) : formatMoney(balance),
-  };
-  const rawMessage = supplier
-    ? side === 'gave'
-      ? t('{store}: paid {amount} on {date}. Balance: {balance}.', vars)
-      : t('{store}: goods worth {amount} received on {date}. Balance: {balance}.', vars)
-    : side === 'got'
-      ? t('{store}: payment of {amount} received on {date}. Thank you! Balance due: {balance}.', vars)
-      : t('{store}: {amount} added to your khata on {date}. Balance due: {balance}.', vars);
-
-  // Every message starts "{store}: "; with no shop name loaded (offline, first start) drop the prefix.
-  const message = rawMessage.replace(/^:\s*/, '');
+  const message = entryMessage(t, { entry, party, store: business?.name, balance: party.balance });
 
   const share = () => Share.share({ message }).catch(() => undefined);
   // iOS wants `&body=`, Android `?body=`.
@@ -129,6 +112,7 @@ export default function EntrySaved() {
           />
         </View>
       </Row>
+      <EntrySafety entryId={entryId} />
     </Screen>
   );
 }

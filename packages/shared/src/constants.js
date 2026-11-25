@@ -51,7 +51,8 @@ export const RATE_LIMITS = Object.freeze({
   'public:track-event': [600, 300],
   'owner:read': [600, 60],
   'owner:write': [120, 60],
-  'owner:upload': [60, 300],
+  // Each photo is two calls (authorize, confirm); a product import uploads up to 3 photos per product.
+  'owner:upload': [240, 300],
   'owner:slug-change': [3, 86400],
   'owner:domain-add': [10, 3600],
   'owner:domain-verify': [30, 3600],

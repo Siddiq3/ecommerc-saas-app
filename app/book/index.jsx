@@ -131,7 +131,7 @@ export default function DayBook() {
           {bills.map((e, i) => {
             const bought = itemsSummary(t, e.items);
             return (
-              <EntryRow key={e.entryId} index={i + 1} entry={e} onPress={() => open({ pathname: '/book/entry', params: { entryId: e.entryId } })}
+              <EntryRow key={e.entryId} index={i + 1} entry={e} onPress={() => open({ pathname: '/book/detail', params: { entryId: e.entryId } })}
                 title={e.partyName ?? bought ?? e.note ?? t('Bill #{n}', { n: i + 1 })}
                 detail={e.partyName ? (bought ?? e.note) : bought ? e.note : null}
                 pill={t(MODE_LABELS[e.mode])} tone={e.mode === 'credit' ? 'amber' : 'slate'} first={i === 0} />
@@ -146,7 +146,7 @@ export default function DayBook() {
           <Card padded={false}>
             {payments.map((e, i) => (
               <EntryRow key={e.entryId} entry={e} first={i === 0}
-                onPress={() => open({ pathname: '/book/entry', params: { entryId: e.entryId } })}
+                onPress={() => open({ pathname: '/book/detail', params: { entryId: e.entryId } })}
                 title={e.kind === 'opening' ? t('Starting cash') : e.partyName ?? t('Payment received')}
                 detail={e.note} pill={e.mode ? t(MODE_LABELS[e.mode]) : null} tone="green" />
             ))}
@@ -160,7 +160,7 @@ export default function DayBook() {
           <Card padded={false}>
             {purchases.map((e, i) => (
               <EntryRow key={e.entryId} entry={e} first={i === 0} negative
-                onPress={() => open({ pathname: '/book/entry', params: { entryId: e.entryId } })}
+                onPress={() => open({ pathname: '/book/detail', params: { entryId: e.entryId } })}
                 title={e.partyName ?? itemsSummary(t, e.items) ?? t('Purchase')}
                 detail={[e.partyName ? itemsSummary(t, e.items) : null, e.billNo].filter(Boolean).join(' · ') || e.note}
                 pill={t(MODE_LABELS[e.mode])} tone={e.mode === 'credit' ? 'amber' : 'slate'} />
@@ -175,7 +175,7 @@ export default function DayBook() {
           <Card padded={false}>
             {returns.map((e, i) => (
               <EntryRow key={e.entryId} entry={e} first={i === 0} negative={e.kind === 'salesReturn'}
-                onPress={() => open({ pathname: '/book/entry', params: { entryId: e.entryId } })}
+                onPress={() => open({ pathname: '/book/detail', params: { entryId: e.entryId } })}
                 title={e.partyName ?? t(KIND_LABELS[e.kind])}
                 detail={[t(KIND_LABELS[e.kind]), itemsSummary(t, e.items)].filter(Boolean).join(' · ')}
                 pill={t(MODE_LABELS[e.mode])} tone={e.mode === 'credit' ? 'amber' : 'slate'} />
@@ -189,7 +189,7 @@ export default function DayBook() {
         <Card padded={false}>
           {expenses.map((e, i) => (
             <EntryRow key={e.entryId} entry={e} first={i === 0} negative
-              onPress={() => open({ pathname: '/book/entry', params: { entryId: e.entryId } })}
+              onPress={() => open({ pathname: '/book/detail', params: { entryId: e.entryId } })}
               title={e.partyName ?? e.label ?? t(CATEGORY_LABELS[e.category])} detail={e.partyName ? [t(CATEGORY_LABELS[e.category]), e.note].filter(Boolean).join(' · ') : e.note} pill={t(MODE_LABELS[e.mode])} tone="slate" />
           ))}
         </Card>

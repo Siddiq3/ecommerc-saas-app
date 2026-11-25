@@ -63,7 +63,7 @@ export default function BookSearch() {
               return (
                 <View key={e.entryId}>
                   {i ? <Divider /> : null}
-                  <Touchable onPress={() => router.push({ pathname: '/book/entry', params: { entryId: e.entryId } })} style={styles.row}
+                  <Touchable onPress={() => router.push({ pathname: '/book/detail', params: { entryId: e.entryId } })} style={styles.row}
                     accessibilityLabel={`${titleOf(e)}, ${detail}, ${out ? '− ' : ''}${formatMoney(e.amount)}`}>
                     <View style={{ flex: 1 }}>
                       <Body numberOfLines={2}>{titleOf(e)}</Body>

@@ -99,6 +99,14 @@ export default function Products() {
             <Ionicons name="folder-outline" size={18} color={colors.ink700} />
             <Body style={styles.iconButtonText}>{t('Categories')}</Body>
           </Touchable>
+          <Touchable
+            onPress={() => router.push('/products/import')}
+            accessibilityLabel={t('Import products')}
+            style={styles.iconButton}
+          >
+            <Ionicons name="cloud-download-outline" size={18} color={colors.ink700} />
+            <Body style={styles.iconButtonText}>{t('Import')}</Body>
+          </Touchable>
         </Row>
       </Row>
       <SearchBar value={search} onChange={setSearch} error={searchError} placeholder={msg('Search products')} />
@@ -151,7 +159,10 @@ export default function Products() {
               }
               action={
                 filtered ? null : (
-                  <Button title={t('Add your first product')} onPress={() => router.push('/products/new')} />
+                  <View style={{ gap: space.sm, alignSelf: 'stretch' }}>
+                    <Button title={t('Add your first product')} onPress={() => router.push('/products/new')} />
+                    <Button title={t('Import from another website')} variant="secondary" onPress={() => router.push('/products/import')} />
+                  </View>
                 )
               }
             />

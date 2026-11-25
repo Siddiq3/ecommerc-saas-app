@@ -369,6 +369,10 @@ export const confirmUploadSchema = z
   })
   .strict();
 
+/** Many uploads in one call (a product import): up to 100 photos authorized, or confirmed, at once. */
+export const batchUploadAuthorizationSchema = z.object({ items: z.array(uploadAuthorizationSchema).min(1).max(100) }).strict();
+export const batchConfirmUploadSchema = z.object({ items: z.array(confirmUploadSchema).min(1).max(100) }).strict();
+
 /* ───────────── Analytics ───────────── */
 
 export const trackEventSchema = z

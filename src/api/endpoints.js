@@ -125,6 +125,8 @@ export const products = {
   list: (businessId, params) => api.get(`${scope(businessId)}/products${qs(params)}`),
   get: (businessId, productId) => api.get(`${scope(businessId)}/products/${productId}`),
   create: (businessId, input) => api.post(`${scope(businessId)}/products`, input),
+  /** Up to 25 at once (a product import); answers each with { ok, product | error } in order. */
+  createBatch: (businessId, products) => api.post(`${scope(businessId)}/products/batch`, { products }),
   update: (businessId, productId, input) => api.patch(`${scope(businessId)}/products/${productId}`, input),
   remove: (businessId, productId) => api.del(`${scope(businessId)}/products/${productId}`),
   setStock: (businessId, productId, input) =>
@@ -211,6 +213,9 @@ export const notifications = {
 export const uploads = {
   authorize: (businessId, input) => api.post(`${scope(businessId)}/uploads/authorize`, input),
   confirm: (businessId, input) => api.post(`${scope(businessId)}/uploads/confirm`, input),
+  /** Up to 100 at once (a product import); confirm answers each item with { ok, upload | error }. */
+  authorizeBatch: (businessId, items) => api.post(`${scope(businessId)}/uploads/authorize-batch`, { items }),
+  confirmBatch: (businessId, items) => api.post(`${scope(businessId)}/uploads/confirm-batch`, { items }),
 };
 
 /* ───────────── Custom domains ───────────── */

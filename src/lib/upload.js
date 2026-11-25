@@ -91,6 +91,39 @@ export const uploadImage = async (businessId, asset, { purpose = 'product', prod
   }
 };
 
+/**
+ * A local photo ready to upload: its bytes, a type the API accepts (anything else, such as GIF or HEIC, is converted to
+ * JPEG first) and its size. `cleanup` removes a converted copy. Used by a product import, which authorizes, sends and
+ * confirms photos in groups.
+ */
+export const prepareImage = async (asset) => {
+  let source = asset;
+  let contentType = contentTypeOf(asset);
+  let cleanup = async () => undefined;
+  if (!contentType) {
+    const context = ImageManipulator.manipulate(asset.uri);
+    if (Math.max(asset.width ?? 0, asset.height ?? 0) > 1600) {
+      context.resize(asset.width >= asset.height ? { width: 1600 } : { height: 1600 });
+    }
+    source = await (await context.renderAsync()).saveAsync({ format: SaveFormat.JPEG, compress: 0.85 });
+    contentType = 'image/jpeg';
+    cleanup = () => deleteAsync(source.uri, { idempotent: true }).catch(() => undefined);
+  }
+  const blob = await (await fetch(source.uri)).blob();
+  return { blob, contentType, sizeBytes: blob.size, width: source.width, height: source.height, cleanup };
+};
+
+/** Sends the bytes to storage on an authorization's presigned URL. */
+export const putToStorage = async (authorization, blob, contentType) => {
+  const put = await fetch(authorization.uploadUrl, {
+    method: 'PUT',
+    // The signature covers these headers; sending anything different invalidates it.
+    headers: { ...(authorization.requiredHeaders ?? {}), 'Content-Type': contentType },
+    body: blob,
+  });
+  if (!put.ok) throw new Error('The upload did not complete. Please try again.');
+};
+
 const uploadPreparedImage = async (businessId, asset, { purpose, productId, contentType }) => {
   const response = await fetch(asset.uri);
   const blob = await response.blob();
@@ -106,14 +139,7 @@ const uploadPreparedImage = async (businessId, asset, { purpose, productId, cont
     productId,
   });
 
-  const put = await fetch(authorization.uploadUrl, {
-    method: 'PUT',
-    // The signature covers these headers; sending anything different invalidates it.
-    headers: { ...(authorization.requiredHeaders ?? {}), 'Content-Type': contentType },
-    body: blob,
-  });
-
-  if (!put.ok) throw new Error('The upload did not complete. Please try again.');
+  await putToStorage(authorization, blob, contentType);
 
   await uploads.confirm(businessId, {
     uploadId: authorization.uploadId,
