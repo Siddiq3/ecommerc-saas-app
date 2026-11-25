@@ -11,8 +11,11 @@
  */
 import assert from 'node:assert/strict';
 import {
-  MAX_VARIANTS, buildRows, comboLabel, fingerprint, optionsFromVariants, parseValues, usable,
+  MAX_VARIANTS, OPTION_PRESETS, PRESETS_FOR_SHOP, buildRows, comboLabel, fingerprint, optionsFromVariants, parseValues,
+  presetsFor, usable, withoutValue,
 } from '../src/lib/variants.js';
+import { BUSINESS_CATEGORIES } from '../packages/shared/src/constants.js';
+import { STRINGS } from '../src/lib/strings.js';
 
 /* ───────────── parseValues ───────────── */
 
@@ -126,5 +129,22 @@ assert.equal(roundTrip.length, 4, '2 sizes x 2 colours, including the pair never
 
 assert.equal(comboLabel({ Size: 'S', Colour: 'Red' }), 'S · Red');
 assert.equal(comboLabel({}), '');
+
+/* ───────────── presets ───────────── */
+
+assert.equal(withoutValue('S, M, L', 'M'), 'S, L');
+assert.equal(withoutValue('S', 'S'), '');
+for (const preset of Object.values(OPTION_PRESETS)) {
+  assert.ok(STRINGS[preset.label]?.length === 8, `"${preset.label}" is translated`);
+  assert.equal(parseValues(preset.values).join(', '), preset.values, `${preset.label} values are clean`);
+}
+assert.equal(buildRows([OPTION_PRESETS.shirt]).length, 5, 'a shirt preset makes one row per size');
+for (const shop of BUSINESS_CATEGORIES) {
+  assert.ok(PRESETS_FOR_SHOP[shop]?.length, `${shop} shops get their own lists`);
+  for (const id of PRESETS_FOR_SHOP[shop]) assert.ok(OPTION_PRESETS[id], `${shop}: ${id} exists`);
+  const { first, rest } = presetsFor(shop);
+  assert.equal(first.length + rest.length, Object.keys(OPTION_PRESETS).length, `${shop}: every list is reachable once`);
+}
+assert.deepEqual(presetsFor(undefined).first, PRESETS_FOR_SHOP.other);
 
 console.log('✓ Variant options, combinations and row identity all behave.');
