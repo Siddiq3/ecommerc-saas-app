@@ -20,6 +20,7 @@ import { LocaleProvider, useT } from '../src/state/locale.jsx';
 import { BookProvider } from '../src/state/book.jsx';
 import { ToastProvider } from '../src/components/Toast.jsx';
 import { PlanLock } from '../src/components/PlanLock.jsx';
+import { AppUpdate } from '../src/components/AppUpdate.jsx';
 import { colors, type } from '../src/theme.js';
 import { registerForPush } from '../src/lib/push.js';
 
@@ -170,6 +171,8 @@ const Navigation = () => {
       </Stack>
       {/* Over every screen once the plan lapses, except account deletion: see PlanLock. */}
       <PlanLock />
+      {/* Last, so "Update required" sits above everything, the plan lock included. */}
+      <AppUpdate />
     </>
   );
 };

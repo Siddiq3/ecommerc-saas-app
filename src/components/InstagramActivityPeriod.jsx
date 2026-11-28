@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
-import { Body, Button, Caption, Card, Row, Touchable } from './ui.jsx';
+import { Body, Button, Caption, Card, Row, Touchable, canShrink } from './ui.jsx';
 import { colors, fonts, radius, space } from '../theme.js';
 
 export const indiaDay = () => new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10);
@@ -36,7 +36,7 @@ export function InstagramActivityPeriod({ value, onChange }) {
         const active = value.period === period;
         return <Touchable key={period} haptics="select" accessibilityRole="radio" accessibilityLabel={title} accessibilityState={{ checked: active }}
           style={[styles.segment, active && styles.segmentActive]} onPress={() => choose(period)}>
-          <Body style={[styles.segmentText, active && styles.segmentTextActive]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{title}</Body>
+          <Body style={[styles.segmentText, active && styles.segmentTextActive]} numberOfLines={1} adjustsFontSizeToFit={canShrink(title)} minimumFontScale={0.75}>{title}</Body>
         </Touchable>;
       })}
       <Touchable haptics="select" accessibilityRole="radio" accessibilityLabel="Custom dates" accessibilityState={{ checked: custom }}

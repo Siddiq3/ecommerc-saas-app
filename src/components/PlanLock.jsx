@@ -10,6 +10,7 @@ import { useT } from '../state/locale.jsx';
 import { useAction } from '../lib/useAsync.js';
 import { SHOW_INSTAGRAM, canManageInstagramPath } from '../lib/instagram-access.js';
 import { SUPPORT_URL } from '../lib/help.js';
+import { msg } from '../lib/i18n.js';
 import { colors, radius, space } from '../theme.js';
 
 /** The account-deletion screen stays reachable while locked: a lapsed plan never blocks leaving. */
@@ -25,9 +26,14 @@ export const DELETE_ACCOUNT_ROUTE = '/settings/delete-account';
  * button or link to one (see src/state/plan.jsx).
  */
 const COPY = {
-  trial_expired: {
-    title: 'Free trial ended',
-    message: 'Your free trial has ended. Your account is currently inactive.',
+  trial: {
+    title: msg('Free trial ended'),
+    message: msg('Your free trial has ended. Your account is currently inactive.'),
+  },
+  // Every lapse reads as trial_expired (billing/status.js); an owner who has paid before is told it was the plan.
+  subscription: {
+    title: msg('Subscription ended'),
+    message: msg('Your subscription has ended. Your account is currently inactive.'),
   },
 };
 
@@ -35,7 +41,7 @@ export const PlanLock = () => {
   const router = useRouter();
   const pathname = usePathname();
   const { status: authStatus, user, signOut } = useAuth();
-  const { entitled, planStatus, needsOnboarding, refresh, books, setUsage } = usePlan();
+  const { entitled, status, needsOnboarding, refresh, books, setUsage } = usePlan();
   const insets = useSafeAreaInsets();
   const t = useT();
   const { run: check, pending: checking, error } = useAction(() => refresh({ silent: true }));
@@ -50,7 +56,7 @@ export const PlanLock = () => {
     && !books
     && pathname !== DELETE_ACCOUNT_ROUTE
     && !canManageInstagramPath(pathname);
-  const copy = COPY[planStatus] ?? COPY.trial_expired;
+  const copy = status?.hasSubscription ? COPY.subscription : COPY.trial;
 
   return (
     <Modal visible={locked} transparent animationType="slide" statusBarTranslucent onRequestClose={() => undefined}>
@@ -59,20 +65,20 @@ export const PlanLock = () => {
           <View style={styles.handle} />
           <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
             <View style={styles.lockIcon}><Ionicons name="lock-closed" size={40} color="#ffffff" /></View>
-            <Title style={styles.center}>{copy.title}</Title>
+            <Title style={styles.center}>{t(copy.title)}</Title>
             {user?.email ? <Caption style={styles.center}>{user.email}</Caption> : null}
 
-            <View style={styles.warning}><Body style={styles.warningText}>{copy.message}</Body></View>
+            <View style={styles.warning}><Body style={styles.warningText}>{t(copy.message)}</Body></View>
 
             <Row gap={space.sm} align="flex-start" style={styles.info}>
               <Ionicons name="information-circle" size={20} color={colors.accent700} />
               <Body style={{ flex: 1, color: colors.accent900 }}>
-                Your store is closed to customers. Your products, orders and settings are kept.
+                {t('Your store is closed to customers. Your products, orders and settings are kept.')}
               </Body>
             </Row>
 
             <Button
-              title="Contact support"
+              title={t('Contact support')}
               variant="secondary"
               icon={<Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.success} />}
               onPress={() => Linking.openURL(SUPPORT_URL).catch(() => undefined)}
@@ -89,24 +95,24 @@ export const PlanLock = () => {
               onPress={() => keepBooks().catch(() => undefined)}
             />
             <Button
-              title="Check status again"
+              title={t('Check status again')}
               variant="secondary"
               loading={checking}
               icon={<Ionicons name="refresh" size={18} color={colors.ink700} />}
               onPress={() => check().catch(() => undefined)}
             />
             <Button
-              title="Log out"
+              title={t('Log out')}
               variant="secondary"
               loading={leaving}
               icon={<Ionicons name="log-out-outline" size={18} color={colors.ink700} />}
               onPress={() => logout().catch(() => undefined)}
             />
             {SHOW_INSTAGRAM ? (
-              <Button title="Manage Instagram" variant="secondary" onPress={() => router.push('/(tabs)/social')} />
+              <Button title={t('Manage Instagram')} variant="secondary" onPress={() => router.push('/(tabs)/social')} />
             ) : null}
             <Button
-              title="Delete account"
+              title={t('Delete account')}
               variant="ghost"
               onPress={() => router.push(DELETE_ACCOUNT_ROUTE)}
             />

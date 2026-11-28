@@ -84,6 +84,13 @@ const buttonTone = {
   danger: { bg: colors.dangerTint, fg: colors.danger, ripple: '#fecaca' },
 };
 
+/**
+ * Whether a one-line label may shrink to fit. Android drops the last word of shrink-to-fit text in the app's Indian
+ * scripts (Devanagari through Malayalam), so those keep their size.
+ */
+const INDIC = /[\u0900-\u0D7F]/;
+export const canShrink = (text) => !INDIC.test(String(text ?? ''));
+
 export const Button = ({
   title, onPress, variant = 'primary', size = 'md', loading, disabled, style, icon, full = true, accessibilityLabel,
 }) => {
@@ -122,7 +129,8 @@ export const Button = ({
           <Text
             style={[styles.buttonText, size === 'sm' && styles.buttonTextSm, { color: tone.fg }]}
             numberOfLines={1}
-            adjustsFontSizeToFit
+            // Not for Indian scripts: Android drew "లాగ్ అవుట్" as "లాగ్" (canShrink).
+            adjustsFontSizeToFit={canShrink(title)}
             minimumFontScale={0.8}
           >
             {title}

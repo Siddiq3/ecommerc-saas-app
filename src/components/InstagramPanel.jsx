@@ -4,7 +4,7 @@ import * as Linking from 'expo-linking';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { instagram } from '../api/endpoints.js';
-import { Alert, Body, Button, Caption, Card, Heading, Pill, Row, Touchable } from './ui.jsx';
+import { Alert, Body, Button, Caption, Card, Heading, Pill, Row, Touchable, canShrink } from './ui.jsx';
 import { SectionHeader } from './domain.jsx';
 import { useRefreshOnFocus } from '../lib/useAsync.js';
 import { InstagramMark, RuleArt, readinessLabel, canTurnOn, instagramError as failure, targetName } from './instagram.jsx';
@@ -51,7 +51,7 @@ const StatTile = ({ label, a11y, value, icon, tone, change }) => (
     <View style={styles.tileIcon}><Ionicons name={icon} size={16} color={tone.fg} /></View>
     {typeof value === 'number' ? <CountUp value={value} style={styles.tileValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} />
       : <Text style={styles.tileValue}>{value}</Text>}
-    <Caption style={styles.tileLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} accessibilityLabel={a11y}>{label}</Caption>
+    <Caption style={styles.tileLabel} numberOfLines={1} adjustsFontSizeToFit={canShrink(label)} minimumFontScale={0.85} accessibilityLabel={a11y}>{label}</Caption>
     {change}
   </View>
 );

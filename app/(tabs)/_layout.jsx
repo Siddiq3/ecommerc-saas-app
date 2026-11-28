@@ -8,6 +8,7 @@ import { usePlan } from '../../src/state/plan.jsx';
 import { useLocale } from '../../src/state/locale.jsx';
 import { useOrderCounts } from '../../src/state/counts.js';
 import { useRefreshOnFocus } from '../../src/lib/useAsync.js';
+import { canShrink } from '../../src/components/ui.jsx';
 import { colors, space, type } from '../../src/theme.js';
 import { SHOW_INSTAGRAM } from '../../src/lib/instagram-access.js';
 
@@ -76,7 +77,8 @@ function TabLabel({ color, children, position }) {
         style={[styles.label, { color, fontSize, lineHeight: Math.round(fontSize * 1.35) }]}
         allowFontScaling={false}
         numberOfLines={1}
-        adjustsFontSizeToFit
+        // The size above already fits every label; the last-resort shrink is skipped for Indian scripts (canShrink).
+        adjustsFontSizeToFit={canShrink(children)}
         minimumFontScale={0.9}
       >
         {children}

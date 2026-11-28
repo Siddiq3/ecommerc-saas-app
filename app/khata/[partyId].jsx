@@ -7,7 +7,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { bookPartySchema } from '@storeflick/validation';
 import { Screen } from '../../src/components/Screen.jsx';
-import { Alert, Body, Button, Caption, Field, Loading, Touchable } from '../../src/components/ui.jsx';
+import { Alert, Body, Button, Caption, Field, Loading, Touchable, canShrink } from '../../src/components/ui.jsx';
 import { Sheet } from '../../src/components/Sheet.jsx';
 import { useToast } from '../../src/components/Toast.jsx';
 import {
@@ -200,7 +200,7 @@ export default function KhataParty() {
             <Touchable key={a.key} onPress={a.onPress} disabled={a.disabled} style={[styles.action, a.disabled && { opacity: 0.4 }]}
               accessibilityRole="button" accessibilityLabel={a.title} accessibilityState={{ disabled: Boolean(a.disabled) }}>
               <Ionicons name={a.icon} size={24} color={khataBar} />
-              <Text style={styles.actionText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{a.title}</Text>
+              <Text style={styles.actionText} numberOfLines={1} adjustsFontSizeToFit={canShrink(a.title)} minimumFontScale={0.8}>{a.title}</Text>
             </Touchable>
           ))}
         </View>
@@ -229,10 +229,10 @@ export default function KhataParty() {
           <>
             <View style={styles.columns}>
               <Text style={[styles.colHead, { flex: 1, paddingLeft: space.md }]} numberOfLines={1}>{t('Entries').toUpperCase()}</Text>
-              <Text style={[styles.colHead, styles.col, { color: colors.danger }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+              <Text style={[styles.colHead, styles.col, { color: colors.danger }]} numberOfLines={1} adjustsFontSizeToFit={canShrink(t('You gave'))} minimumFontScale={0.7}>
                 {t('You gave').toUpperCase()}
               </Text>
-              <Text style={[styles.colHead, styles.col, { color: colors.success }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+              <Text style={[styles.colHead, styles.col, { color: colors.success }]} numberOfLines={1} adjustsFontSizeToFit={canShrink(t('You got'))} minimumFontScale={0.7}>
                 {t('You got').toUpperCase()}
               </Text>
             </View>
@@ -320,10 +320,13 @@ export default function KhataParty() {
 /** "Bal. ₹1,00,000" under an entry: shrinks to fit a narrow column instead of cutting the figure. */
 const BalanceChip = ({ amount, tone }) => {
   const t = useT();
+  const text = t('Bal. {amount}', { amount: formatMoney(Math.abs(amount)) });
+  // Android would drop the amount itself from a shrunk Indian-script label (canShrink): those wrap instead.
+  const shrink = canShrink(text);
   return (
     <View style={[styles.bal, { backgroundColor: tones[tone].bg }]}>
-      <Text style={[styles.balText, { color: tones[tone].fg }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
-        {t('Bal. {amount}', { amount: formatMoney(Math.abs(amount)) })}
+      <Text style={[styles.balText, { color: tones[tone].fg }]} numberOfLines={shrink ? 1 : 2} adjustsFontSizeToFit={shrink} minimumFontScale={0.7}>
+        {text}
       </Text>
     </View>
   );

@@ -14,6 +14,13 @@ const idempotencyKey = () =>
 
 const withKey = () => ({ headers: { 'X-Idempotency-Key': idempotencyKey() } });
 
+/* ───────────── App ───────────── */
+
+/** Which app versions the stores have: the update card and the "Update required" screen (AppUpdate). */
+export const appInfo = {
+  version: () => api.get('/public/app-version', { auth: false }),
+};
+
 /* ───────────── Auth ───────────── */
 
 export const auth = {
