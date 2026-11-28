@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Sheet } from './Sheet.jsx';
 import { Body, Button, Divider, Touchable } from './ui.jsx';
 import { HELP_CONTEXTS, helpQuestion } from '../lib/help.js';
+import { useT } from '../state/locale.jsx';
 import { colors, fonts, radius, space, type } from '../theme.js';
 
 /**
@@ -13,15 +14,24 @@ import { colors, fonts, radius, space, type } from '../theme.js';
  * All content comes from src/lib/help.js — nothing here knows what any answer says.
  */
 
-/** `**word**` → bold. Nothing else is parsed. */
-const Rich = ({ text, style }) => (
-  <Text style={style}>
-    {text.split('**').map((part, i) => (i % 2 ? <Text key={i} style={styles.bold}>{part}</Text> : part))}
-  </Text>
-);
+/**
+ * `**word**` → bold. Nothing else is parsed. Translations keep the bold label in English, and it is translated here
+ * on its own, so it always reads exactly like the button on screen.
+ */
+const Rich = ({ text, style }) => {
+  const t = useT();
+  return (
+    <Text style={style}>
+      {t(text).split('**').map((part, i) => (i % 2 ? <Text key={i} style={styles.bold}>{t(part)}</Text> : part))}
+    </Text>
+  );
+};
 
-export const HelpAnswer = ({ question, onAction }) => (
+export const HelpAnswer = ({ question, onAction }) => {
+  const t = useT();
+  return (
   <View>
+    {question.about ? <Rich text={question.about} style={styles.about} /> : null}
     {question.steps.map((step, i) => (
       <View key={step} style={styles.step}>
         {question.steps.length > 1 ? (
@@ -37,20 +47,24 @@ export const HelpAnswer = ({ question, onAction }) => (
       </View>
     ) : null}
     {question.action ? (
-      <Button title={question.action.label} onPress={() => onAction(question.action)} style={styles.action} />
+      <Button title={t(question.action.label)} onPress={() => onAction(question.action)} style={styles.action} />
     ) : null}
   </View>
-);
+  );
+};
 
-export const QuestionRow = ({ question, onPress, last }) => (
+export const QuestionRow = ({ question, onPress, last }) => {
+  const t = useT();
+  return (
   <>
-    <Touchable onPress={onPress} style={styles.questionRow} accessibilityLabel={question.question}>
-      <Body style={{ flex: 1 }}>{question.question}</Body>
+    <Touchable onPress={onPress} style={styles.questionRow} accessibilityLabel={t(question.question)}>
+      <Body style={{ flex: 1 }}>{t(question.question)}</Body>
       <Ionicons name="chevron-forward" size={16} color={colors.ink400} />
     </Touchable>
     {last ? null : <Divider />}
   </>
-);
+  );
+};
 
 /** Runs an answer's action: an in-app route, or an outside link. */
 export const useHelpAction = () => {
@@ -66,6 +80,7 @@ export const useHelpAction = () => {
  */
 export const HelpSheet = ({ visible, onClose, questionId, context }) => {
   const router = useRouter();
+  const t = useT();
   const [picked, setPicked] = useState(null);
   const current = helpQuestion(questionId ?? picked);
 
@@ -78,14 +93,14 @@ export const HelpSheet = ({ visible, onClose, questionId, context }) => {
   const ids = context ? HELP_CONTEXTS[context] ?? [] : [];
 
   return (
-    <Sheet visible={visible} onClose={onClose} title={current ? current.question : 'Need help?'}>
+    <Sheet visible={visible} onClose={onClose} title={current ? t(current.question) : t('Need help?')}>
       {current ? (
         <>
           <HelpAnswer question={current} onAction={act} />
           {picked ? (
-            <Touchable onPress={() => setPicked(null)} style={styles.link} accessibilityLabel="Other questions">
+            <Touchable onPress={() => setPicked(null)} style={styles.link} accessibilityLabel={t('Other questions')}>
               <Ionicons name="arrow-back" size={16} color={colors.accent700} />
-              <Body style={styles.linkText}>Other questions</Body>
+              <Body style={styles.linkText}>{t('Other questions')}</Body>
             </Touchable>
           ) : null}
         </>
@@ -97,9 +112,9 @@ export const HelpSheet = ({ visible, onClose, questionId, context }) => {
           <Touchable
             onPress={() => { onClose(); router.push('/help'); }}
             style={styles.link}
-            accessibilityLabel="Ask something else"
+            accessibilityLabel={t('Ask something else')}
           >
-            <Body style={styles.linkText}>Ask something else</Body>
+            <Body style={styles.linkText}>{t('Ask something else')}</Body>
             <Ionicons name="arrow-forward" size={16} color={colors.accent700} />
           </Touchable>
         </>
@@ -114,9 +129,10 @@ export const HelpButton = ({ context, style }) => {
   // A new key per opening starts the sheet back on the question list, without resetting it
   // on close — which would swap its content mid slide-out.
   const [opened, setOpened] = useState(0);
+  const t = useT();
   return (
     <>
-      <Touchable onPress={() => { setOpened((n) => n + 1); setOpen(true); }} style={[styles.helpButton, style]} accessibilityLabel="Need help?">
+      <Touchable onPress={() => { setOpened((n) => n + 1); setOpen(true); }} style={[styles.helpButton, style]} accessibilityLabel={t('Need help?')}>
         <Ionicons name="help" size={20} color={colors.ink700} />
       </Touchable>
       <HelpSheet key={opened} visible={open} onClose={() => setOpen(false)} context={context} />
@@ -138,6 +154,7 @@ const styles = StyleSheet.create({
   },
   stepNumberText: { ...type.caption, fontFamily: fonts.bold, color: colors.accent700 },
   stepText: { ...type.body, color: colors.ink800, flex: 1 },
+  about: { ...type.body, color: colors.ink700, marginBottom: space.lg },
   note: {
     flexDirection: 'row',
     gap: space.sm,

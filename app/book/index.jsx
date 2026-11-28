@@ -6,6 +6,7 @@ import { Screen } from '../../src/components/Screen.jsx';
 import { Body, Button, Caption, Card, Divider, Heading, Pill, Row, Touchable } from '../../src/components/ui.jsx';
 import { CATEGORY_LABELS, KIND_LABELS, MODE_LABELS, MoneyLine, SectionTitle, SyncBadge } from '../../src/components/book.jsx';
 import { itemsSummary } from '../../src/components/BillItems.jsx';
+import { HelpButton } from '../../src/components/Help.jsx';
 import { dayKey, shiftDay } from '../../src/lib/book.js';
 import { readDay } from '../../src/lib/bookQueries.js';
 import { formatDate, formatMoney } from '../../src/lib/format.js';
@@ -29,9 +30,12 @@ export default function DayBook() {
   useEffect(() => {
     navigation.setOptions?.({
       headerRight: () => (
-        <Touchable onPress={() => router.push('/book/search')} style={styles.headerIcon} accessibilityRole="button" accessibilityLabel={t('Search bills and entries')}>
-          <Ionicons name="search" size={22} color={colors.ink900} />
-        </Touchable>
+        <Row gap={space.xs} style={{ alignItems: 'center' }}>
+          <Touchable onPress={() => router.push('/book/search')} style={styles.headerIcon} accessibilityRole="button" accessibilityLabel={t('Search bills and entries')}>
+            <Ionicons name="search" size={22} color={colors.ink900} />
+          </Touchable>
+          <HelpButton context="book" />
+        </Row>
       ),
     });
   }, [navigation, router, t]);

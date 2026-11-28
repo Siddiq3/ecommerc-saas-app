@@ -22,6 +22,7 @@ import { useAuth } from '../../src/state/auth.jsx';
 import { useToast } from '../../src/components/Toast.jsx';
 import { khataListHtml } from '../../src/lib/bookPrint.js';
 import { useT } from '../../src/state/locale.jsx';
+import { HelpButton } from '../../src/components/Help.jsx';
 import { colors, fonts, radius, shadow, space, tones, type } from '../../src/theme.js';
 
 const TABS = [{ value: 'customer', label: msg('Customers') }, { value: 'supplier', label: msg('Suppliers') }];
@@ -64,7 +65,7 @@ export default function Khata() {
   const [printing, setPrinting] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
   const deleted = (useBookQuery((db) => readDeletedParties(db)) ?? []).filter((p) => isSupplier(p) === (tab === 'supplier'));
-  useKhataBar(navigation, { title: t('Khata') }, [t]);
+  useKhataBar(navigation, { title: t('Khata'), headerRight: () => <HelpButton context="khata" /> }, [t]);
   useWeeklyNudge();
   // "Remind all": everyone who owes and has a number, largest dues first. Opened from the
   // Monday notification too. Each send opens WhatsApp with the message ready; ticked once sent.

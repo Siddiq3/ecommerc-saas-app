@@ -5,11 +5,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Caption, Touchable } from '../src/components/ui.jsx';
 import { FadeIn } from '../src/components/motion.jsx';
 import { HelpAnswer, useHelpAction } from '../src/components/Help.jsx';
-import { HELP_CATEGORIES, helpQuestion } from '../src/lib/help.js';
+import { HELP_CATEGORIES, helpQuestion, helpTopics } from '../src/lib/help.js';
+import { msg } from '../src/lib/i18n.js';
+import { usePlan } from '../src/state/plan.jsx';
+import { useT } from '../src/state/locale.jsx';
 import { colors, radius, space } from '../src/theme.js';
 
 /**
- * Help as a support chat — with nothing to type.
+ * Help as a support chat — with nothing to type. Every word is in the app language, and a shop that uses only
+ * the bill book and khata is not asked about an online store it does not have.
  *
  * The assistant offers choices as chips; tapping one posts it as the owner's message and the
  * assistant answers from src/lib/help.js. Every reply is predefined and local: no request
@@ -19,27 +23,28 @@ import { colors, radius, space } from '../src/theme.js';
 
 const REPLY_DELAY = 450;
 
-const topicChips = HELP_CATEGORIES.map((c) => ({ label: c.title, icon: c.icon, topic: c.id }));
+const chipsFor = (topics) => topics.map((c) => ({ label: c.title, icon: c.icon, topic: c.id }));
 
-const greeting = () => [
-  { id: 'hello', from: 'bot', text: 'Hi! 👋 How can we help?' },
-  { id: 'hello-2', from: 'bot', text: 'Pick a topic and I’ll show you quick answers about managing your store.', chips: topicChips },
+const greeting = (topicChips) => [
+  { id: 'hello', from: 'bot', text: msg('Hi! 👋 How can we help?') },
+  { id: 'hello-2', from: 'bot', text: msg('Pick a topic and I will show you step-by-step answers.'), chips: topicChips },
 ];
 
 let nextId = 0;
-const msg = (fields) => ({ id: `m${nextId++}`, ...fields });
+const post = (fields) => ({ id: `m${nextId++}`, ...fields });
 
 /** What the assistant says after the owner taps a chip. */
-const replyTo = (chip) => {
+const replyTo = (chip, topicChips) => {
   if (chip.topic) {
     const category = HELP_CATEGORIES.find((c) => c.id === chip.topic);
     return [
-      msg({
+      post({
         from: 'bot',
-        text: `Sure — here’s what people usually ask about ${category.title.toLowerCase()}:`,
+        text: msg('Here is what people usually ask about {topic}:'),
+        vars: { topic: category.title },
         chips: [
           ...category.questions.map((q) => ({ label: q.question, questionId: q.id })),
-          { label: 'Other topics', icon: 'apps-outline', allTopics: true },
+          { label: msg('Other topics'), icon: 'apps-outline', allTopics: true },
         ],
       }),
     ];
@@ -48,18 +53,18 @@ const replyTo = (chip) => {
     const category = HELP_CATEGORIES.find((c) => c.questions.some((q) => q.id === chip.questionId));
     const more = category.questions.filter((q) => q.id !== chip.questionId).slice(0, 3);
     return [
-      msg({ from: 'bot', answer: helpQuestion(chip.questionId) }),
-      msg({
+      post({ from: 'bot', answer: helpQuestion(chip.questionId) }),
+      post({
         from: 'bot',
-        text: 'Anything else I can help with?',
+        text: msg('Anything else I can help with?'),
         chips: [
           ...more.map((q) => ({ label: q.question, questionId: q.id })),
-          { label: 'Other topics', icon: 'apps-outline', allTopics: true },
+          { label: msg('Other topics'), icon: 'apps-outline', allTopics: true },
         ],
       }),
     ];
   }
-  return [msg({ from: 'bot', text: 'What would you like help with?', chips: topicChips })];
+  return [post({ from: 'bot', text: msg('What would you like help with?'), chips: topicChips })];
 };
 
 export default function Help() {
@@ -67,19 +72,22 @@ export default function Help() {
   const scroll = useRef(null);
   const timer = useRef(null);
   const go = useHelpAction();
-  const [messages, setMessages] = useState(greeting);
+  const t = useT();
+  const { books } = usePlan();
+  const [topicChips] = useState(() => chipsFor(helpTopics(books)));
+  const [messages, setMessages] = useState(() => greeting(topicChips));
   const [typing, setTyping] = useState(false);
 
   useEffect(() => () => clearTimeout(timer.current), []);
 
   const choose = (chip) => {
     if (typing) return;
-    setMessages((prev) => [...prev, msg({ from: 'user', text: chip.label })]);
+    setMessages((prev) => [...prev, post({ from: 'user', text: chip.label })]);
     setTyping(true);
     // A short pause so the answer reads as a reply, not a page swap.
     timer.current = setTimeout(() => {
       setTyping(false);
-      setMessages((prev) => [...prev, ...replyTo(chip)]);
+      setMessages((prev) => [...prev, ...replyTo(chip, topicChips)]);
     }, REPLY_DELAY);
   };
 
@@ -97,7 +105,7 @@ export default function Help() {
         <FadeIn key={m.id} from={m.from === 'user' ? 'right' : 'bottom'}>
           {m.from === 'user' ? (
             <View style={[styles.bubble, styles.userBubble]}>
-              <Body style={styles.userText}>{m.text}</Body>
+              <Body style={styles.userText}>{t(m.text)}</Body>
             </View>
           ) : (
             <View style={styles.botRow}>
@@ -105,11 +113,11 @@ export default function Help() {
               <View style={[styles.bubble, styles.botBubble, m.answer && styles.answerBubble]}>
                 {m.answer ? (
                   <>
-                    <Body strong style={styles.answerTitle}>{m.answer.question}</Body>
+                    <Body strong style={styles.answerTitle}>{t(m.answer.question)}</Body>
                     <HelpAnswer question={m.answer} onAction={go} />
                   </>
                 ) : (
-                  <Body>{m.text}</Body>
+                  <Body>{t(m.text, m.vars && { topic: t(m.vars.topic) })}</Body>
                 )}
               </View>
             </View>
@@ -118,9 +126,10 @@ export default function Help() {
             <View style={styles.chips}>
               {m.chips.map((chip, i) => (
                 <FadeIn key={chip.label} delay={Math.min(i, 6) * 40} style={styles.chipWrap}>
-                  <Touchable onPress={() => choose(chip)} style={styles.chip} accessibilityLabel={chip.label}>
+                  <Touchable onPress={() => choose(chip)} style={styles.chip} accessibilityLabel={t(chip.label)}>
                     {chip.icon ? <Ionicons name={chip.icon} size={16} color={colors.accent700} /> : null}
-                    <Body style={styles.chipText}>{chip.label}</Body>
+                    {/* "simple": Android's default line breaking measured Telugu a hair short and hid the last word. */}
+                    <Body style={styles.chipText} textBreakStrategy="simple">{t(chip.label)}</Body>
                   </Touchable>
                 </FadeIn>
               ))}

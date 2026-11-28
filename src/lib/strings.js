@@ -10,6 +10,10 @@ import { BOOK } from './strings-book.js';
 import { STAFF } from './strings-staff.js';
 import { IMPORT } from './strings-import.js';
 import { SCAN } from './strings-scan.js';
+import { HELP_A } from './strings-help-a.js';
+import { HELP_B } from './strings-help-b.js';
+import { HELP_C } from './strings-help-c.js';
+import { HELP_D } from './strings-help-d.js';
 
 export const ORDER = ['hi', 'ta', 'te', 'kn', 'ml', 'mr', 'bn', 'gu'];
 
@@ -20,6 +24,10 @@ export const STRINGS = {
   ...STAFF,
   ...IMPORT,
   ...SCAN,
+  ...HELP_A,
+  ...HELP_B,
+  ...HELP_C,
+  ...HELP_D,
   // Tabs
   'Home': ['होम', 'முகப்பு', 'హోమ్', 'ಮುಖಪುಟ', 'ഹോം', 'होम', 'হোম', 'હોમ'],
   'Social': ['सोशल', 'சமூகம்', 'సోషల్', 'ಸೋಶಿಯಲ್', 'സോഷ്യൽ', 'सोशल', 'সোশ্যাল', 'સોશિયલ'],

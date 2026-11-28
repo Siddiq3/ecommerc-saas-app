@@ -5,7 +5,8 @@
  * kind of action. Routes in `action.href` are checked by verify-routes.
  */
 import assert from 'node:assert/strict';
-import { HELP_CATEGORIES, HELP_CONTEXTS, helpQuestion } from '../src/lib/help.js';
+import { HELP_CATEGORIES, HELP_CONTEXTS, helpQuestion, helpTexts, helpTopics } from '../src/lib/help.js';
+import { STRINGS, ORDER } from '../src/lib/strings.js';
 
 const questions = HELP_CATEGORIES.flatMap((c) => c.questions);
 const ids = questions.map((q) => q.id);
@@ -21,4 +22,21 @@ for (const [screen, list] of Object.entries(HELP_CONTEXTS)) {
   for (const id of list) assert.ok(helpQuestion(id), `${screen} → ${id} exists`);
 }
 
-console.log(`✓ ${questions.length} help questions in ${HELP_CATEGORIES.length} topics are well formed.`);
+// Every help text is translated, and each translation keeps the same **bold** labels in English: the help screen
+// translates those on their own, so they read exactly like the buttons. Each bold label needs its own row too.
+const bold = (text) => text.split('**').filter((_, i) => i % 2).sort().join('|');
+const missing = [];
+for (const text of new Set(helpTexts())) {
+  const row = STRINGS[text];
+  if (!row) { missing.push(text); continue; }
+  row.forEach((tr, i) => assert.equal(bold(tr), bold(text), `"${text}" in ${ORDER[i]} must keep its bold labels`));
+  for (const label of text.split('**').filter((_, i) => i % 2)) if (!STRINGS[label]) missing.push(label);
+}
+if (missing.length) console.error([...new Set(missing)].map((m) => JSON.stringify(m)).join('\n'));
+assert.equal(missing.length, 0, `${new Set(missing).size} help texts have no translation (listed above)`);
+
+// A shop using only the bill book and khata sees no online-store topics.
+assert.ok(helpTopics(true).every((c) => !c.store) && helpTopics(true).some((c) => c.id === 'khata'));
+assert.equal(helpTopics(false).length, HELP_CATEGORIES.length);
+
+console.log(`✓ ${questions.length} help questions in ${HELP_CATEGORIES.length} topics are well formed and translated.`);

@@ -10,14 +10,17 @@
  * `action.url` opens outside the app instead.
  */
 
+import { BOOK_HELP } from './help-book.js';
+
 /** The StoreFlick website (terms, privacy, account deletion) — not a store. No trailing slash. */
 export const WEB_URL = String(process.env.EXPO_PUBLIC_WEB_URL ?? 'https://storeflick.in').replace(/\/$/, '');
 /** The website has no help page yet; support is by email, the same address its footer shows. */
 export const SUPPORT_URL = 'mailto:support@storeflick.in';
 
-export const HELP_CATEGORIES = [
+const STORE_AND_PRODUCTS = [
   {
     id: 'setup',
+    store: true, // online store only: hidden for a shop using just the bill book and khata
     title: 'Store setup',
     icon: 'storefront-outline',
     questions: [
@@ -151,10 +154,22 @@ export const HELP_CATEGORIES = [
         note: 'Use the **Low** and **Out** filters in Products to see what needs restocking.',
         action: { label: 'Open products', href: '/(tabs)/products' },
       },
+      {
+        id: 'import-products',
+        question: 'How do I bring products from another website or an Excel list?',
+        steps: [
+          'Open **Products** and tap **Import**.',
+          'Choose where the products come from, or tap **Get the template** to fill in a list.',
+          'Save the list as CSV and tap **Choose CSV file**.',
+        ],
+        note: 'Products already in your store are skipped, so importing the same file twice is safe.',
+        action: { label: 'Import products', href: '/products/import' },
+      },
     ],
   },
   {
     id: 'orders',
+    store: true, // online store only: hidden for a shop using just the bill book and khata
     title: 'Orders',
     icon: 'receipt-outline',
     questions: [
@@ -214,6 +229,7 @@ export const HELP_CATEGORIES = [
   },
   {
     id: 'payments',
+    store: true, // online store only: hidden for a shop using just the bill book and khata
     title: 'Payments',
     icon: 'wallet-outline',
     questions: [
@@ -274,6 +290,7 @@ export const HELP_CATEGORIES = [
   },
   {
     id: 'delivery',
+    store: true, // online store only: hidden for a shop using just the bill book and khata
     title: 'Delivery',
     icon: 'bicycle-outline',
     questions: [
@@ -325,6 +342,7 @@ export const HELP_CATEGORIES = [
   },
   {
     id: 'coupons',
+    store: true, // online store only: hidden for a shop using just the bill book and khata
     title: 'Coupons & offers',
     icon: 'ticket-outline',
     questions: [
@@ -374,6 +392,7 @@ export const HELP_CATEGORIES = [
   },
   {
     id: 'marketing',
+    store: true, // online store only: hidden for a shop using just the bill book and khata
     title: 'Sharing & marketing',
     icon: 'megaphone-outline',
     questions: [
@@ -454,6 +473,26 @@ export const HELP_CATEGORIES = [
         action: { label: 'Open subscription', href: '/settings/subscription' },
       },
       {
+        id: 'change-language',
+        question: 'How do I change the app language?',
+        steps: [
+          'Open **Account** and tap **Language**.',
+          'Choose your language.',
+        ],
+        note: 'Help answers change to your language too.',
+        action: { label: 'Change language', href: '/settings/language' },
+      },
+      {
+        id: 'voice-typing',
+        question: 'How do I type with my voice?',
+        steps: [
+          'Tap the microphone next to a box, like a product name or an item.',
+          'Speak, then tap again to stop.',
+        ],
+        note: 'To speak in English while the app is in your language, change **Voice typing language** in **Account** → **Language**.',
+        action: { label: 'Change language', href: '/settings/language' },
+      },
+      {
         id: 'contact-support',
         question: 'How do I contact StoreFlick support?',
         steps: [
@@ -465,12 +504,26 @@ export const HELP_CATEGORIES = [
   },
 ];
 
+/** Every topic: the store and products first, then the bill book side, then the account. */
+export const HELP_CATEGORIES = [...STORE_AND_PRODUCTS.slice(0, -1), ...BOOK_HELP, STORE_AND_PRODUCTS.at(-1)];
+
+/** The topics a shop sees: one using only the bill book and khata has no online store to ask about. */
+export const helpTopics = (books) => HELP_CATEGORIES.filter((c) => !(books && c.store));
+
+/** Every English text in the help, for the translations check. */
+export const helpTexts = () => HELP_CATEGORIES.flatMap((c) => [
+  c.title,
+  ...c.questions.flatMap((q) => [q.question, q.about, ...q.steps, q.note, q.action?.label]),
+]).filter(Boolean);
+
 /** The questions shown by each screen's "Need help?" button, by question id. */
 export const HELP_CONTEXTS = {
   products: ['add-product', 'edit-product', 'product-images', 'product-variants'],
   orders: ['order-status', 'verify-upi', 'accept-order', 'cancel-order'],
   store: ['store-name', 'share-link', 'customize-store', 'upi-how'],
   delivery: ['delivery-charges', 'free-delivery', 'delivery-address'],
+  book: ['make-bill', 'part-payment', 'scan-bill', 'add-expense'],
+  khata: ['khata-entry', 'khata-remind', 'khata-due', 'khata-link'],
 };
 
 const BY_ID = new Map(HELP_CATEGORIES.flatMap((c) => c.questions.map((q) => [q.id, q])));
